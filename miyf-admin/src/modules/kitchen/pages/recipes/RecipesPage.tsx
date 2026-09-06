@@ -166,7 +166,8 @@ export default function RecipesPage() {
 
         const [name, ...rest] = line.split(/\s+/);
 
-        return { name, amount: rest.length ? rest.join(' ') : undefined };
+        // 后端 amount 必填；未写用量时默认「适量」
+        return { name, amount: rest.length ? rest.join(' ') : '适量' };
 
       });
 
@@ -188,7 +189,7 @@ export default function RecipesPage() {
 
       .filter(Boolean)
 
-      .map((content, i) => ({ step: i + 1, content }));
+      .map((text, i) => ({ step: i + 1, description: text, content: text }));
 
 
 

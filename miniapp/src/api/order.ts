@@ -10,6 +10,8 @@ interface OrderItemRaw {
   quantity: number
   unit?: string
   remark?: string
+  coverImage?: string
+  coverUrl?: string
 }
 
 interface OrderRaw {
@@ -31,6 +33,7 @@ function mapItem(raw: OrderItemRaw): OrderItem {
     dishName: raw.dishName,
     quantity: raw.quantity,
     unit: raw.unit,
+    coverUrl: raw.coverImage || raw.coverUrl || undefined,
     note: raw.remark,
     remark: raw.remark
   }

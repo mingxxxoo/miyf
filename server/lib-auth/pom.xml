@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.miyf</groupId>
+        <artifactId>miyf-server</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>lib-auth</artifactId>
+    <packaging>pom</packaging>
+    <name>lib-auth</name>
+    <description>认证鉴权聚合：网关、登录、组织、权限、用户（自 core-common 渐进迁入）</description>
+
+    <modules>
+        <module>gateway-service</module>
+        <module>auth-service</module>
+        <module>organization-service</module>
+        <module>permission-service</module>
+        <module>user-service</module>
+    </modules>
+</project>

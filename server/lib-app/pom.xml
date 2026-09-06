@@ -17,6 +17,7 @@
     <description>业务模块聚合</description>
 
     <modules>
-        <module>app-kitchen</module>
+        <module>kitchen-service</module>
+        <module>health-service</module>
     </modules>
 </project>

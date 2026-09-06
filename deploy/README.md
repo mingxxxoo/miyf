@@ -223,6 +223,35 @@ WX_APP_ID=你的AppId
 WX_APP_SECRET=你的AppSecret
 ```
 
+### 3.2.1 华为运动健康（OAuth）
+
+默认关闭。需要在管理端拉取华为数据时：
+
+1. 华为开发者联盟创建应用，开通 Health Kit，配置 **OAuth 客户端**（Client ID / Secret）
+2. 回调地址填管理端「健康数据源」页完整 URL（须与 `HUAWEI_HEALTH_REDIRECT_URI` **完全一致**）
+3. `.env` 示例：
+
+```env
+APP_HEALTH_PROVIDER_HUAWEI_ENABLED=true
+APP_HEALTH_HUAWEI_MOCK=false
+HUAWEI_HEALTH_CLIENT_ID=你的ClientId
+HUAWEI_HEALTH_CLIENT_SECRET=你的ClientSecret
+# 生产管理端示例（按实际域名改）
+HUAWEI_HEALTH_REDIRECT_URI=https://www.miyf.cn/health/providers
+# 本地 Vite 开发
+# HUAWEI_HEALTH_REDIRECT_URI=http://localhost:5173/health/providers
+```
+
+4. `docker compose up -d server` 使环境变量生效
+5. SUPER_ADMIN 重新登录以加载 `health:huawei:oauth` 等权限
+6. 管理端：选主体 → **OAuth 授权** → 华为账号登录同意 → 回到本页完成绑定 → 同步或等待任务 `health.provider.sync`
+
+说明：
+
+- `APP_HEALTH_HUAWEI_MOCK=true` 时，未授权主体返回演示数据；已 OAuth 的主体仍走真实接口
+- Token 按主体存 Redis，**不落 clientSecret**；撤销或删除主体会清理该主体 token
+- 用户拒绝授权时 URL 带 `error` / `error_description`，管理端会提示并清掉查询参数
+
 ### 3.3 完整示例（请自行替换密钥）
 
 见同目录 [`.env.example`](./.env.example)。核心片段：
@@ -364,10 +393,18 @@ BASE_NGINX_IMAGE=registry.cn-shanghai.aliyuncs.com/miyf/nginx:1.27-alpine
 
 ```bash
 cd deploy
+# 推荐：显式关掉 attestation，避免 ACR 拒收（compose 的 provenance/sbom 在部分 Desktop 版本上仍可能带上）
+# PowerShell:
+#   $env:BUILDX_NO_DEFAULT_ATTESTS="1"
+#   docker buildx build --provenance=false --sbom=false --load ...
 docker compose -f docker-compose.yml -f docker-compose.build.yml build
 ```
 
 > 你当前环境是 `linux/x86_64`，与云服务器一致，**不要加** `--platform`。Apple Silicon 跨架构时可设 `$env:DOCKER_DEFAULT_PLATFORM="linux/amd64"`。
+>
+> `docker-compose.build.yml` 已关闭 `provenance`/`sbom`，避免阿里云 ACR 推送时报
+`unknown manifest class for application/vnd.oci.empty.v1+json`。若 Compose 过旧不识别这两项，可改用：
+> `docker buildx build --provenance=false --sbom=false ...` 或设 `$env:BUILDX_NO_DEFAULT_ATTESTS=1` 后再 build。
 
 产物标签即：
 
@@ -800,6 +837,21 @@ A: 检查 `TARO_APP_API_BASE` 是否带 `/api`；HTTP IP 仅适合开发工具�
 
 **Q: build 报加速器 `403 Forbidden`（如 `mirror.aliyuncs.com/.../library/maven`）？**  
 A: 个人加速器常无法代理这类官方镜像。按 **4.0** 把 maven / eclipse-temurin / node / nginx 导入 ACR，`.env` 的 `BASE_*_IMAGE` 指向 `registry.cn-shanghai.aliyuncs.com/miyf/...`，再 build。
+
+**Q: 华为 OAuth 回调失败 / redirect_uri 不匹配？**  
+A: `HUAWEI_HEALTH_REDIRECT_URI` 须与华为开放平台填写的回调 URL **完全一致**（含协议、域名、路径 `/health/providers`）。改
+`.env` 后执行 `docker compose up -d server`。管理端若 URL 带 `error=`，页面会提示拒绝原因。
+
+**Q: push ACR 报 `unknown manifest class for application/vnd.oci.empty.v1+json`？**  
+A: 新版 BuildKit 默认写入 attestation，ACR 不认。用已关闭 `provenance`/`sbom` 的 `docker-compose.build.yml` **重新 build**
+后再 push；或：
+
+```powershell
+$env:BUILDX_NO_DEFAULT_ATTESTS="1"
+docker compose -f docker-compose.yml -f docker-compose.build.yml build --no-cache
+docker push registry.cn-shanghai.aliyuncs.com/miyf/miyf_app:0.1.0
+docker push registry.cn-shanghai.aliyuncs.com/miyf/miyf_nginx:0.1.0
+```
 
 **Q: 磁盘占用过大？**  
 A: 清理悬空镜像：`docker system prune -f`（勿加 `-a` 除非确认可删未用镜像）。数据在 `/miyf/data`，日志在 `/miyf/log`，与镜像无关。

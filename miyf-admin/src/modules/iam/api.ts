@@ -36,6 +36,12 @@ export interface IamPermission {
   name: string;
   description?: string;
   groupCode?: string;
+  permNo?: string;
+  parentId?: string;
+  product?: string;
+  treeName?: string;
+  nodeType?: string;
+  sortOrder?: number;
 }
 
 export interface IamOrgUnit {
@@ -104,6 +110,12 @@ function mapPermission(raw: Record<string, unknown>): IamPermission {
     name: String(raw.name ?? ''),
     description: raw.description ? String(raw.description) : undefined,
     groupCode: raw.groupCode ? String(raw.groupCode) : undefined,
+    permNo: raw.permNo ? String(raw.permNo) : undefined,
+    parentId: raw.parentId != null ? sid(raw.parentId) : undefined,
+    product: raw.product ? String(raw.product) : undefined,
+    treeName: raw.treeName ? String(raw.treeName) : undefined,
+    nodeType: raw.nodeType ? String(raw.nodeType) : undefined,
+    sortOrder: raw.sortOrder != null ? Number(raw.sortOrder) : undefined,
   };
 }
 
@@ -150,7 +162,7 @@ export const iamUserApi = {
       nickname: data.nickname,
       status: data.status ?? 'ENABLED',
       orgUnitId: data.orgUnitId || undefined,
-      roleIds: data.roleIds?.map((id) => Number(id)),
+      roleIds: data.roleIds,
     });
     return mapUser(raw);
   },
@@ -171,7 +183,7 @@ export const iamUserApi = {
       nickname: data.nickname,
       status: data.status,
       orgUnitId: data.orgUnitId || undefined,
-      roleIds: data.roleIds?.map((rid) => Number(rid)),
+      roleIds: data.roleIds,
     });
     return mapUser(raw);
   },
@@ -189,7 +201,7 @@ export const iamRoleApi = {
       code: data.code,
       name: data.name,
       description: data.description,
-      groupIds: data.groupIds?.map((id) => Number(id)),
+      groupIds: data.groupIds,
     });
     return mapRole(raw);
   },
@@ -201,7 +213,7 @@ export const iamRoleApi = {
       code: data.code,
       name: data.name,
       description: data.description,
-      groupIds: data.groupIds?.map((gid) => Number(gid)),
+      groupIds: data.groupIds,
     });
     return mapRole(raw);
   },
@@ -291,7 +303,7 @@ export const iamOrgUnitApi = {
     const raw = await post<Record<string, unknown>>('/iam/org-units', {
       code: data.code,
       name: data.name,
-      parentId: data.parentId ? Number(data.parentId) : undefined,
+      parentId: data.parentId || undefined,
       sortOrder: data.sortOrder ?? 0,
       status: data.status ?? 'ENABLED',
     });
@@ -310,7 +322,7 @@ export const iamOrgUnitApi = {
     const raw = await put<Record<string, unknown>>(`/iam/org-units/${id}`, {
       code: data.code,
       name: data.name,
-      parentId: data.parentId ? Number(data.parentId) : undefined,
+      parentId: data.parentId || undefined,
       sortOrder: data.sortOrder ?? 0,
       status: data.status ?? 'ENABLED',
     });
@@ -340,7 +352,7 @@ export const iamMenuApi = {
     const raw = await post<Record<string, unknown>>('/iam/menus', {
       name: data.name,
       menuType: data.menuType,
-      parentId: data.parentId ? Number(data.parentId) : undefined,
+      parentId: data.parentId || undefined,
       path: data.path,
       component: data.component,
       icon: data.icon,
@@ -369,7 +381,7 @@ export const iamMenuApi = {
     const raw = await put<Record<string, unknown>>(`/iam/menus/${id}`, {
       name: data.name,
       menuType: data.menuType,
-      parentId: data.parentId ? Number(data.parentId) : undefined,
+      parentId: data.parentId || undefined,
       path: data.path,
       component: data.component,
       icon: data.icon,
@@ -401,7 +413,7 @@ export const iamPermGroupApi = {
       name: data.name,
       description: data.description,
       sortOrder: data.sortOrder ?? 0,
-      permissionIds: data.permissionIds?.map((id) => Number(id)),
+      permissionIds: data.permissionIds,
     });
     return mapPermGroup(raw);
   },
@@ -420,7 +432,7 @@ export const iamPermGroupApi = {
       name: data.name,
       description: data.description,
       sortOrder: data.sortOrder ?? 0,
-      permissionIds: data.permissionIds?.map((pid) => Number(pid)),
+      permissionIds: data.permissionIds,
     });
     return mapPermGroup(raw);
   },

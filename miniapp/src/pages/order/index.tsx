@@ -1,6 +1,6 @@
 import { View, Text, Button, Input, Picker } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import OrderCard from '@/components/OrderCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
@@ -33,13 +33,12 @@ export default function OrderIndexPage() {
   const [tab, setTab] = useState<'ALL' | OrderStatus>('ALL')
 
   useDidShow(() => {
-    if (isLoggedIn) void fetchOrders()
+    if (isLoggedIn) void fetchOrders(tab === 'ALL' ? undefined : tab)
   })
 
-  const filtered = useMemo(() => {
-    if (tab === 'ALL') return orders
-    return orders.filter((o) => String(o.status).toUpperCase() === tab)
-  }, [orders, tab])
+  useEffect(() => {
+    if (isLoggedIn) void fetchOrders(tab === 'ALL' ? undefined : tab)
+  }, [tab, isLoggedIn, fetchOrders])
 
   const ensureLogin = async () => {
     if (isLoggedIn) return true
@@ -151,7 +150,7 @@ export default function OrderIndexPage() {
 
       <View className='order-page__history'>
         <Text className='order-page__section-title'>预约记录</Text>
-        {filtered.length === 0 ? (
+        {orders.length === 0 ? (
           <EmptyState
             emoji='📋'
             title='还没有预约记录'
@@ -160,7 +159,7 @@ export default function OrderIndexPage() {
             onAction={() => Taro.switchTab({ url: '/pages/category/index' })}
           />
         ) : (
-          filtered.map((order) => <OrderCard key={order.id} order={order} />)
+          orders.map((order) => <OrderCard key={order.id} order={order} />)
         )}
       </View>
     </View>

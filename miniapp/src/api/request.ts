@@ -89,6 +89,22 @@ function showToastAfterLoading(title: string) {
   }, 100)
 }
 
+const USER_KEY = 'ck_user'
+
+function clearAuthState() {
+  clearToken()
+  try {
+    Taro.removeStorageSync(USER_KEY)
+  } catch {
+    // ignore
+  }
+  try {
+    Taro.eventCenter.trigger('miyf:auth-expired')
+  } catch {
+    // ignore
+  }
+}
+
 async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', options: RequestOptions): Promise<T> {
   const { url, data, header = {}, showLoading = false, showError = true } = options
   const token = getToken()
@@ -116,8 +132,8 @@ async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', options: Re
     const { statusCode } = res
     const body = res.data
 
-    if (statusCode === 401) {
-      clearToken()
+    if (statusCode === 401 || (body && typeof body === 'object' && body.code === 40100)) {
+      clearAuthState()
       toastMessage = '请先登录'
       throw new Error('Unauthorized')
     }
@@ -129,12 +145,19 @@ async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', options: Re
     }
 
     if (body && typeof body === 'object' && 'code' in body && body.code !== 0) {
+      if (body.code === 40100) {
+        clearAuthState()
+      }
       const message = toErrorText(body.message) || '请求失败'
       toastMessage = message
       throw new Error(message)
     }
 
-    return (body?.data ?? body) as T
+    // 仅解包 data；成功时允许 data 为 null/空，勿回退成整个 ApiResult
+    if (body && typeof body === 'object' && 'code' in body) {
+      return body.data as T
+    }
+    return body as T
   } catch (err) {
     if (!toastMessage) {
       toastMessage = friendlyRequestError(toErrorText(err))

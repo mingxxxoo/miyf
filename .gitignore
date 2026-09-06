@@ -51,6 +51,8 @@ Desktop.ini
 
 
 # Project exclude paths
-/server/lib-app/app-kitchen/target/
-/server/lib-core/target/
+/server/lib-app/kitchen-service/target/
+/server/lib-app/health-service/target/
+/server/lib-core/**/target/
+/server/lib-auth/**/target/
 /server/server-boot/target/

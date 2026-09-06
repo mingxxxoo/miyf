@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>cn.miyf</groupId>
+        <artifactId>lib-core</artifactId>
+        <version>1.0.0</version>
+    </parent>
+    <artifactId>config-service</artifactId>
+    <name>config-service</name>
+    <description>系统配置与参数</description>
+    <dependencies>
+        <dependency>
+            <groupId>cn.miyf</groupId>
+            <artifactId>core-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.miyf</groupId>
+            <artifactId>auth-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>

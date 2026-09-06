@@ -20,6 +20,17 @@ import PermissionsPage from '@/modules/iam/pages/permissions/PermissionsPage';
 import OrgUnitsPage from '@/modules/iam/pages/org-units/OrgUnitsPage';
 import MenusPage from '@/modules/iam/pages/menus/MenusPage';
 import PermGroupsPage from '@/modules/iam/pages/perm-groups/PermGroupsPage';
+import SystemHomePage from '@/pages/system/SystemHomePage';
+import SystemConfigPage from '@/pages/system/SystemConfigPage';
+import SystemDictPage from '@/pages/system/SystemDictPage';
+import SystemNotifyPage from '@/pages/system/SystemNotifyPage';
+import SystemJobsPage from '@/pages/system/SystemJobsPage';
+import SystemMonitorPage from '@/pages/system/SystemMonitorPage';
+import HealthOverviewPage from '@/modules/health/pages/HealthOverviewPage';
+import HealthSubjectsPage from '@/modules/health/pages/HealthSubjectsPage';
+import HealthSamplesPage from '@/modules/health/pages/HealthSamplesPage';
+import HealthProvidersPage from '@/modules/health/pages/HealthProvidersPage';
+import HealthTrendsPage from '@/modules/health/pages/HealthTrendsPage';
 
 /** 旧路径 /dishes/:id/edit → /kitchen/dishes/:id/edit */
 function LegacyDishEditRedirect() {
@@ -204,6 +215,99 @@ export default function AppRoutes() {
           element={
             <Guard permission="iam:menu:list">
               <MenusPage />
+            </Guard>
+          }
+        />
+
+        {/* 系统设置（系统管理员） */}
+        <Route path="/system" element={<SystemHomePage />} />
+        <Route
+          path="/system/permissions"
+          element={
+            <Guard permission="iam:permission:list">
+              <PermissionsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/system/config"
+          element={
+            <Guard permission="sys:config:list">
+              <SystemConfigPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/system/dicts"
+          element={
+            <Guard permission="sys:dict:list">
+              <SystemDictPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/system/notifications"
+          element={
+            <Guard permissions={['sys:notify:list', 'sys:notify:send']}>
+              <SystemNotifyPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/system/jobs"
+          element={
+            <Guard permission="sys:job:list">
+              <SystemJobsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/system/monitor"
+          element={
+            <Guard permission="sys:monitor:view">
+              <SystemMonitorPage />
+            </Guard>
+          }
+        />
+
+        {/* 健康管理 */}
+        <Route
+          path="/health/overview"
+          element={
+            <Guard permission="health:overview:view">
+              <HealthOverviewPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/health/subjects"
+          element={
+            <Guard permission="health:subject:list">
+              <HealthSubjectsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/health/samples"
+          element={
+            <Guard permission="health:sample:list">
+              <HealthSamplesPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/health/providers"
+          element={
+            <Guard permissions={['health:provider:list', 'health:sync:trigger']}>
+              <HealthProvidersPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/health/trends"
+          element={
+            <Guard permission="health:trend:view">
+              <HealthTrendsPage />
             </Guard>
           }
         />

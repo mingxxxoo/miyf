@@ -7,6 +7,7 @@ import {
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  SettingOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { fetchMyMenus, type MenuTreeNode } from '@/modules/iam/api';
@@ -14,6 +15,12 @@ import { useAuthStore } from '@/stores/authStore';
 import { usePermissionStore } from '@/stores/permissionStore';
 
 const { Header, Sider, Content } = Layout;
+
+function isSystemAdmin(roles?: string[], permissions?: string[]) {
+  if (roles?.includes('SUPER_ADMIN') || roles?.includes('SYSTEM_ADMIN')) return true;
+  if (permissions?.includes('*') || permissions?.includes('sys:settings:view')) return true;
+  return false;
+}
 
 function resolveIcon(name?: string) {
   if (!name) return undefined;
@@ -52,7 +59,9 @@ export default function AdminLayout() {
   const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const permissions = usePermissionStore((s) => s.permissions);
   const clearPermissions = usePermissionStore((s) => s.clearPermissions);
+  const sysAdmin = isSystemAdmin(user?.roles, permissions);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +93,17 @@ export default function AdminLayout() {
 
   const userMenu: MenuProps = {
     items: [
+      ...(sysAdmin
+        ? [
+            {
+              key: 'system',
+              icon: <SettingOutlined />,
+              label: '系统设置',
+              onClick: () => navigate('/system'),
+            },
+            { type: 'divider' as const },
+          ]
+        : []),
       {
         key: 'logout',
         icon: <LogoutOutlined />,

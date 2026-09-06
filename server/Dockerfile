@@ -8,18 +8,12 @@ FROM ${MAVEN_IMAGE} AS build
 WORKDIR /workspace
 
 COPY pom.xml ./
-COPY lib-core/pom.xml lib-core/pom.xml
-COPY lib-app/pom.xml lib-app/pom.xml
-COPY lib-app/app-kitchen/pom.xml lib-app/app-kitchen/pom.xml
-COPY server-boot/pom.xml server-boot/pom.xml
-
-RUN mvn -B -pl server-boot -am dependency:go-offline -DskipTests || true
-
 COPY lib-core ./lib-core
+COPY lib-auth ./lib-auth
 COPY lib-app ./lib-app
 COPY server-boot ./server-boot
 
-RUN mvn -B -pl server-boot -am package -DskipTests \
+RUN mvn -B -pl server-boot -am package -Dmaven.test.skip=true \
     && cp server-boot/target/server-boot-*.jar /workspace/app.jar
 
 FROM ${JRE_IMAGE} AS runtime

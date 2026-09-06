@@ -1,11 +1,11 @@
 # miyf
 
-多业务平台（当前已接入厨房预约业务模块 `app-kitchen`）。
+多业务平台（当前已接入厨房业务 `kitchen-service`、健康业务 `health-service`）。
 
 > **当前版本（1.0.0）完全不涉及金额、支付和商业交易。**  
 > 时区统一为 **Asia/Shanghai（UTC+8）**。
 
-**miyf** 提供统一 IAM、安全与基础设施；厨房业务作为 `app-kitchen` 模块：家人或小团队预约做饭、点评，没有购物车与结账。
+**miyf** 提供统一 IAM、安全与基础设施；厨房业务作为 `kitchen-service` 模块：家人或小团队预约做饭、点评，没有购物车与结账。
 
 ---
 
@@ -71,8 +71,9 @@
 ```text
 miyf/
 ├── server/                 # 后端（Maven 多模块）
-│   ├── lib-core/           # 框架 + IAM / 安全
-│   ├── lib-app/app-kitchen/# 厨房业务
+│   ├── lib-core/           # 平台横向：core-common + oss/dict/config/…-service
+│   ├── lib-auth/           # 认证鉴权：gateway/auth/org/permission/user-service
+│   ├── lib-app/            # 业务：kitchen-service / health-service
 │   ├── server-boot/        # 启动入口 + Flyway + yml
 │   └── Dockerfile
 ├── miniapp/                # 微信小程序（厨房业务）
@@ -82,7 +83,7 @@ miyf/
 │   ├── docker-compose.yml
 │   ├── nginx/
 │   └── .env.example
-├── docs/                   # 计划与设计摘录
+├── docs/                   # MODULE_ARCHITECTURE、计划与设计摘录
 ├── .env.example
 └── README.md
 ```

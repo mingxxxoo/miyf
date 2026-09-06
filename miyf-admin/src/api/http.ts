@@ -15,7 +15,21 @@ export const setToken = (token: string): void => {
 
 export const clearToken = (): void => {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('ck-auth-storage');
 };
+
+/** 带业务码与附加数据的 API 错误（登录风控等） */
+export class ApiError extends Error {
+  code: number;
+  data?: unknown;
+
+  constructor(message: string, code = -1, data?: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = code;
+    this.data = data;
+  }
+}
 
 const http = axios.create({
   baseURL: '/api',
@@ -37,13 +51,29 @@ http.interceptors.request.use(
 );
 
 http.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
+  (response) => {
+    const body = response.data as ApiResult<unknown> | undefined;
+    if (body && typeof body === 'object' && body.code === 40100) {
       clearToken();
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
+      return Promise.reject(new ApiError(body.message || '未登录或登录已过期', 40100, body.data));
+    }
+    return response;
+  },
+  (error: AxiosError<ApiResult<unknown>>) => {
+    const status = error.response?.status;
+    const body = error.response?.data;
+    const code = body?.code;
+    if (status === 401 || code === 40100) {
+      clearToken();
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    if (body && typeof body === 'object' && 'code' in body && body.code !== 0) {
+      return Promise.reject(new ApiError(body.message || '请求失败', body.code, body.data));
     }
     return Promise.reject(error);
   },
@@ -56,7 +86,13 @@ export async function request<T>(config: AxiosRequestConfig): Promise<T> {
 
   if (body && typeof body === 'object' && 'code' in body) {
     if (body.code !== 0) {
-      throw new Error(body.message || '请求失败');
+      if (body.code === 40100) {
+        clearToken();
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
+      throw new ApiError(body.message || '请求失败', body.code, body.data);
     }
     return body.data;
   }

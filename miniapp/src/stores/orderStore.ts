@@ -50,7 +50,7 @@ export const useOrderStore = create<OrderState>((set, getState) => ({
       const page = await orderApi.fetchMyOrders({
         status: status || undefined,
         page: 1,
-        rows: 50
+        rows: 100
       })
       set({ orders: page.records || [], loading: false })
     } catch {

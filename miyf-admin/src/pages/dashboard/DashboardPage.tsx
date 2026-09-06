@@ -18,16 +18,21 @@ const emptyStats: DashboardStats = {
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>(emptyStats);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setError(null);
       try {
         const data = await dashboardApi.stats();
         if (!cancelled) setStats(data);
-      } catch {
-        if (!cancelled) setStats(emptyStats);
+      } catch (err) {
+        if (!cancelled) {
+          setStats(emptyStats);
+          setError(err instanceof Error ? err.message : '仪表盘数据加载失败');
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -137,6 +142,9 @@ export default function DashboardPage() {
   return (
     <div className="ck-page">
       <h2 className="ck-page-title">数据概览</h2>
+      {error && (
+        <Empty description={error} style={{ marginBottom: 16 }} />
+      )}
       <Spin spinning={loading}>
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           {cards.map((stat) => (

@@ -35,7 +35,7 @@ management:
 mybatis-plus:
   # 复杂 SQL 统一放 mapper XML，禁止用 Wrapper 拼装联表/动态分页/聚合
   mapper-locations: classpath*:mapper/**/*.xml
-  type-aliases-package: cn.miyf.bean.entity,cn.miyf.kitchen.bean.entity
+  type-aliases-package: cn.miyf.bean.entity,cn.miyf.kitchen.bean.entity,cn.miyf.health.bean.entity,cn.miyf.notification.entity,cn.miyf.job.entity
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
@@ -105,6 +105,31 @@ app:
   druid:
     stat-username: ${DRUID_STAT_USERNAME:change-me}
     stat-password: ${DRUID_STAT_PASSWORD:change-me}
+  health:
+    enabled: ${APP_HEALTH_ENABLED:true}
+    sync:
+      # 健康远程数据源定时同步（HealthSyncJob）；可在 /system/jobs 启停
+      cron: ${APP_HEALTH_SYNC_CRON:0 15 * * * *}
+    providers:
+      example:
+        enabled: ${APP_HEALTH_PROVIDER_EXAMPLE_ENABLED:false}
+      huawei:
+        enabled: ${APP_HEALTH_PROVIDER_HUAWEI_ENABLED:false}
+    huawei:
+      mock-enabled: ${APP_HEALTH_HUAWEI_MOCK:true}
+      client-id: ${HUAWEI_HEALTH_CLIENT_ID:}
+      client-secret: ${HUAWEI_HEALTH_CLIENT_SECRET:}
+      redirect-uri: ${HUAWEI_HEALTH_REDIRECT_URI:http://localhost:5173/health/providers}
+      authorize-url: https://oauth-login.cloud.huawei.com/oauth2/v3/authorize
+      token-url: https://oauth-login.cloud.huawei.com/oauth2/v3/token
+      health-api-base: https://health-api.cloud.huawei.com/healthkit/v1
+  notification:
+    mail:
+      enabled: ${APP_NOTIFICATION_MAIL_ENABLED:false}
+      from: ${APP_NOTIFICATION_MAIL_FROM:noreply@miyf.local}
+    sms:
+      enabled: ${APP_NOTIFICATION_SMS_ENABLED:false}
+      provider: ${APP_NOTIFICATION_SMS_PROVIDER:logging}
 
 wx:
   auth:

@@ -139,12 +139,14 @@ function mapRecipe(raw: Record<string, unknown>): DishRecipe {
 }
 
 function mapOrderItem(raw: Record<string, unknown>): OrderItem {
+  const cover = raw.coverImage ?? raw.coverUrl;
   return {
     id: raw.id ? sid(raw.id) : undefined,
     dishId: sid(raw.dishId),
     dishName: String(raw.dishName ?? ''),
     quantity: Number(raw.quantity ?? 0),
     unit: raw.unit ? String(raw.unit) : undefined,
+    coverUrl: cover ? String(cover) : undefined,
     note: raw.remark ? String(raw.remark) : raw.note ? String(raw.note) : undefined,
     remark: raw.remark ? String(raw.remark) : undefined,
   };
@@ -195,10 +197,33 @@ export interface LoginResult {
   permissions: string[];
 }
 
+export interface LoginRisk {
+  failCount: number;
+  captchaRequired: boolean;
+  locked: boolean;
+  lockedUntil?: number | null;
+  lockRemainSeconds: number;
+}
+
+export interface CaptchaPayload {
+  captchaId: string;
+  imageBase64: string;
+  expireSeconds: number;
+}
+
 export const authApi = {
-  login: async (username: string, password: string): Promise<LoginResult> => {
-    const vo = await post<LoginVo>('/admin/auth/login', { username, password });
-    const permissions = vo.permissions?.length ? vo.permissions : ['*'];
+  login: async (
+    username: string,
+    password: string,
+    captcha?: { captchaId?: string; captchaCode?: string },
+  ): Promise<LoginResult> => {
+    const vo = await post<LoginVo>('/admin/auth/login', {
+      username,
+      password,
+      captchaId: captcha?.captchaId,
+      captchaCode: captcha?.captchaCode,
+    });
+    const permissions = vo.permissions?.length ? vo.permissions : [];
     const roles = vo.roles ?? [];
     return {
       token: vo.token,
@@ -211,6 +236,9 @@ export const authApi = {
       },
     };
   },
+  loginStatus: (username: string) =>
+    get<LoginRisk>('/admin/auth/login-status', { username }),
+  captcha: () => get<CaptchaPayload>('/admin/auth/captcha'),
   me: async (): Promise<LoginResult> => {
     const vo = await get<LoginVo>('/admin/auth/me');
     const permissions = vo.permissions?.length ? vo.permissions : [];
@@ -228,13 +256,7 @@ export const authApi = {
 };
 
 export const dashboardApi = {
-  stats: async (): Promise<DashboardStats> => {
-    try {
-      return await get<DashboardStats>('/admin/dashboard/stats');
-    } catch {
-      return buildDashboardFallback();
-    }
-  },
+  stats: async (): Promise<DashboardStats> => get<DashboardStats>('/admin/dashboard/stats'),
 };
 
 export const userApi = {
@@ -346,8 +368,8 @@ function toRecipeSaveBody(data: Partial<DishRecipe>) {
     steps: (data.steps || []).map((s, i) => ({
       step: s.step ?? i + 1,
       title: s.title,
-      content: s.content || s.description || '',
-      imageUrl: s.imageUrl || s.image,
+      description: s.description || s.content || '',
+      image: s.image || s.imageUrl,
     })),
     tips: data.tips,
     nutrition: typeof data.nutrition === 'string' ? undefined : data.nutrition,
@@ -428,66 +450,6 @@ export const commentApi = {
   remove: (id: string) => del<void>(`/admin/comments/${id}`),
   rebuildRating: (dishId: string) => post(`/admin/comments/rebuild-rating/${dishId}`),
 };
-
-async function buildDashboardFallback(): Promise<DashboardStats> {
-  const empty: DashboardStats = {
-    userCount: 0,
-    todayOrders: 0,
-    dishCount: 0,
-    pendingComments: 0,
-    reservationTrend: [],
-    hotDishes: [],
-    ratingDistribution: [],
-    userActivity: [],
-  };
-  try {
-    const [dishes, orders, comments] = await Promise.all([
-      dishApi.page({ page: 1, pageSize: 200, status: 'ON_SALE' }).catch(() => asPage<Dish>([])),
-      orderApi.page({ page: 1, pageSize: 200 }).catch(() => asPage<Order>([])),
-      commentApi.page({ page: 1, pageSize: 200 }).catch(() => asPage<Comment>([])),
-    ]);
-    const today = new Date().toISOString().slice(0, 10);
-    const todayOrders = (orders.records || []).filter((o) =>
-      String(o.createdAt || '').startsWith(today),
-    ).length;
-    const days: string[] = [];
-    for (let i = 6; i >= 0; i -= 1) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      days.push(d.toISOString().slice(0, 10));
-    }
-    const reservationTrend = days.map((date) => ({
-      date: date.slice(5),
-      count: (orders.records || []).filter((o) => String(o.createdAt || '').startsWith(date)).length,
-    }));
-    const dishCountMap = new Map<string, number>();
-    for (const order of orders.records || []) {
-      for (const item of order.items || []) {
-        dishCountMap.set(item.dishName, (dishCountMap.get(item.dishName) || 0) + item.quantity);
-      }
-    }
-    const hotDishes = [...dishCountMap.entries()]
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
-    const ratingDistribution = [1, 2, 3, 4, 5].map((rating) => ({
-      rating,
-      count: (comments.records || []).filter((c) => c.rating === rating && !c.hidden).length,
-    }));
-    return {
-      ...empty,
-      dishCount: dishes.total || dishes.records.length,
-      todayOrders,
-      pendingComments: (comments.records || []).filter((c) => c.hidden).length,
-      reservationTrend,
-      hotDishes,
-      ratingDistribution,
-      userActivity: reservationTrend.map((d) => ({ date: d.date, activeUsers: d.count })),
-    };
-  } catch {
-    return empty;
-  }
-}
 
 export const operationLogApi = {
   page: (params?: PageQuery) =>

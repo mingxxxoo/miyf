@@ -9,7 +9,7 @@ import { fetchDishes } from '@/api/dish'
 import type { Category, Dish } from '@/types'
 import './index.scss'
 
-const CATEGORY_KEY = 'ck_category_id'
+const CATEGORY_KEY = 'miyf_kitchen_category_id'
 const ALL = 'all'
 
 export default function CategoryPage() {
