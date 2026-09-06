@@ -1,0 +1,13 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+wx:
+  auth:
+    mock-enabled: true
+
+logging:
+  level:
+    cn.miyf: DEBUG
+    com.baomidou.mybatisplus: DEBUG

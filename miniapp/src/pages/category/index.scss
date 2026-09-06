@@ -1,0 +1,39 @@
+.category-page {
+  min-height: 100vh;
+
+  &__tabs {
+    white-space: nowrap;
+    padding: 24px 32px;
+    background: $ck-bg;
+    border-bottom: 1px solid $ck-border;
+  }
+
+  &__tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 16px 32px;
+    margin-right: 16px;
+    border-radius: 999px;
+    font-size: 28px;
+    color: $ck-muted;
+    background: #fff;
+    border: 1px solid $ck-border;
+
+    &--active {
+      background: rgba($ck-primary, 0.15);
+      color: darken($ck-primary, 12%);
+      border-color: rgba($ck-primary, 0.4);
+      font-weight: 600;
+    }
+  }
+
+  &__content {
+    padding: 32px;
+  }
+
+  &__grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+}

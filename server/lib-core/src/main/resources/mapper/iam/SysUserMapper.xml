@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- IAM 用户 SQL @author XieMingJie @since 2026-09-05 -->
+<mapper namespace="cn.miyf.repository.mapper.SysUserMapper">
+
+    <select id="selectByUsername" resultType="cn.miyf.bean.entity.SysUserEntity">
+        SELECT id, org_unit_id, username, password_hash, nickname, status,
+               created_at, updated_at
+        FROM sys_user
+WHERE username = #{username}
+        LIMIT 1
+    </select>
+</mapper>

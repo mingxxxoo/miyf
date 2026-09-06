@@ -1,0 +1,38 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 22px;
+  font-weight: 500;
+
+  &--warm {
+    background: rgba($ck-primary, 0.18);
+    color: darken($ck-primary, 18%);
+  }
+
+  &--mint {
+    background: rgba($ck-secondary, 0.35);
+    color: darken($ck-secondary, 28%);
+  }
+
+  &--cooking {
+    background: #FFF3E0;
+    color: #E65100;
+  }
+
+  &--ready {
+    background: #E8F5E9;
+    color: #2E7D32;
+  }
+
+  &--done {
+    background: $ck-border;
+    color: $ck-muted;
+  }
+
+  &--muted {
+    background: #F5F5F5;
+    color: $ck-muted;
+  }
+}

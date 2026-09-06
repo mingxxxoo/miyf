@@ -1,0 +1,10 @@
+:root {
+  --ck-primary: #FFB36B;
+  --ck-secondary: #9DD9C4;
+  --ck-bg: #FFFDF8;
+  --ck-text: #333333;
+  --ck-muted: #888888;
+  --ck-border: #F0ECE5;
+  --ck-card-radius: 16px;
+  --ck-control-radius: 12px;
+}

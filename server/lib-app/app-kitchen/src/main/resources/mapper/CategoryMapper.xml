@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 分类 SQL @author XieMingJie @since 2026-09-04 16:41 -->
+<mapper namespace="cn.miyf.kitchen.repository.mapper.CategoryMapper">
+
+    <select id="selectAllEnabled" resultType="cn.miyf.kitchen.bean.entity.CategoryEntity">
+        SELECT id, name, icon, sort_order, status, created_at, updated_at
+        FROM dish_category
+        WHERE status = 'ENABLED'
+        ORDER BY sort_order ASC, created_at ASC
+    </select>
+
+    <select id="selectAllOrdered" resultType="cn.miyf.kitchen.bean.entity.CategoryEntity">
+        SELECT id, name, icon, sort_order, status, created_at, updated_at
+        FROM dish_category
+        ORDER BY sort_order ASC, created_at ASC
+    </select>
+</mapper>

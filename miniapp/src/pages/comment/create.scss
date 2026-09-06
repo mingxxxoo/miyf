@@ -1,0 +1,53 @@
+.comment-create {
+  padding: 32px;
+  min-height: 100vh;
+
+  &__hero {
+    margin-bottom: 32px;
+  }
+
+  &__title {
+    display: block;
+    font-size: 40px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  &__subtitle {
+    display: block;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+  }
+
+  &__card {
+    margin-bottom: 24px;
+  }
+
+  &__label {
+    display: block;
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+
+  &__textarea {
+    width: 100%;
+    min-height: 240px;
+    font-size: 28px;
+    line-height: 1.7;
+    color: $ck-text;
+  }
+
+  &__count {
+    display: block;
+    text-align: right;
+    font-size: 22px;
+    color: $ck-muted;
+    margin-top: 12px;
+  }
+
+  &__submit {
+    margin-top: 16px;
+    width: 100%;
+  }
+}

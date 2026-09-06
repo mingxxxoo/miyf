@@ -1,0 +1,86 @@
+.index-page {
+  padding-bottom: 32px;
+
+  &__hero {
+    padding: 48px 32px 32px;
+    background: linear-gradient(160deg, rgba($ck-primary, 0.18), rgba($ck-secondary, 0.12), $ck-bg);
+  }
+
+  &__brand {
+    display: block;
+    font-size: 52px;
+    font-weight: 800;
+    color: darken($ck-primary, 8%);
+    letter-spacing: 0.04em;
+    margin-bottom: 12px;
+  }
+
+  &__greeting {
+    display: block;
+    font-size: 36px;
+    font-weight: 600;
+    color: $ck-text;
+    margin-bottom: 12px;
+  }
+
+  &__subtitle {
+    display: block;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+  }
+
+  &__section {
+    padding: 32px 32px 0;
+  }
+
+  &__section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  &__section-title {
+    display: block;
+    font-size: $ck-font-title;
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+
+  &__section-head &__section-title {
+    margin-bottom: 0;
+  }
+
+  &__section-more {
+    font-size: $ck-font-caption;
+    color: $ck-primary;
+  }
+
+  &__cats {
+    white-space: nowrap;
+    margin-bottom: 8px;
+  }
+
+  &__cat {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 28px;
+    margin-right: 16px;
+    border-radius: $ck-radius-sm;
+    background: #fff;
+    border: 1px solid $ck-border;
+    font-size: 26px;
+    color: $ck-text;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  &__item {
+    width: 100%;
+  }
+}

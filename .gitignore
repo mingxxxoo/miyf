@@ -1,0 +1,56 @@
+# Env & secrets
+.env
+.env.local
+.env.*.local
+**/uploads/
+*.pem
+*.p12
+*.jks
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Java / Maven
+server/target/
+*.class
+*.jar
+*.war
+*.log
+
+# Node
+node_modules/
+dist/
+build/
+.temp/
+.cache/
+*.tsbuildinfo
+
+# Taro
+miniapp/dist/
+miniapp/.swc/
+miniapp/.taro/
+
+# Admin
+miyf-admin/dist/
+
+# Docker volumes
+deploy/data/
+postgres-data/
+redis-data/
+
+# Coverage
+coverage/
+surefire-reports/
+failsafe-reports/
+Desktop.ini
+
+
+# Project exclude paths
+/server/lib-app/app-kitchen/target/
+/server/lib-core/target/
+/server/server-boot/target/

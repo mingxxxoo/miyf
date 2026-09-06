@@ -1,0 +1,136 @@
+name: miyf
+
+# 宿主机目录约定（均在 /miyf 下）
+#   /miyf/app              部署代码（本仓库）
+#   /miyf/data/{组件}/...  持久化数据
+#   /miyf/log/{组件}/...   日志（server 按日 gzip；nginx 用 logrotate）
+#
+# 运行策略：本文件仅 image（服务器 docker compose pull && up -d，不编译）。
+# 本地/CI 构建：docker compose -f docker-compose.yml -f docker-compose.build.yml build
+
+services:
+  postgres:
+    image: ${MIYF_IMAGE_POSTGRES:-registry.cn-shanghai.aliyuncs.com/miyf/postgres:16-alpine}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-miyf}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - ${MIYF_DATA_DB:-/miyf/data/db/data}:/var/lib/postgresql/data
+    networks:
+      - miyf-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-miyf}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    # ports:
+    #   - "5432:5432"
+
+  redis:
+    image: ${MIYF_IMAGE_REDIS:-registry.cn-shanghai.aliyuncs.com/miyf/redis:7-alpine}
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ${MIYF_DATA_REDIS:-/miyf/data/redis/data}:/data
+    networks:
+      - miyf-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    # ports:
+    #   - "6379:6379"
+
+  minio:
+    image: ${MIYF_IMAGE_MINIO:-registry.cn-shanghai.aliyuncs.com/miyf/minio:latest}
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${FILE_STORAGE_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${FILE_STORAGE_SECRET_KEY:-minioadmin}
+    volumes:
+      - ${MIYF_DATA_OSS:-/miyf/data/oss/resource}:/data
+    networks:
+      - miyf-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    # ports:
+    #   - "9001:9001"
+
+  server:
+    image: ${MIYF_IMAGE_SERVER:-registry.cn-shanghai.aliyuncs.com/miyf/miyf_app:0.1.0}
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SERVER_PORT: 8080
+      PRIMARY_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-miyf}
+      PRIMARY_DB_USERNAME: ${POSTGRES_USER:-postgres}
+      PRIMARY_DB_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      APP_REDIS_ENABLED: ${APP_REDIS_ENABLED:-true}
+      FILE_STORAGE_TYPE: minio
+      FILE_STORAGE_ENDPOINT: http://minio:9000
+      FILE_STORAGE_BUCKET: ${FILE_STORAGE_BUCKET:-miyf}
+      FILE_STORAGE_ACCESS_KEY: ${FILE_STORAGE_ACCESS_KEY:-minioadmin}
+      FILE_STORAGE_SECRET_KEY: ${FILE_STORAGE_SECRET_KEY:-minioadmin}
+      FILE_STORAGE_BASE_URL: ${FILE_STORAGE_BASE_URL:-http://localhost/media}
+      FILE_STORAGE_AUTO_CREATE_BUCKET: ${FILE_STORAGE_AUTO_CREATE_BUCKET:-true}
+      FILE_STORAGE_PUBLIC_READ: ${FILE_STORAGE_PUBLIC_READ:-true}
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret-at-least-32-chars}
+      JWT_EXPIRE_SECONDS: ${JWT_EXPIRE_SECONDS:-604800}
+      WX_AUTH_MOCK_ENABLED: ${WX_AUTH_MOCK_ENABLED:-true}
+      WX_APP_ID: ${WX_APP_ID:-}
+      WX_APP_SECRET: ${WX_APP_SECRET:-}
+      LOG_PATH: ${LOG_PATH:-/miyf/log/server}
+    volumes:
+      - ${MIYF_LOG_SERVER:-/miyf/log/server}:/miyf/log/server
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - miyf-net
+    # ports:
+    #   - "8080:8080"
+
+  nginx:
+    image: ${MIYF_IMAGE_NGINX:-registry.cn-shanghai.aliyuncs.com/miyf/miyf_nginx:0.1.0}
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      # 启用 HTTPS 时取消下面三行注释（须先放好证书）
+      # - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ${MIYF_LOG_NGINX:-/miyf/log/nginx}:/var/log/nginx
+      # - ${MIYF_DATA_NGINX_CERTS:-/miyf/data/nginx/certs}:/etc/nginx/certs:ro
+      # - ./nginx/conf.d/https.conf:/etc/nginx/conf.d/https.conf:ro
+    depends_on:
+      server:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - miyf-net
+
+networks:
+  miyf-net:
+    driver: bridge

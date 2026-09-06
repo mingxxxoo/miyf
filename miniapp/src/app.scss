@@ -1,0 +1,66 @@
+page {
+  background-color: $ck-bg;
+  color: $ck-text;
+  font-size: $ck-font-body;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+}
+
+.ck-page {
+  min-height: 100vh;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.ck-section-title {
+  font-size: $ck-font-title;
+  font-weight: 600;
+  color: $ck-text;
+  margin-bottom: 24px;
+}
+
+.ck-card {
+  background: #fff;
+  border-radius: $ck-radius-md;
+  border: 1px solid $ck-border;
+  box-shadow: $ck-shadow-soft;
+  padding: 28px;
+}
+
+.ck-muted {
+  color: $ck-muted;
+  font-size: $ck-font-caption;
+}
+
+.ck-btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88px;
+  border-radius: $ck-radius-lg;
+  background: linear-gradient(135deg, $ck-primary 0%, darken($ck-primary, 6%) 100%);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 500;
+  border: none;
+
+  &::after {
+    border: none;
+  }
+}
+
+.ck-btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88px;
+  border-radius: $ck-radius-lg;
+  background: #fff;
+  color: $ck-primary;
+  font-size: 30px;
+  font-weight: 500;
+  border: 2px solid $ck-primary;
+
+  &::after {
+    border: none;
+  }
+}

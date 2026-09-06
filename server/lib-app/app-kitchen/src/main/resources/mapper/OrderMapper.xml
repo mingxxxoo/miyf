@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 预约单 SQL @author XieMingJie @since 2026-09-04 16:41 -->
+<mapper namespace="cn.miyf.kitchen.repository.mapper.OrderMapper">
+
+    <update id="updateStatus">
+        UPDATE kitchen_order
+        SET status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+          AND status = #{fromStatus}
+    </update>
+
+    <select id="selectUserPage" resultType="cn.miyf.kitchen.bean.entity.OrderEntity">
+        SELECT id, order_no, user_id, status, remark, created_at, updated_at
+        FROM kitchen_order
+        WHERE user_id = #{userId}
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countUserPage" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_order
+        WHERE user_id = #{userId}
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+    </select>
+
+    <select id="selectAdminPage" resultType="cn.miyf.kitchen.bean.entity.OrderEntity">
+        SELECT id, order_no, user_id, status, remark, created_at, updated_at
+        FROM kitchen_order
+        WHERE 1 = 1
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+          <if test="orderNo != null and orderNo != ''">
+              AND order_no ILIKE CONCAT('%', #{orderNo}, '%')
+          </if>
+          <if test="userId != null">
+              AND user_id = #{userId}
+          </if>
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAdminPage" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_order
+        WHERE 1 = 1
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+          <if test="orderNo != null and orderNo != ''">
+              AND order_no ILIKE CONCAT('%', #{orderNo}, '%')
+          </if>
+          <if test="userId != null">
+              AND user_id = #{userId}
+          </if>
+    </select>
+
+    <select id="countByStatusSince" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_order
+        WHERE status = #{status}
+          <if test="since != null">
+              AND created_at &gt;= #{since}
+          </if>
+    </select>
+
+    <select id="countSince" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_order
+        WHERE 1 = 1
+          <if test="since != null">
+              AND created_at &gt;= #{since}
+          </if>
+    </select>
+
+    <select id="countGroupByStatus" resultType="map">
+        SELECT status, COUNT(1) AS cnt
+        FROM kitchen_order
+        GROUP BY status
+    </select>
+
+    <select id="countDailySince" resultType="map">
+        SELECT TO_CHAR(created_at AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD') AS day_key,
+               TO_CHAR(created_at AT TIME ZONE 'Asia/Shanghai', 'MM-DD') AS day_label,
+               COUNT(1) AS cnt
+        FROM kitchen_order
+        WHERE created_at &gt;= #{since}
+        GROUP BY day_key, day_label
+        ORDER BY day_key
+    </select>
+
+    <select id="countActiveUsersDailySince" resultType="map">
+        SELECT TO_CHAR(created_at AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD') AS day_key,
+               TO_CHAR(created_at AT TIME ZONE 'Asia/Shanghai', 'MM-DD') AS day_label,
+               COUNT(DISTINCT user_id) AS cnt
+        FROM kitchen_order
+        WHERE created_at &gt;= #{since}
+        GROUP BY day_key, day_label
+        ORDER BY day_key
+    </select>
+
+    <select id="hotDishesSince" resultType="map">
+        SELECT oi.dish_name AS name,
+               SUM(oi.quantity) AS cnt
+        FROM kitchen_order_item oi
+                 INNER JOIN kitchen_order o ON o.id = oi.order_id
+        WHERE o.created_at &gt;= #{since}
+        GROUP BY oi.dish_name
+        ORDER BY cnt DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

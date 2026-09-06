@@ -1,0 +1,15 @@
+.git
+.idea
+.cursor
+**/.DS_Store
+**/node_modules
+**/dist
+**/target
+**/uploads
+miniapp
+docs
+sql
+.env
+.env.*
+deploy/data
+*.md

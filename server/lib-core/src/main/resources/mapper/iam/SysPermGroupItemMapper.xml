@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- IAM 权限组条目 SQL @author XieMingJie @since 2026-09-05 -->
+<mapper namespace="cn.miyf.repository.mapper.SysPermGroupItemMapper">
+
+    <select id="selectByGroupAndPermission" resultType="cn.miyf.bean.entity.SysPermGroupItemEntity">
+        SELECT id, group_id, permission_id, created_at
+        FROM sys_perm_group_item
+        WHERE group_id = #{groupId}
+          AND permission_id = #{permissionId}
+        LIMIT 1
+    </select>
+
+    <delete id="deleteByGroupId">
+        DELETE FROM sys_perm_group_item
+        WHERE group_id = #{groupId}
+    </delete>
+</mapper>

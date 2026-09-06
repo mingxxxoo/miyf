@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 评论 SQL @author XieMingJie @since 2026-09-04 16:41 -->
+<mapper namespace="cn.miyf.kitchen.repository.mapper.CommentMapper">
+
+    <select id="countExists" resultType="long">
+        <!-- 含已删除：一单一菜一用户只能评价一次 -->
+        SELECT COUNT(1)
+        FROM kitchen_comment
+        WHERE order_id = #{orderId}
+          AND dish_id = #{dishId}
+          AND user_id = #{userId}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE kitchen_comment
+        SET status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectByDishPage" resultType="cn.miyf.kitchen.bean.entity.CommentEntity">
+        SELECT id, user_id, dish_id, order_id, rating, content, status, created_at, updated_at
+        FROM kitchen_comment
+WHERE dish_id = #{dishId}
+          AND status = 'NORMAL'
+          <if test="rating != null">
+              AND rating = #{rating}
+          </if>
+        <choose>
+            <when test="sort == 'rating_asc'">
+                ORDER BY rating ASC, created_at DESC
+            </when>
+            <when test="sort == 'rating_desc'">
+                ORDER BY rating DESC, created_at DESC
+            </when>
+            <otherwise>
+                ORDER BY created_at DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByDishPage" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_comment
+WHERE dish_id = #{dishId}
+          AND status = 'NORMAL'
+          <if test="rating != null">
+              AND rating = #{rating}
+          </if>
+    </select>
+
+    <select id="selectAdminPage" resultType="cn.miyf.kitchen.bean.entity.CommentEntity">
+        SELECT id, user_id, dish_id, order_id, rating, content, status, created_at, updated_at
+        FROM kitchen_comment
+          <if test="dishId != null">
+              AND dish_id = #{dishId}
+          </if>
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+          <if test="rating != null">
+              AND rating = #{rating}
+          </if>
+        /* @conditionSql */
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAdminPage" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_comment
+          <if test="dishId != null">
+              AND dish_id = #{dishId}
+          </if>
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+          <if test="rating != null">
+              AND rating = #{rating}
+          </if>
+    </select>
+
+    <select id="selectByUserPage" resultType="cn.miyf.kitchen.bean.entity.CommentEntity">
+        SELECT id, user_id, dish_id, order_id, rating, content, status, created_at, updated_at
+        FROM kitchen_comment
+WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByUserPage" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_comment
+WHERE user_id = #{userId}
+    </select>
+
+    <!-- 仅 NORMAL 且未删除参与评分 -->
+    <select id="avgRating" resultType="map">
+        SELECT COALESCE(AVG(rating), 0) AS avg_rating,
+               COUNT(1) AS cnt
+        FROM kitchen_comment
+WHERE status = 'NORMAL'
+          AND dish_id = #{dishId}
+    </select>
+
+    <select id="countNormal" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_comment
+        WHERE status = 'NORMAL'
+    </select>
+
+    <select id="countHidden" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_comment
+        WHERE status = 'HIDDEN'
+    </select>
+
+    <select id="countGroupByRating" resultType="map">
+        SELECT rating, COUNT(1) AS cnt
+        FROM kitchen_comment
+        WHERE status = 'NORMAL'
+        GROUP BY rating
+        ORDER BY rating
+    </select>
+</mapper>

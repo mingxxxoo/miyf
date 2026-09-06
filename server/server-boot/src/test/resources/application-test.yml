@@ -1,0 +1,23 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+
+wx:
+  auth:
+    mock-enabled: true
+
+app:
+  file-storage:
+    type: local
+    path: ${java.io.tmpdir}/miyf-it-uploads
+    base-url: http://localhost:8080/uploads
+  redis:
+    enabled: true
+    rate-limit:
+      enabled: false
+
+logging:
+  level:
+    root: WARN
+    cn.miyf: INFO
+    org.testcontainers: INFO

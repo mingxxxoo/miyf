@@ -1,0 +1,12 @@
+# Maven / IDE
+.git
+.idea
+**/.DS_Store
+**/target
+**/*.iml
+**/.mvn
+**/uploads
+
+# Local env
+.env
+.env.*

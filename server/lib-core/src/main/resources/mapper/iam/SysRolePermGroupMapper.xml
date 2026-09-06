@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- IAM 角色权限组绑定 SQL @author XieMingJie @since 2026-09-05 -->
+<mapper namespace="cn.miyf.repository.mapper.SysRolePermGroupMapper">
+
+    <delete id="deleteByRoleId">
+        DELETE FROM sys_role_perm_group
+        WHERE role_id = #{roleId}
+    </delete>
+
+    <select id="selectByRoleAndGroup" resultType="cn.miyf.bean.entity.SysRolePermGroupEntity">
+        SELECT id, role_id, group_id, created_at
+        FROM sys_role_perm_group
+        WHERE role_id = #{roleId}
+          AND group_id = #{groupId}
+        LIMIT 1
+    </select>
+</mapper>

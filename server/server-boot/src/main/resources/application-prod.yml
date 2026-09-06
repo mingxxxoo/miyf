@@ -1,0 +1,13 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+wx:
+  auth:
+    mock-enabled: false
+
+logging:
+  level:
+    cn.miyf: INFO
+    root: WARN

@@ -1,0 +1,21 @@
+# miyf Nginx 日志：按日切割并 gzip（安装到宿主机 /etc/logrotate.d/miyf）
+# 依赖：logrotate；切割后 reopen nginx 日志句柄
+/miyf/log/nginx/*.log {
+    daily
+    rotate 30
+    missingok
+    notifempty
+    compress
+    delaycompress
+    dateext
+    dateformat -%Y-%m-%d
+    sharedscripts
+    create 0640 root root
+    postrotate
+        if command -v docker >/dev/null 2>&1; then
+            docker compose -f /miyf/app/deploy/docker-compose.yml \
+              --env-file /miyf/app/deploy/.env exec -T nginx \
+              nginx -s reopen >/dev/null 2>&1 || true
+        fi
+    endscript
+}

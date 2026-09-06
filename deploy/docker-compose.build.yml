@@ -1,0 +1,25 @@
+# 本地 / CI 构建覆盖层（打出与 docker-compose.yml 中 image 同名的镜像）
+# 用法：
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml build
+# Apple Silicon 跨架构时可先设：DOCKER_DEFAULT_PLATFORM=linux/amd64
+#
+# 服务器生产环境不要使用本文件。
+
+services:
+  server:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+      args:
+        MAVEN_IMAGE: ${BASE_MAVEN_IMAGE:-maven:3.9.9-eclipse-temurin-21}
+        JRE_IMAGE: ${BASE_JRE_IMAGE:-eclipse-temurin:21-jre-alpine}
+    image: ${MIYF_IMAGE_SERVER:-registry.cn-shanghai.aliyuncs.com/miyf/miyf_app:0.1.0}
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: deploy/nginx/Dockerfile
+      args:
+        NODE_IMAGE: ${BASE_NODE_IMAGE:-node:20-alpine}
+        NGINX_IMAGE: ${BASE_NGINX_IMAGE:-nginx:1.27-alpine}
+    image: ${MIYF_IMAGE_NGINX:-registry.cn-shanghai.aliyuncs.com/miyf/miyf_nginx:0.1.0}

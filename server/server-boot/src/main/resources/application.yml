@@ -1,0 +1,130 @@
+spring:
+  application:
+    name: miyf
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  jackson:
+    # Boot 4 默认 tools.jackson；业务 ObjectMapper 见 JacksonConfig（com.fasterxml）
+    default-property-inclusion: non_null
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration/postgresql
+    baseline-on-migrate: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+mybatis-plus:
+  # 复杂 SQL 统一放 mapper XML，禁止用 Wrapper 拼装联表/动态分页/聚合
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: cn.miyf.bean.entity,cn.miyf.kitchen.bean.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: assign_id
+
+app:
+  id:
+    worker-id: ${APP_ID_WORKER_ID:1}
+    datacenter-id: ${APP_ID_DATACENTER_ID:1}
+  database-type: ${DATABASE_TYPE:postgresql}
+  datasource:
+    primary:
+      enabled: true
+      type: ${DATABASE_TYPE:postgresql}
+      url: ${PRIMARY_DB_URL:jdbc:postgresql://localhost:5432/miyf}
+      username: ${PRIMARY_DB_USERNAME:postgres}
+      password: ${PRIMARY_DB_PASSWORD:change-me}
+      driver-class-name: org.postgresql.Driver
+      initial-size: 2
+      min-idle: 2
+      max-active: 20
+    secondary:
+      enabled: ${SECONDARY_DB_ENABLED:false}
+      type: ${SECONDARY_DB_TYPE:mysql}
+      url: ${SECONDARY_DB_URL:}
+      username: ${SECONDARY_DB_USERNAME:}
+      password: ${SECONDARY_DB_PASSWORD:}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      initial-size: 1
+      min-idle: 1
+      max-active: 10
+  jwt:
+    secret: ${JWT_SECRET:change-me-to-a-long-random-secret-at-least-32-chars}
+    expire-seconds: ${JWT_EXPIRE_SECONDS:604800}
+  redis:
+    enabled: ${APP_REDIS_ENABLED:true}
+    cache:
+      category-ttl-seconds: ${REDIS_CACHE_CATEGORY_TTL:600}
+      hot-dish-ttl-seconds: ${REDIS_CACHE_HOT_DISH_TTL:300}
+      empty-ttl-seconds: ${REDIS_CACHE_EMPTY_TTL:60}
+    rate-limit:
+      enabled: ${REDIS_RATE_LIMIT_ENABLED:true}
+      login-max-attempts: ${REDIS_LOGIN_MAX_ATTEMPTS:10}
+      login-window-seconds: ${REDIS_LOGIN_WINDOW_SECONDS:300}
+      api-max-requests: ${REDIS_API_MAX_REQUESTS:120}
+      api-window-seconds: ${REDIS_API_WINDOW_SECONDS:60}
+    lock:
+      default-lease-seconds: ${REDIS_LOCK_LEASE_SECONDS:10}
+  file-storage:
+    type: ${FILE_STORAGE_TYPE:minio}
+    path: ${FILE_STORAGE_PATH:./uploads}
+    base-url: ${FILE_STORAGE_BASE_URL:http://localhost:9000/miyf}
+    max-size-bytes: ${FILE_STORAGE_MAX_SIZE_BYTES:5242880}
+    allowed-content-types:
+      - image/jpeg
+      - image/png
+      - image/webp
+    endpoint: ${FILE_STORAGE_ENDPOINT:http://localhost:9000}
+    bucket: ${FILE_STORAGE_BUCKET:miyf}
+    access-key: ${FILE_STORAGE_ACCESS_KEY:minioadmin}
+    secret-key: ${FILE_STORAGE_SECRET_KEY:minioadmin}
+    region: ${FILE_STORAGE_REGION:}
+    auto-create-bucket: ${FILE_STORAGE_AUTO_CREATE_BUCKET:true}
+    public-read: ${FILE_STORAGE_PUBLIC_READ:true}
+  druid:
+    stat-username: ${DRUID_STAT_USERNAME:change-me}
+    stat-password: ${DRUID_STAT_PASSWORD:change-me}
+
+wx:
+  auth:
+    app-id: ${WX_APP_ID:}
+    app-secret: ${WX_APP_SECRET:}
+    mock-enabled: ${WX_AUTH_MOCK_ENABLED:true}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: method
+    display-request-duration: true
+    try-it-out-enabled: true
+  show-actuator: false
+
+logging:
+  file:
+    path: ${LOG_PATH:./logs}
+  level:
+    cn.miyf: INFO
