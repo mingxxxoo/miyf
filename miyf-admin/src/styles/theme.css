@@ -1,10 +1,12 @@
 :root {
-  --ck-primary: #FFB36B;
-  --ck-secondary: #9DD9C4;
-  --ck-bg: #FFFDF8;
-  --ck-text: #333333;
-  --ck-muted: #888888;
-  --ck-border: #F0ECE5;
+  --ck-primary: #ffb36b;
+  --ck-secondary: #9dd9c4;
+  --ck-bg: #fffdf8;
+  --ck-text: #332e2a;
+  --ck-muted: #8f8880;
+  --ck-border: #eee8df;
   --ck-card-radius: 16px;
   --ck-control-radius: 12px;
+  --ck-shadow: 0 8px 24px rgba(51, 46, 42, 0.06);
+  --ck-content-max: 1400px;
 }

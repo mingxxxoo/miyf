@@ -65,9 +65,9 @@ public class CommentRepositoryImpl extends AbstractMybatisRepository<Comment, Co
     }
 
     @Override
-    protected void setDomainTimestamps(Comment domain, Instant createdAt, Instant updatedAt) {
-        domain.setCreatedAt(createdAt);
-        domain.setUpdatedAt(updatedAt);
+    protected void setDomainTimestamps(Comment domain, Instant createTime, Instant lastModifyTime) {
+        domain.setCreateTime(createTime);
+        domain.setLastModifyTime(lastModifyTime);
     }
 
     /**
@@ -278,7 +278,7 @@ public class CommentRepositoryImpl extends AbstractMybatisRepository<Comment, Co
             img.setCommentId(commentId);
             img.setUrl(url);
             img.setSortOrder(sort++);
-            img.setCreatedAt(now);
+            img.setCreateTime(now);
             commentImageMapper.insert(img);
         }
     }

@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.util.Locale;
 import java.util.Set;
 
@@ -141,7 +142,7 @@ public final class FileUploadValidator {
      * @history 1.00 2026-09-05 09:19 XieMingJie Created.
      */
     public static InputStream concat(byte[] header, InputStream rest) {
-        return new java.io.SequenceInputStream(new ByteArrayInputStream(header), rest);
+        return new SequenceInputStream(new ByteArrayInputStream(header), rest);
     }
 
     private static String normalizeMime(String mime) {

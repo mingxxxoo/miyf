@@ -9,6 +9,7 @@ import ImageUploader from '@/components/ImageUploader';
 import { categoryApi, dishApi } from '@/api';
 
 import type { Category } from '@/types';
+import { PageHeader } from '@/ui';
 
 
 
@@ -92,9 +93,8 @@ export default function DishCreatePage() {
 
     <div className="ck-page">
 
-      <h2 className="ck-page-title">新增菜品</h2>
-
-      <Card bordered={false}>
+      <PageHeader title="新增菜品" />
+<Card bordered={false}>
 
         <Form
 

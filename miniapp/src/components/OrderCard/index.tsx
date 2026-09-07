@@ -30,7 +30,7 @@ export default function OrderCard({ order }: OrderCardProps) {
         )}
         <View className='order-card__info'>
           <Text className='order-card__title'>{itemSummary}</Text>
-          <Text className='order-card__time'>下单时间：{formatTime(order.createdAt)}</Text>
+          <Text className='order-card__time'>下单时间：{formatTime(order.createTime)}</Text>
           {order.note && <Text className='order-card__guest'>备注：{order.note}</Text>}
         </View>
       </View>

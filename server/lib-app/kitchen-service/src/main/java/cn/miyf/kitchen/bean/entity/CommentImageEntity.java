@@ -53,7 +53,7 @@ public class CommentImageEntity implements Serializable {
     @Schema(description = "排序")
     private Integer sortOrder;
 
-    @TableField("created_at")
+    @TableField("create_time")
     @Schema(description = "创建时间")
-    private Instant createdAt;
+    private Instant createTime;
 }

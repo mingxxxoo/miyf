@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 系统应用 SQL @author XieMingJie @since 2026-09-07 -->
+<mapper namespace="cn.miyf.repository.mapper.SysAppMapper">
+
+    <select id="selectByCode" resultType="cn.miyf.bean.entity.SysAppEntity">
+        SELECT id,
+               code,
+               name,
+               description,
+               icon,
+               home_path,
+               sort_order,
+               status,
+               built_in,
+               create_time,
+               last_modify_time
+        FROM sys_app
+        WHERE code = #{code}
+        LIMIT 1
+    </select>
+
+    <select id="countPermissionsByProduct" resultType="map">
+        SELECT product AS product, COUNT(*) AS cnt
+        FROM sys_permission
+        WHERE product IS NOT NULL
+          AND product &lt;&gt; ''
+        GROUP BY product
+    </select>
+
+    <select id="countMenusByProduct" resultType="map">
+        SELECT product AS product, COUNT(*) AS cnt
+        FROM sys_menu
+        WHERE product IS NOT NULL
+          AND product &lt;&gt; ''
+          AND menu_type IN ('DIR', 'MENU')
+        GROUP BY product
+    </select>
+</mapper>

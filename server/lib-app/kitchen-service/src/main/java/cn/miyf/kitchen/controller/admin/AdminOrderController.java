@@ -7,7 +7,7 @@ import cn.miyf.kitchen.bean.qo.OrderPageQo;
 import cn.miyf.kitchen.bean.vo.OrderVo;
 import cn.miyf.kitchen.service.OrderApplicationService;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
+import cn.miyf.kitchen.security.KitchenAdminPopedom;
 import cn.miyf.security.RequirePermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2026-09-04 17:40
  */
 @Tag(name = "管理端预约")
-@PopedomGroup(value = "11030000", name = "管理员", product = "kitchen", sort = 10)
+@KitchenAdminPopedom
 @RestController
 @RequestMapping("/api/admin/orders")
 public class AdminOrderController {
@@ -52,8 +52,7 @@ public class AdminOrderController {
      * @history 1.00 2026-09-04 17:40 XieMingJie Created.
      */
     @Operation(summary = "预约分页")
-    @MiyfPermission(code = "kitchen:order:list", name = "预约列表", groupCode = "kitchen_order", groupName = "预约管理")
-    @RequirePermission({"kitchen:order:list"})
+    @MiyfPermission(code = "kitchen:order:list")
     @GetMapping
     public ApiResult<PageResult<OrderVo>> page(OrderPageQo qo) {
         return ApiResult.ok(orderApplicationService.pageAdmin(qo));
@@ -67,7 +66,7 @@ public class AdminOrderController {
      * @history 1.00 2026-09-04 17:40 XieMingJie Created.
      */
     @Operation(summary = "预约详情")
-    @MiyfPermission(code = "kitchen:order:detail", name = "预约详情", groupCode = "kitchen_order", groupName = "预约管理")
+    @MiyfPermission(code = "kitchen:order:detail")
     @RequirePermission({"kitchen:order:detail", "kitchen:order:list"})
     @GetMapping("/{id}")
     public ApiResult<OrderVo> detail(@PathVariable Long id) {
@@ -83,9 +82,9 @@ public class AdminOrderController {
      * @history 1.00 2026-09-04 17:40 XieMingJie Created.
      */
     @Operation(summary = "更新预约状态")
-    @MiyfPermission(code = "kitchen:order:update", name = "变更预约状态", groupCode = "kitchen_order", groupName = "预约管理")
-    @MiyfPermission(code = "kitchen:order:cancel", name = "取消预约", groupCode = "kitchen_order", groupName = "预约管理")
-    @MiyfPermission(code = "kitchen:order:complete", name = "完成预约", groupCode = "kitchen_order", groupName = "预约管理")
+    @MiyfPermission(code = "kitchen:order:update")
+    @MiyfPermission(code = "kitchen:order:cancel")
+    @MiyfPermission(code = "kitchen:order:complete")
     @RequirePermission({"kitchen:order:update", "kitchen:order:cancel", "kitchen:order:complete"})
     @PutMapping("/{id}/status")
     public ApiResult<OrderVo> updateStatus(@PathVariable Long id,

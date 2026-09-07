@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 厨房用户端认证：微信登录（kitchen_user）。
@@ -55,12 +56,12 @@ public class KitchenAuthApplicationService extends BaseApplicationService {
     /**
      * 微信小程序登录：不存在则自动注册。
      * <p>
-     * 登录失败计数按 openid 维度，避免按一次性 code 限流失效。
+     * 登录必须录入用户名、手机号、微信号；失败计数按 openid 维度限流。
      *
      * @param dto 登录请求
      * @return 登录结果
      * @history 1.00 2026-09-05 XieMingJie Created.
-     * @history 1.01 2026-09-06 XieMingJie 限流键改为 wx:{openid}。
+     * @history 1.01 2026-09-07 XieMingJie Require username/phone/wechatId on login.
      */
     @Transactional
     public LoginVo wxLogin(WxLoginDto dto) {
@@ -69,11 +70,18 @@ public class KitchenAuthApplicationService extends BaseApplicationService {
             WxSession session = wxAuthClient.code2Session(dto.getCode());
             principalKey = "wx:" + session.openid();
             redisRateLimiter.assertLoginAllowed(principalKey);
+            String username = dto.getUsername().trim();
+            String phone = dto.getPhone().trim();
+            String wechatId = dto.getWechatId().trim();
+            String nickname = StringUtils.hasText(dto.getNickname()) ? dto.getNickname().trim() : username;
             User user = userRepository.findByOpenid(session.openid()).orElseGet(() -> {
                 User created = new User();
                 created.setOpenid(session.openid());
                 created.setUnionid(session.unionid());
-                created.setNickname(StringUtils.hasText(dto.getNickname()) ? dto.getNickname() : "厨房新朋友");
+                created.setUsername(username);
+                created.setNickname(nickname);
+                created.setPhone(phone);
+                created.setWechatId(wechatId);
                 created.setAvatarUrl(dto.getAvatarUrl());
                 created.setStatus("ENABLED");
                 return userRepository.save(created);
@@ -82,20 +90,35 @@ public class KitchenAuthApplicationService extends BaseApplicationService {
                 throw new BusinessException(ErrorCode.USER_DISABLED);
             }
             boolean profileChanged = false;
-            if (StringUtils.hasText(dto.getNickname()) && !dto.getNickname().equals(user.getNickname())) {
-                user.setNickname(dto.getNickname());
+            if (!Objects.equals(username, user.getUsername())) {
+                user.setUsername(username);
                 profileChanged = true;
             }
-            if (StringUtils.hasText(dto.getAvatarUrl()) && !dto.getAvatarUrl().equals(user.getAvatarUrl())) {
+            if (!Objects.equals(nickname, user.getNickname())) {
+                user.setNickname(nickname);
+                profileChanged = true;
+            }
+            if (!Objects.equals(phone, user.getPhone())) {
+                user.setPhone(phone);
+                profileChanged = true;
+            }
+            if (!Objects.equals(wechatId, user.getWechatId())) {
+                user.setWechatId(wechatId);
+                profileChanged = true;
+            }
+            if (StringUtils.hasText(dto.getAvatarUrl()) && !Objects.equals(dto.getAvatarUrl(), user.getAvatarUrl())) {
                 user.setAvatarUrl(dto.getAvatarUrl());
                 profileChanged = true;
             }
             if (profileChanged) {
                 userRepository.save(user);
             }
+            String displayName = StringUtils.hasText(user.getNickname())
+                    ? user.getNickname()
+                    : (StringUtils.hasText(user.getUsername()) ? user.getUsername() : user.getOpenid());
             AuthPrincipal principal = new AuthPrincipal(
                     user.getId(),
-                    user.getNickname() == null ? user.getOpenid() : user.getNickname(),
+                    displayName,
                     PrincipalType.USER,
                     List.of(),
                     true
@@ -105,7 +128,8 @@ public class KitchenAuthApplicationService extends BaseApplicationService {
                     .setToken(jwtService.createToken(principal))
                     .setExpireSeconds(jwtService.getExpireSeconds())
                     .setUserId(principal.getId())
-                    .setDisplayName(user.getNickname())
+                    .setDisplayName(displayName)
+                    .setUsername(user.getUsername())
                     .setPrincipalType(principal.getType().name())
                     .setPermissions(principal.getPermissions())
                     .setRoles(List.of());

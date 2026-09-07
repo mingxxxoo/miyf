@@ -45,9 +45,9 @@ public class RecipeRepositoryImpl extends AbstractMybatisRepository<Recipe, Reci
     }
 
     @Override
-    protected void setDomainTimestamps(Recipe domain, Instant createdAt, Instant updatedAt) {
-        domain.setCreatedAt(createdAt);
-        domain.setUpdatedAt(updatedAt);
+    protected void setDomainTimestamps(Recipe domain, Instant createTime, Instant lastModifyTime) {
+        domain.setCreateTime(createTime);
+        domain.setLastModifyTime(lastModifyTime);
     }
 
     /**

@@ -9,6 +9,8 @@ import cn.miyf.common.ErrorCode;
 import cn.miyf.common.id.SnowflakeIdGenerator;
 import cn.miyf.repository.mapper.SysUserMapper;
 import cn.miyf.repository.mapper.SysUserRoleMapper;
+import cn.miyf.security.AuthPrincipal;
+import cn.miyf.security.DataScope;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,8 +18,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 系统用户（管理员账号）应用服务。
@@ -32,71 +39,78 @@ public class SysUserApplicationService extends BaseApplicationService {
     private final SysUserRoleMapper userRoleMapper;
     private final SnowflakeIdGenerator snowflakeIdGenerator;
     private final PasswordEncoder passwordEncoder;
+    private final DataScopeService dataScopeService;
 
     public SysUserApplicationService(SysUserMapper userMapper,
                                      SysUserRoleMapper userRoleMapper,
                                      SnowflakeIdGenerator snowflakeIdGenerator,
-                                     PasswordEncoder passwordEncoder) {
+                                     PasswordEncoder passwordEncoder,
+                                     DataScopeService dataScopeService) {
         this.userMapper = userMapper;
         this.userRoleMapper = userRoleMapper;
         this.snowflakeIdGenerator = snowflakeIdGenerator;
         this.passwordEncoder = passwordEncoder;
+        this.dataScopeService = dataScopeService;
     }
 
-    /**
-     * 用户列表（脱敏）。
-     *
-     * @return 列表
-     * @history 1.00 2026-09-05 XieMingJie Created.
-     * @history 1.01 2026-09-06 XieMingJie 从 IamApplicationService 拆出。
-     */
     public List<SysUserVo> listUsers() {
-        return userMapper.selectList(Wrappers.<SysUserEntity>lambdaQuery()
-                        .orderByDesc(SysUserEntity::getCreatedAt))
-                .stream()
-                .map(this::toUserVo)
+        AuthPrincipal principal = dataScopeService.requireAdmin();
+        List<SysUserEntity> users = userMapper.selectList(Wrappers.<SysUserEntity>lambdaQuery()
+                .orderByDesc(SysUserEntity::getCreateTime));
+        users = filterByDataScope(principal, users);
+        if (users.isEmpty()) {
+            return List.of();
+        }
+        List<Long> userIds = users.stream().map(SysUserEntity::getId).filter(Objects::nonNull).toList();
+        Map<Long, List<String>> roleIdsByUser = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            List<SysUserRoleEntity> binds = userRoleMapper.selectList(
+                    Wrappers.<SysUserRoleEntity>lambdaQuery().in(SysUserRoleEntity::getUserId, userIds));
+            for (SysUserRoleEntity bind : binds) {
+                if (bind.getUserId() == null || bind.getRoleId() == null) {
+                    continue;
+                }
+                roleIdsByUser
+                        .computeIfAbsent(bind.getUserId(), k -> new ArrayList<>())
+                        .add(String.valueOf(bind.getRoleId()));
+            }
+        }
+        return users.stream()
+                .map(u -> toUserVo(u, roleIdsByUser.getOrDefault(u.getId(), List.of())))
                 .toList();
     }
 
-    /**
-     * 创建用户。
-     *
-     * @param dto 请求
-     * @return VO
-     * @history 1.00 2026-09-05 XieMingJie Created.
-     */
     @Transactional
     public SysUserVo createUser(SysUserSaveDto dto) {
+        AuthPrincipal principal = dataScopeService.requireAdmin();
         if (!StringUtils.hasText(dto.getPassword())) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "密码不能为空");
         }
+        Long orgUnitId = parseId(dto.getOrgUnitId());
+        dataScopeService.assertCanAssignOrg(principal, orgUnitId);
         Instant now = Instant.now();
         SysUserEntity entity = new SysUserEntity()
-                .setOrgUnitId(parseId(dto.getOrgUnitId()))
+                .setOrgUnitId(orgUnitId)
                 .setUsername(dto.getUsername())
                 .setPasswordHash(passwordEncoder.encode(dto.getPassword()))
                 .setNickname(dto.getNickname())
                 .setStatus(StringUtils.hasText(dto.getStatus()) ? dto.getStatus() : "ENABLED");
         entity.setId(snowflakeIdGenerator.nextId());
-        entity.setCreatedAt(now);
-        entity.setUpdatedAt(now);
+        entity.setCreateTime(now);
+        entity.setLastModifyTime(now);
         userMapper.insert(entity);
         bindUserRoles(entity.getId(), parseIds(dto.getRoleIds()));
         return toUserVo(entity);
     }
 
-    /**
-     * 更新用户。
-     *
-     * @param id  ID
-     * @param dto 请求
-     * @return VO
-     * @history 1.00 2026-09-05 XieMingJie Created.
-     */
     @Transactional
     public SysUserVo updateUser(Long id, SysUserSaveDto dto) {
+        AuthPrincipal principal = dataScopeService.requireAdmin();
         SysUserEntity entity = requireUser(id);
-        entity.setOrgUnitId(parseId(dto.getOrgUnitId()));
+        dataScopeService.assertCanAccessUser(principal, entity.getId(), entity.getOrgUnitId());
+        Long orgUnitId = parseId(dto.getOrgUnitId());
+        dataScopeService.assertCanAssignOrg(principal, orgUnitId);
+        entity.setOrgUnitId(orgUnitId);
         entity.setUsername(dto.getUsername());
         entity.setNickname(dto.getNickname());
         if (StringUtils.hasText(dto.getStatus())) {
@@ -105,7 +119,7 @@ public class SysUserApplicationService extends BaseApplicationService {
         if (StringUtils.hasText(dto.getPassword())) {
             entity.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
         }
-        entity.setUpdatedAt(Instant.now());
+        entity.setLastModifyTime(Instant.now());
         userMapper.updateById(entity);
         if (dto.getRoleIds() != null) {
             bindUserRoles(id, parseIds(dto.getRoleIds()));
@@ -113,28 +127,53 @@ public class SysUserApplicationService extends BaseApplicationService {
         return toUserVo(entity);
     }
 
-    /**
-     * 删除用户。
-     *
-     * @param id ID
-     * @history 1.00 2026-09-05 XieMingJie Created.
-     */
     @Transactional
     public void deleteUser(Long id) {
-        requireUser(id);
+        AuthPrincipal principal = dataScopeService.requireAdmin();
+        SysUserEntity entity = requireUser(id);
+        dataScopeService.assertCanAccessUser(principal, entity.getId(), entity.getOrgUnitId());
         userRoleMapper.deleteByUserId(id);
         userMapper.deleteById(id);
     }
 
+    private List<SysUserEntity> filterByDataScope(AuthPrincipal principal, List<SysUserEntity> users) {
+        DataScope scope = principal.getDataScope() == null ? DataScope.ALL : principal.getDataScope();
+        if (scope == DataScope.ALL) {
+            return users;
+        }
+        if (scope == DataScope.SELF) {
+            return users.stream().filter(u -> Objects.equals(u.getId(), principal.getId())).toList();
+        }
+        Set<Long> allowedOrgs = dataScopeService.resolveAllowedOrgIds(principal);
+        if (allowedOrgs == null || allowedOrgs.isEmpty()) {
+            return List.of();
+        }
+        return users.stream()
+                .filter(u -> u.getOrgUnitId() != null && allowedOrgs.contains(u.getOrgUnitId()))
+                .toList();
+    }
+
     private SysUserVo toUserVo(SysUserEntity entity) {
+        List<SysUserRoleEntity> binds = userRoleMapper.selectList(
+                Wrappers.<SysUserRoleEntity>lambdaQuery().eq(SysUserRoleEntity::getUserId, entity.getId()));
+        List<String> roleIds = binds.stream()
+                .map(SysUserRoleEntity::getRoleId)
+                .filter(Objects::nonNull)
+                .map(String::valueOf)
+                .collect(Collectors.toCollection(ArrayList::new));
+        return toUserVo(entity, roleIds);
+    }
+
+    private SysUserVo toUserVo(SysUserEntity entity, List<String> roleIds) {
         return new SysUserVo()
                 .setId(entity.getId())
                 .setOrgUnitId(entity.getOrgUnitId())
                 .setUsername(entity.getUsername())
                 .setNickname(entity.getNickname())
                 .setStatus(entity.getStatus())
-                .setCreatedAt(entity.getCreatedAt())
-                .setUpdatedAt(entity.getUpdatedAt());
+                .setRoleIds(roleIds == null ? new ArrayList<>() : new ArrayList<>(roleIds))
+                .setCreateTime(entity.getCreateTime())
+                .setLastModifyTime(entity.getLastModifyTime());
     }
 
     private SysUserEntity requireUser(Long id) {
@@ -156,7 +195,7 @@ public class SysUserApplicationService extends BaseApplicationService {
                     .setId(snowflakeIdGenerator.nextId())
                     .setUserId(userId)
                     .setRoleId(roleId)
-                    .setCreatedAt(now);
+                    .setCreateTime(now);
             userRoleMapper.insert(bind);
         }
     }

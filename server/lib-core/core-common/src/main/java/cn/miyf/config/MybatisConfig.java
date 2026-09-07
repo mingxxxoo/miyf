@@ -56,13 +56,13 @@ public class MybatisConfig {
             @Override
             public void insertFill(MetaObject metaObject) {
                 Instant now = Instant.now();
-                strictInsertFill(metaObject, "createdAt", Instant.class, now);
-                strictInsertFill(metaObject, "updatedAt", Instant.class, now);
+                strictInsertFill(metaObject, "createTime", Instant.class, now);
+                strictInsertFill(metaObject, "lastModifyTime", Instant.class, now);
             }
 
             @Override
             public void updateFill(MetaObject metaObject) {
-                strictUpdateFill(metaObject, "updatedAt", Instant.class, Instant.now());
+                strictUpdateFill(metaObject, "lastModifyTime", Instant.class, Instant.now());
             }
         };
     }

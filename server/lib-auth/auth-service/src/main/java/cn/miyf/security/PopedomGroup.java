@@ -9,7 +9,10 @@ import java.lang.annotation.Target;
 /**
  * 控制器级权限组声明。启动扫描写入权限组，方法级权限挂到本组。
  * <p>
- * {@code value} 为 8 位权限组编码，如厨房个人 {@code 11010000}、单位 {@code 11020000}、管理员 {@code 11030000}。
+ * {@code value} 为 8 位权限组编码。请勿在业务代码中手写数字，优先使用模块组合注解：
+ * {@link IamAdminPopedom}、{@link SystemSettingsPopedom}，或各业务模块的 {@code *Popedom} /
+ * {@code *PopedomCodes}。
+ * <p>
  * 方法权限生成 16 位 ID：{@code value + 8位序号}，根权限为 {@code value + 00000000}。
  *
  * @author XieMingJie

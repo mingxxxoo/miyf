@@ -13,7 +13,7 @@ public record InboxItem(
         String userKey,
         String title,
         String content,
-        Instant createdAt,
+        Instant createTime,
         boolean read
 ) {
 }

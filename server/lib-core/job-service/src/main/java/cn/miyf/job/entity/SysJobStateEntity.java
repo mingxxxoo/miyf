@@ -43,7 +43,7 @@ public class SysJobStateEntity implements Serializable {
     @Schema(description = "是否启用")
     private Boolean enabled;
 
-    @TableField("updated_at")
-    @Schema(description = "更新时间")
-    private Instant updatedAt;
+    @TableField("last_modify_time")
+    @Schema(description = "最后修改时间")
+    private Instant lastModifyTime;
 }

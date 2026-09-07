@@ -1,11 +1,10 @@
 package cn.miyf.controller;
 
 import cn.miyf.bean.dto.PermGroupSaveDto;
-import cn.miyf.bean.entity.SysPermGroupEntity;
+import cn.miyf.bean.vo.SysPermGroupVo;
 import cn.miyf.common.ApiResult;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
-import cn.miyf.security.RequirePermission;
+import cn.miyf.security.IamAdminPopedom;
 import cn.miyf.service.PermissionApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,7 +27,7 @@ import java.util.List;
  * @since 2026-09-05
  */
 @Tag(name = "IAM-权限组")
-@PopedomGroup(value = "10030000", name = "管理员", product = "iam", sort = 5)
+@IamAdminPopedom
 @RestController
 @RequestMapping("/api/iam/perm-groups")
 public class IamPermGroupController {
@@ -40,32 +39,28 @@ public class IamPermGroupController {
     }
 
     @Operation(summary = "权限组列表")
-    @MiyfPermission(code = "iam:perm-group:list", name = "权限组列表", groupCode = "iam_perm_group", groupName = "权限组")
-    @RequirePermission({"iam:perm-group:list"})
+    @MiyfPermission(code = "iam:perm-group:list")
     @GetMapping
-    public ApiResult<List<SysPermGroupEntity>> list() {
+    public ApiResult<List<SysPermGroupVo>> list() {
         return ApiResult.ok(permissionApplicationService.listPermGroups());
     }
 
     @Operation(summary = "创建权限组")
-    @MiyfPermission(code = "iam:perm-group:create", name = "创建权限组", groupCode = "iam_perm_group", groupName = "权限组")
-    @RequirePermission({"iam:perm-group:create"})
+    @MiyfPermission(code = "iam:perm-group:create")
     @PostMapping
-    public ApiResult<SysPermGroupEntity> create(@Valid @RequestBody PermGroupSaveDto dto) {
+    public ApiResult<SysPermGroupVo> create(@Valid @RequestBody PermGroupSaveDto dto) {
         return ApiResult.ok(permissionApplicationService.createPermGroup(dto));
     }
 
     @Operation(summary = "更新权限组")
-    @MiyfPermission(code = "iam:perm-group:update", name = "更新权限组", groupCode = "iam_perm_group", groupName = "权限组")
-    @RequirePermission({"iam:perm-group:update"})
+    @MiyfPermission(code = "iam:perm-group:update")
     @PutMapping("/{id}")
-    public ApiResult<SysPermGroupEntity> update(@PathVariable Long id, @Valid @RequestBody PermGroupSaveDto dto) {
+    public ApiResult<SysPermGroupVo> update(@PathVariable Long id, @Valid @RequestBody PermGroupSaveDto dto) {
         return ApiResult.ok(permissionApplicationService.updatePermGroup(id, dto));
     }
 
     @Operation(summary = "删除权限组")
-    @MiyfPermission(code = "iam:perm-group:delete", name = "删除权限组", groupCode = "iam_perm_group", groupName = "权限组")
-    @RequirePermission({"iam:perm-group:delete"})
+    @MiyfPermission(code = "iam:perm-group:delete")
     @DeleteMapping("/{id}")
     public ApiResult<Void> delete(@PathVariable Long id) {
         permissionApplicationService.deletePermGroup(id);

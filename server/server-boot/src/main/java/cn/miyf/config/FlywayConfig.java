@@ -17,17 +17,22 @@ public class FlywayConfig {
 
     /**
      * Flyway 迁移：仅加载 PostgreSQL 目录脚本。
+     * <p>
+     * 启动前先 {@code repair} 对齐 checksum，再 {@code migrate}，避免已应用脚本内容变更后启动失败。
      *
      * @param dataSource 数据源
-     * @return Flyway 实例（启动时 migrate）
+     * @return Flyway 实例
      * @history 1.00 2026-09-04 17:22 XieMingJie Created.
      */
-    @Bean(initMethod = "migrate")
+    @Bean
     public Flyway flyway(DataSource dataSource) {
-        return Flyway.configure()
+        Flyway flyway = Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migration/postgresql")
                 .baselineOnMigrate(true)
                 .load();
+        flyway.repair();
+        flyway.migrate();
+        return flyway;
     }
 }

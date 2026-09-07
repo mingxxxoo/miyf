@@ -393,18 +393,10 @@ BASE_NGINX_IMAGE=registry.cn-shanghai.aliyuncs.com/miyf/nginx:1.27-alpine
 
 ```bash
 cd deploy
-# 推荐：显式关掉 attestation，避免 ACR 拒收（compose 的 provenance/sbom 在部分 Desktop 版本上仍可能带上）
-# PowerShell:
-#   $env:BUILDX_NO_DEFAULT_ATTESTS="1"
-#   docker buildx build --provenance=false --sbom=false --load ...
 docker compose -f docker-compose.yml -f docker-compose.build.yml build
 ```
 
 > 你当前环境是 `linux/x86_64`，与云服务器一致，**不要加** `--platform`。Apple Silicon 跨架构时可设 `$env:DOCKER_DEFAULT_PLATFORM="linux/amd64"`。
->
-> `docker-compose.build.yml` 已关闭 `provenance`/`sbom`，避免阿里云 ACR 推送时报
-`unknown manifest class for application/vnd.oci.empty.v1+json`。若 Compose 过旧不识别这两项，可改用：
-> `docker buildx build --provenance=false --sbom=false ...` 或设 `$env:BUILDX_NO_DEFAULT_ATTESTS=1` 后再 build。
 
 产物标签即：
 
@@ -841,17 +833,6 @@ A: 个人加速器常无法代理这类官方镜像。按 **4.0** 把 maven / ec
 **Q: 华为 OAuth 回调失败 / redirect_uri 不匹配？**  
 A: `HUAWEI_HEALTH_REDIRECT_URI` 须与华为开放平台填写的回调 URL **完全一致**（含协议、域名、路径 `/health/providers`）。改
 `.env` 后执行 `docker compose up -d server`。管理端若 URL 带 `error=`，页面会提示拒绝原因。
-
-**Q: push ACR 报 `unknown manifest class for application/vnd.oci.empty.v1+json`？**  
-A: 新版 BuildKit 默认写入 attestation，ACR 不认。用已关闭 `provenance`/`sbom` 的 `docker-compose.build.yml` **重新 build**
-后再 push；或：
-
-```powershell
-$env:BUILDX_NO_DEFAULT_ATTESTS="1"
-docker compose -f docker-compose.yml -f docker-compose.build.yml build --no-cache
-docker push registry.cn-shanghai.aliyuncs.com/miyf/miyf_app:0.1.0
-docker push registry.cn-shanghai.aliyuncs.com/miyf/miyf_nginx:0.1.0
-```
 
 **Q: 磁盘占用过大？**  
 A: 清理悬空镜像：`docker system prune -f`（勿加 `-a` 除非确认可删未用镜像）。数据在 `/miyf/data`，日志在 `/miyf/log`，与镜像无关。

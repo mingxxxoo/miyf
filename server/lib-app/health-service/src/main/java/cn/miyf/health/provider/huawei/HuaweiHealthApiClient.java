@@ -164,12 +164,12 @@ public class HuaweiHealthApiClient {
 
     private List<HealthSampleDraft> mapPoint(Long subjectId, String dataType, JsonNode point) {
         List<HealthSampleDraft> list = new ArrayList<>();
-        Instant measuredAt = parseHuaweiTime(point.path("endTime").asLong(0),
+        Instant measuredTime = parseHuaweiTime(point.path("endTime").asLong(0),
                 point.path("startTime").asLong(0));
-        if (measuredAt == null) {
-            measuredAt = Instant.now();
+        if (measuredTime == null) {
+            measuredTime = Instant.now();
         }
-        String sourceBase = dataType + ":" + measuredAt.toEpochMilli();
+        String sourceBase = dataType + ":" + measuredTime.toEpochMilli();
         JsonNode values = point.path("value");
         if (!values.isArray()) {
             return list;
@@ -177,14 +177,14 @@ public class HuaweiHealthApiClient {
         if ("com.huawei.instantaneous.body_weight".equals(dataType)) {
             BigDecimal weight = findFloat(values, "body_weight");
             if (weight != null) {
-                list.add(draft(subjectId, HealthMetricCodes.WEIGHT, weight, measuredAt, sourceBase + ":weight"));
+                list.add(draft(subjectId, HealthMetricCodes.WEIGHT, weight, measuredTime, sourceBase + ":weight"));
             }
             BigDecimal fat = findFloat(values, "body_fat_rate");
             if (fat == null) {
                 fat = findFloat(values, "fat_rate");
             }
             if (fat != null) {
-                list.add(draft(subjectId, HealthMetricCodes.BODY_FAT, fat, measuredAt, sourceBase + ":fat"));
+                list.add(draft(subjectId, HealthMetricCodes.BODY_FAT, fat, measuredTime, sourceBase + ":fat"));
             }
         } else if ("com.huawei.instantaneous.height".equals(dataType)) {
             BigDecimal height = findFloat(values, "height");
@@ -193,12 +193,12 @@ public class HuaweiHealthApiClient {
                 if (height.compareTo(BigDecimal.TEN) < 0) {
                     height = height.multiply(BigDecimal.valueOf(100));
                 }
-                list.add(draft(subjectId, HealthMetricCodes.HEIGHT, height, measuredAt, sourceBase + ":height"));
+                list.add(draft(subjectId, HealthMetricCodes.HEIGHT, height, measuredTime, sourceBase + ":height"));
             }
         } else if ("com.huawei.instantaneous.body.fat.rate".equals(dataType)) {
             BigDecimal fat = findFloat(values, "body_fat_rate");
             if (fat != null) {
-                list.add(draft(subjectId, HealthMetricCodes.BODY_FAT, fat, measuredAt, sourceBase + ":fat"));
+                list.add(draft(subjectId, HealthMetricCodes.BODY_FAT, fat, measuredTime, sourceBase + ":fat"));
             }
         } else if ("com.huawei.instantaneous.heart_rate".equals(dataType)) {
             BigDecimal hr = findFloat(values, "bpm");
@@ -206,21 +206,21 @@ public class HuaweiHealthApiClient {
                 hr = findNumber(values, "bpm");
             }
             if (hr != null) {
-                list.add(draft(subjectId, HealthMetricCodes.HEART_RATE, hr, measuredAt, sourceBase + ":hr"));
+                list.add(draft(subjectId, HealthMetricCodes.HEART_RATE, hr, measuredTime, sourceBase + ":hr"));
             }
         } else if ("com.huawei.continuous.steps.delta".equals(dataType)) {
             BigDecimal steps = findNumber(values, "steps_delta");
             if (steps != null) {
-                list.add(draft(subjectId, HealthMetricCodes.STEPS, steps, measuredAt, sourceBase + ":steps"));
+                list.add(draft(subjectId, HealthMetricCodes.STEPS, steps, measuredTime, sourceBase + ":steps"));
             }
         } else if ("com.huawei.instantaneous.blood_pressure".equals(dataType)) {
             BigDecimal sys = findFloat(values, "systolic_pressure");
             BigDecimal dia = findFloat(values, "diastolic_pressure");
             if (sys != null) {
-                list.add(draft(subjectId, HealthMetricCodes.BLOOD_PRESSURE_SYS, sys, measuredAt, sourceBase + ":sys"));
+                list.add(draft(subjectId, HealthMetricCodes.BLOOD_PRESSURE_SYS, sys, measuredTime, sourceBase + ":sys"));
             }
             if (dia != null) {
-                list.add(draft(subjectId, HealthMetricCodes.BLOOD_PRESSURE_DIA, dia, measuredAt, sourceBase + ":dia"));
+                list.add(draft(subjectId, HealthMetricCodes.BLOOD_PRESSURE_DIA, dia, measuredTime, sourceBase + ":dia"));
             }
         } else if ("com.huawei.instantaneous.blood_glucose".equals(dataType)) {
             BigDecimal glucose = findFloat(values, "level");
@@ -228,20 +228,20 @@ public class HuaweiHealthApiClient {
                 glucose = findFloat(values, "blood_glucose");
             }
             if (glucose != null) {
-                list.add(draft(subjectId, HealthMetricCodes.BLOOD_GLUCOSE, glucose, measuredAt, sourceBase + ":bg"));
+                list.add(draft(subjectId, HealthMetricCodes.BLOOD_GLUCOSE, glucose, measuredTime, sourceBase + ":bg"));
             }
         }
         return list;
     }
 
     private HealthSampleDraft draft(Long subjectId, String metric, BigDecimal value,
-                                    Instant measuredAt, String sourceId) {
+                                    Instant measuredTime, String sourceId) {
         return new HealthSampleDraft()
                 .setSubjectId(subjectId)
                 .setMetricCode(metric)
                 .setValueNum(value)
                 .setUnit(HealthMetricCodes.defaultUnit(metric))
-                .setMeasuredAt(measuredAt)
+                .setMeasuredTime(measuredTime)
                 .setSourceSampleId(sourceId)
                 .setQuality("NORMAL")
                 .setMeta(Map.of("provider", "huawei"));

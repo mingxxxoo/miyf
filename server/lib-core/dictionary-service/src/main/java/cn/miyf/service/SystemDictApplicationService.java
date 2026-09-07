@@ -72,8 +72,8 @@ public class SystemDictApplicationService {
         Instant now = Instant.now();
         SysDictTypeEntity entity = mapType(new SysDictTypeEntity(), dto);
         entity.setId(snowflakeIdGenerator.nextId());
-        entity.setCreatedAt(now);
-        entity.setUpdatedAt(now);
+        entity.setCreateTime(now);
+        entity.setLastModifyTime(now);
         dictTypeMapper.insert(entity);
         return entity;
     }
@@ -91,7 +91,7 @@ public class SystemDictApplicationService {
         SysDictTypeEntity entity = requireType(id);
         assertTypeCodeUnique(dto.getCode(), id);
         mapType(entity, dto);
-        entity.setUpdatedAt(Instant.now());
+        entity.setLastModifyTime(Instant.now());
         dictTypeMapper.updateById(entity);
         return entity;
     }
@@ -162,8 +162,8 @@ public class SystemDictApplicationService {
         Instant now = Instant.now();
         SysDictItemEntity entity = mapItem(new SysDictItemEntity(), dto, typeId);
         entity.setId(snowflakeIdGenerator.nextId());
-        entity.setCreatedAt(now);
-        entity.setUpdatedAt(now);
+        entity.setCreateTime(now);
+        entity.setLastModifyTime(now);
         dictItemMapper.insert(entity);
         return entity;
     }
@@ -186,7 +186,7 @@ public class SystemDictApplicationService {
         }
         assertItemValueUnique(typeId, dto.getItemValue(), id);
         mapItem(entity, dto, typeId);
-        entity.setUpdatedAt(Instant.now());
+        entity.setLastModifyTime(Instant.now());
         dictItemMapper.updateById(entity);
         return entity;
     }

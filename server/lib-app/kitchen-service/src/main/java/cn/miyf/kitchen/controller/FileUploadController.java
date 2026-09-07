@@ -7,8 +7,7 @@ import cn.miyf.infrastructure.storage.FileStorageService;
 import cn.miyf.infrastructure.storage.StoredFile;
 import cn.miyf.kitchen.bean.vo.UploadedFileVo;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
-import cn.miyf.security.RequirePermission;
+import cn.miyf.kitchen.security.KitchenAdminPopedom;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
@@ -28,7 +27,7 @@ import java.io.InputStream;
  * @since 2026-09-05 09:19
  */
 @Tag(name = "文件上传")
-@PopedomGroup(value = "11030000", name = "管理员", product = "kitchen", sort = 10)
+@KitchenAdminPopedom
 @RestController
 @RequestMapping("/api")
 public class FileUploadController {
@@ -53,8 +52,7 @@ public class FileUploadController {
      * @history 1.00 2026-09-05 09:19 XieMingJie Created.
      */
     @Operation(summary = "上传图片")
-    @MiyfPermission(code = "kitchen:file:upload", name = "上传文件", groupCode = "kitchen_file", groupName = "文件上传")
-    @RequirePermission({"kitchen:file:upload"})
+    @MiyfPermission(code = "kitchen:file:upload")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResult<UploadedFileVo> upload(@RequestPart("file") MultipartFile file) {
         if (file == null || file.isEmpty()) {

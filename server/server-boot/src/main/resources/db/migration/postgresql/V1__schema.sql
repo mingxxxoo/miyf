@@ -8,8 +8,8 @@ CREATE TABLE sys_org_unit (
     name            VARCHAR(128) NOT NULL,
     sort_order      INT          NOT NULL DEFAULT 0,
     status          VARCHAR(32)  NOT NULL DEFAULT 'ENABLED',
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_sys_org_unit_code UNIQUE (code)
 );
 
@@ -20,8 +20,8 @@ CREATE TABLE sys_user (
     password_hash   VARCHAR(100) NOT NULL,
     nickname        VARCHAR(64),
     status          VARCHAR(32)  NOT NULL DEFAULT 'ENABLED',
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_sys_user_username UNIQUE (username)
 );
 
@@ -32,8 +32,8 @@ CREATE TABLE sys_role (
     code            VARCHAR(64)  NOT NULL,
     name            VARCHAR(64)  NOT NULL,
     description     VARCHAR(255),
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_sys_role_code UNIQUE (code)
 );
 
@@ -43,8 +43,8 @@ CREATE TABLE sys_permission (
     name            VARCHAR(128) NOT NULL,
     description     VARCHAR(255),
     group_code      VARCHAR(64),
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_sys_permission_code UNIQUE (code)
 );
 
@@ -54,8 +54,8 @@ CREATE TABLE sys_perm_group (
     name            VARCHAR(128) NOT NULL,
     description     VARCHAR(255),
     sort_order      INT          NOT NULL DEFAULT 0,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_sys_perm_group_code UNIQUE (code)
 );
 
@@ -63,7 +63,7 @@ CREATE TABLE sys_perm_group_item (
     id              BIGINT       PRIMARY KEY,
     group_id        BIGINT       NOT NULL REFERENCES sys_perm_group(id) ON DELETE CASCADE,
     permission_id   BIGINT       NOT NULL REFERENCES sys_permission(id) ON DELETE CASCADE,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_sys_perm_group_item UNIQUE (group_id, permission_id)
 );
 
@@ -71,7 +71,7 @@ CREATE TABLE sys_role_perm_group (
     id              BIGINT       PRIMARY KEY,
     role_id         BIGINT       NOT NULL REFERENCES sys_role(id) ON DELETE CASCADE,
     group_id        BIGINT       NOT NULL REFERENCES sys_perm_group(id) ON DELETE CASCADE,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_sys_role_perm_group UNIQUE (role_id, group_id)
 );
 
@@ -79,7 +79,7 @@ CREATE TABLE sys_user_role (
     id              BIGINT       PRIMARY KEY,
     user_id         BIGINT       NOT NULL REFERENCES sys_user(id) ON DELETE CASCADE,
     role_id         BIGINT       NOT NULL REFERENCES sys_role(id) ON DELETE CASCADE,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_sys_user_role UNIQUE (user_id, role_id)
 );
 
@@ -95,8 +95,8 @@ CREATE TABLE sys_menu (
     sort_order      INT          NOT NULL DEFAULT 0,
     visible         BOOLEAN      NOT NULL DEFAULT TRUE,
     status          VARCHAR(32)  NOT NULL DEFAULT 'ENABLED',
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT ck_sys_menu_type CHECK (menu_type IN ('DIR', 'MENU', 'BUTTON'))
 );
 
@@ -107,11 +107,14 @@ CREATE TABLE kitchen_user (
     id              BIGINT       PRIMARY KEY,
     openid          VARCHAR(64)  NOT NULL,
     unionid         VARCHAR(64),
+    username        VARCHAR(64),
     nickname        VARCHAR(64),
+    phone           VARCHAR(20),
+    wechat_id       VARCHAR(64),
     avatar_url      VARCHAR(512),
     status          VARCHAR(32)  NOT NULL DEFAULT 'ENABLED',
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_kitchen_user_openid UNIQUE (openid)
 );
 
@@ -121,8 +124,8 @@ CREATE TABLE dish_category (
     icon            VARCHAR(512),
     sort_order      INT          NOT NULL DEFAULT 0,
     status          VARCHAR(32)  NOT NULL DEFAULT 'ENABLED',
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE dish (
@@ -142,8 +145,8 @@ CREATE TABLE dish (
     rating_count    INT          NOT NULL DEFAULT 0,
     created_by      BIGINT,
     updated_by      BIGINT,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT ck_dish_stock_type CHECK (stock_type IN ('LIMITED', 'UNLIMITED')),
     CONSTRAINT ck_dish_status CHECK (status IN ('DRAFT', 'ON_SALE', 'OFF_SALE')),
     CONSTRAINT ck_dish_stock_nonneg CHECK (stock >= 0)
@@ -159,8 +162,8 @@ CREATE TABLE dish_image (
     dish_id         BIGINT       NOT NULL REFERENCES dish(id) ON DELETE CASCADE,
     image_url       VARCHAR(512) NOT NULL,
     sort_order      INT          NOT NULL DEFAULT 0,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_dish_image_dish_id ON dish_image(dish_id);
@@ -178,8 +181,8 @@ CREATE TABLE dish_recipe (
     steps           JSONB        NOT NULL DEFAULT '[]'::jsonb,
     tips            TEXT,
     nutrition       JSONB,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_dish_recipe_dish_id UNIQUE (dish_id)
 );
 
@@ -189,8 +192,8 @@ CREATE TABLE kitchen_order (
     user_id         BIGINT       NOT NULL REFERENCES kitchen_user(id),
     status          VARCHAR(32)  NOT NULL DEFAULT 'PENDING',
     remark          VARCHAR(512),
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_kitchen_order_no UNIQUE (order_no),
     CONSTRAINT ck_kitchen_order_status CHECK (status IN (
         'PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'
@@ -199,7 +202,7 @@ CREATE TABLE kitchen_order (
 
 CREATE INDEX idx_kitchen_order_user_id ON kitchen_order(user_id);
 CREATE INDEX idx_kitchen_order_status ON kitchen_order(status);
-CREATE INDEX idx_kitchen_order_created_at ON kitchen_order(created_at);
+CREATE INDEX idx_kitchen_order_create_time ON kitchen_order(create_time);
 
 CREATE TABLE kitchen_order_item (
     id              BIGINT       PRIMARY KEY,
@@ -209,8 +212,8 @@ CREATE TABLE kitchen_order_item (
     quantity        INT          NOT NULL,
     unit            VARCHAR(32)  NOT NULL DEFAULT '份',
     remark          VARCHAR(255),
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT ck_kitchen_order_item_qty CHECK (quantity > 0)
 );
 
@@ -225,8 +228,8 @@ CREATE TABLE kitchen_comment (
     rating          INT          NOT NULL,
     content         VARCHAR(1000),
     status          VARCHAR(32)  NOT NULL DEFAULT 'NORMAL',
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_kitchen_comment_order_dish_user UNIQUE (order_id, dish_id, user_id),
     CONSTRAINT ck_kitchen_comment_rating CHECK (rating >= 1 AND rating <= 5),
     CONSTRAINT ck_kitchen_comment_status CHECK (status IN ('NORMAL', 'HIDDEN'))
@@ -240,8 +243,8 @@ CREATE TABLE kitchen_comment_image (
     comment_id      BIGINT       NOT NULL REFERENCES kitchen_comment(id) ON DELETE CASCADE,
     image_url       VARCHAR(512) NOT NULL,
     sort_order      INT          NOT NULL DEFAULT 0,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_kitchen_comment_image_comment_id ON kitchen_comment_image(comment_id);
@@ -257,9 +260,9 @@ CREATE TABLE operation_logs (
     request_method    VARCHAR(16),
     request_uri       VARCHAR(255),
     operation_detail  TEXT,
-    created_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    create_time        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time        TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_operation_logs_created_at ON operation_logs(created_at);
+CREATE INDEX idx_operation_logs_create_time ON operation_logs(create_time);
 CREATE INDEX idx_operation_logs_operator_id ON operation_logs(operator_id);

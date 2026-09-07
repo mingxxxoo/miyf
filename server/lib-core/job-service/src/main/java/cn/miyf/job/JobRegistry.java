@@ -9,6 +9,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
@@ -16,6 +17,8 @@ import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -82,7 +85,26 @@ public class JobRegistry {
     }
 
     public List<JobDescriptor> list() {
-        return new ArrayList<>(jobs.values());
+        Instant now = Instant.now();
+        List<JobDescriptor> list = new ArrayList<>(jobs.size());
+        for (JobDescriptor job : jobs.values()) {
+            job.setNextRunTime(computeNextRunTime(job.getCron(), now));
+            list.add(job);
+        }
+        return list;
+    }
+
+    private static Instant computeNextRunTime(String cron, Instant now) {
+        if (!StringUtils.hasText(cron) || "fixedRate".equals(cron) || "fixedDelay".equals(cron)) {
+            return null;
+        }
+        try {
+            CronExpression expression = CronExpression.parse(cron);
+            LocalDateTime next = expression.next(LocalDateTime.ofInstant(now, ZoneId.systemDefault()));
+            return next == null ? null : next.atZone(ZoneId.systemDefault()).toInstant();
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     public JobDescriptor require(String code) {
@@ -114,7 +136,7 @@ public class JobRegistry {
         SysJobStateEntity state = new SysJobStateEntity()
                 .setCode(code)
                 .setEnabled(enabled)
-                .setUpdatedAt(Instant.now());
+                .setLastModifyTime(Instant.now());
         if (sysJobStateMapper.selectById(code) == null) {
             sysJobStateMapper.insert(state);
         } else {
@@ -151,7 +173,7 @@ public class JobRegistry {
         if (job == null) {
             return;
         }
-        job.setLastStartedAt(Instant.now()).setLastStatus("RUNNING").setLastError(null);
+        job.setLastStartedTime(Instant.now()).setLastStatus("RUNNING").setLastError(null);
     }
 
     public void markSuccess(String code) {
@@ -159,7 +181,7 @@ public class JobRegistry {
         if (job == null) {
             return;
         }
-        job.setLastFinishedAt(Instant.now()).setLastStatus("SUCCESS");
+        job.setLastFinishedTime(Instant.now()).setLastStatus("SUCCESS");
     }
 
     public void markFailed(String code, String error) {
@@ -167,7 +189,7 @@ public class JobRegistry {
         if (job == null) {
             return;
         }
-        job.setLastFinishedAt(Instant.now()).setLastStatus("FAILED").setLastError(error);
+        job.setLastFinishedTime(Instant.now()).setLastStatus("FAILED").setLastError(error);
     }
 
     public Collection<JobDescriptor> all() {
@@ -189,7 +211,7 @@ public class JobRegistry {
         sysJobStateMapper.insert(new SysJobStateEntity()
                 .setCode(code)
                 .setEnabled(enabled)
-                .setUpdatedAt(Instant.now()));
+                .setLastModifyTime(Instant.now()));
     }
 
     private static String resolveCron(Method method) {

@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -119,7 +120,7 @@ public class HealthApplicationService {
                         .like(HealthSubjectEntity::getDisplayName, keyword)
                         .or()
                         .like(HealthSubjectEntity::getRemark, keyword))
-                .orderByDesc(HealthSubjectEntity::getUpdatedAt));
+                .orderByDesc(HealthSubjectEntity::getLastModifyTime));
     }
 
     /**
@@ -134,8 +135,8 @@ public class HealthApplicationService {
         Instant now = Instant.now();
         HealthSubjectEntity entity = mapSubject(new HealthSubjectEntity(), dto);
         entity.setId(snowflakeIdGenerator.nextId());
-        entity.setCreatedAt(now);
-        entity.setUpdatedAt(now);
+        entity.setCreateTime(now);
+        entity.setLastModifyTime(now);
         subjectMapper.insert(entity);
         return entity;
     }
@@ -152,7 +153,7 @@ public class HealthApplicationService {
     public HealthSubjectEntity updateSubject(Long id, HealthSubjectSaveDto dto) {
         HealthSubjectEntity entity = requireSubject(id);
         mapSubject(entity, dto);
-        entity.setUpdatedAt(Instant.now());
+        entity.setLastModifyTime(Instant.now());
         subjectMapper.updateById(entity);
         return entity;
     }
@@ -186,7 +187,7 @@ public class HealthApplicationService {
         return sampleMapper.selectList(Wrappers.<HealthSampleEntity>lambdaQuery()
                 .eq(subjectId != null, HealthSampleEntity::getSubjectId, subjectId)
                 .eq(StringUtils.hasText(metricCode), HealthSampleEntity::getMetricCode, metricCode)
-                .orderByDesc(HealthSampleEntity::getMeasuredAt)
+                .orderByDesc(HealthSampleEntity::getMeasuredTime)
                 .last("LIMIT " + rows));
     }
 
@@ -214,9 +215,9 @@ public class HealthApplicationService {
         List<HealthSampleEntity> samples = sampleMapper.selectList(Wrappers.<HealthSampleEntity>lambdaQuery()
                 .eq(HealthSampleEntity::getSubjectId, subjectId)
                 .eq(HealthSampleEntity::getMetricCode, metric)
-                .ge(from != null, HealthSampleEntity::getMeasuredAt, from)
-                .le(to != null, HealthSampleEntity::getMeasuredAt, to)
-                .orderByAsc(HealthSampleEntity::getMeasuredAt)
+                .ge(from != null, HealthSampleEntity::getMeasuredTime, from)
+                .le(to != null, HealthSampleEntity::getMeasuredTime, to)
+                .orderByAsc(HealthSampleEntity::getMeasuredTime)
                 .last("LIMIT " + rows));
 
         HealthTrendVo vo = new HealthTrendVo()
@@ -233,7 +234,7 @@ public class HealthApplicationService {
             }
             BigDecimal value = sample.getValueNum();
             HealthTrendVo.Point point = new HealthTrendVo.Point()
-                    .setMeasuredAt(sample.getMeasuredAt())
+                    .setMeasuredTime(sample.getMeasuredTime())
                     .setValue(value)
                     .setProviderCode(sample.getProviderCode())
                     .setQuality(sample.getQuality());
@@ -250,10 +251,10 @@ public class HealthApplicationService {
                 vo.setMax(value);
             }
             vo.setLatest(value);
-            vo.setLatestAt(sample.getMeasuredAt());
+            vo.setLatestTime(sample.getMeasuredTime());
         }
         if (valueCount > 0) {
-            vo.setAvg(sum.divide(BigDecimal.valueOf(valueCount), 4, java.math.RoundingMode.HALF_UP));
+            vo.setAvg(sum.divide(BigDecimal.valueOf(valueCount), 4, RoundingMode.HALF_UP));
         }
         return vo;
     }
@@ -278,14 +279,14 @@ public class HealthApplicationService {
                 .setMetricCode(metric)
                 .setValueNum(dto.getValueNum())
                 .setUnit(unit)
-                .setMeasuredAt(dto.getMeasuredAt())
+                .setMeasuredTime(dto.getMeasuredTime())
                 .setProviderCode(ManualHealthDataProvider.CODE)
                 .setSourceSampleId(null)
                 .setQuality(quality)
                 .setMetaJson(dto.getMetaJson());
         entity.setId(snowflakeIdGenerator.nextId());
-        entity.setCreatedAt(now);
-        entity.setUpdatedAt(now);
+        entity.setCreateTime(now);
+        entity.setLastModifyTime(now);
         sampleMapper.insert(entity);
         return entity;
     }
@@ -370,15 +371,15 @@ public class HealthApplicationService {
                     .setCredentialRef(dto.getCredentialRef())
                     .setStatus(status);
             entity.setId(snowflakeIdGenerator.nextId());
-            entity.setCreatedAt(now);
-            entity.setUpdatedAt(now);
+            entity.setCreateTime(now);
+            entity.setLastModifyTime(now);
             bindingMapper.insert(entity);
             return entity;
         }
         existing.setExternalAccountId(dto.getExternalAccountId());
         existing.setCredentialRef(dto.getCredentialRef());
         existing.setStatus(status);
-        existing.setUpdatedAt(now);
+        existing.setLastModifyTime(now);
         bindingMapper.updateById(existing);
         return existing;
     }
@@ -397,7 +398,7 @@ public class HealthApplicationService {
         return syncRunMapper.selectList(Wrappers.<HealthSyncRunEntity>lambdaQuery()
                 .eq(StringUtils.hasText(providerCode), HealthSyncRunEntity::getProviderCode, providerCode)
                 .eq(subjectId != null, HealthSyncRunEntity::getSubjectId, subjectId)
-                .orderByDesc(HealthSyncRunEntity::getStartedAt)
+                .orderByDesc(HealthSyncRunEntity::getStartedTime)
                 .last("LIMIT " + size));
     }
 
@@ -425,10 +426,10 @@ public class HealthApplicationService {
                 .setStatus("RUNNING")
                 .setFetchedCount(0)
                 .setIngestedCount(0)
-                .setStartedAt(now);
+                .setStartedTime(now);
         run.setId(snowflakeIdGenerator.nextId());
-        run.setCreatedAt(now);
-        run.setUpdatedAt(now);
+        run.setCreateTime(now);
+        run.setLastModifyTime(now);
         syncRunMapper.insert(run);
 
         if (!provider.supportsRemoteFetch()) {
@@ -499,26 +500,26 @@ public class HealthApplicationService {
                 .setMetricCode(metric)
                 .setValueNum(draft.getValueNum())
                 .setUnit(unit)
-                .setMeasuredAt(draft.getMeasuredAt() != null ? draft.getMeasuredAt() : now)
+                .setMeasuredTime(draft.getMeasuredTime() != null ? draft.getMeasuredTime() : now)
                 .setProviderCode(providerCode)
                 .setSourceSampleId(StringUtils.hasText(draft.getSourceSampleId()) ? draft.getSourceSampleId().trim() : null)
                 .setQuality(normalizeQuality(draft.getQuality()))
                 .setMetaJson(toMetaJson(draft));
         entity.setId(snowflakeIdGenerator.nextId());
-        entity.setCreatedAt(now);
-        entity.setUpdatedAt(now);
+        entity.setCreateTime(now);
+        entity.setLastModifyTime(now);
         sampleMapper.insert(entity);
         return true;
     }
 
     private void finishRun(HealthSyncRunEntity run, String status, int fetched, int ingested,
-                           String error, Instant finishedAt) {
+                           String error, Instant finishedTime) {
         run.setStatus(status);
         run.setFetchedCount(fetched);
         run.setIngestedCount(ingested);
         run.setErrorMessage(error);
-        run.setFinishedAt(finishedAt);
-        run.setUpdatedAt(finishedAt);
+        run.setFinishedTime(finishedTime);
+        run.setLastModifyTime(finishedTime);
         syncRunMapper.updateById(run);
     }
 
@@ -539,8 +540,8 @@ public class HealthApplicationService {
         if (binding == null) {
             return;
         }
-        binding.setLastSyncAt(at);
-        binding.setUpdatedAt(at);
+        binding.setLastSyncTime(at);
+        binding.setLastModifyTime(at);
         bindingMapper.updateById(binding);
     }
 

@@ -53,7 +53,7 @@ public class SysPermGroupItemEntity implements Serializable {
     @Schema(description = "权限 ID")
     private Long permissionId;
 
-    @TableField(value = "created_at", fill = FieldFill.INSERT)
+    @TableField(value = "create_time", fill = FieldFill.INSERT)
     @Schema(description = "创建时间")
-    private Instant createdAt;
+    private Instant createTime;
 }

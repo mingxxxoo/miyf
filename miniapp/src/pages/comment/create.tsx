@@ -10,7 +10,7 @@ export default function CommentCreatePage() {
   const router = useRouter()
   const orderId = router.params.orderId || ''
   const dishId = router.params.dishId || ''
-  const { isLoggedIn, login } = useUserStore()
+  const { isLoggedIn, requireLogin } = useUserStore()
   const [rating, setRating] = useState(5)
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -21,7 +21,7 @@ export default function CommentCreatePage() {
       return
     }
     if (!isLoggedIn) {
-      const ok = await login()
+      const ok = await requireLogin()
       if (!ok) return
     }
     setSubmitting(true)

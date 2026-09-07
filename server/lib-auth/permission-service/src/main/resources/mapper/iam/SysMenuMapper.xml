@@ -5,8 +5,8 @@
 <mapper namespace="cn.miyf.repository.mapper.SysMenuMapper">
 
     <select id="selectVisibleMenus" resultType="cn.miyf.bean.entity.SysMenuEntity">
-        SELECT id, parent_id, name, path, component, icon, menu_type, permission_code,
-               sort_order, visible, status, created_at, updated_at
+        SELECT id, parent_id, name, path, component, icon, menu_type, permission_code, product,
+               sort_order, visible, status, create_time, last_modify_time
         FROM sys_menu
 WHERE visible = TRUE
           AND status = 'ENABLED'

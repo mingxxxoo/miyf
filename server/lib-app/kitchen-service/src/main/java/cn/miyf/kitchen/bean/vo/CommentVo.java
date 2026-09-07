@@ -71,5 +71,5 @@ public class CommentVo extends BaseVo {
     private List<String> images;
 
     @Schema(description = "创建时间")
-    private Instant createdAt;
+    private Instant createTime;
 }

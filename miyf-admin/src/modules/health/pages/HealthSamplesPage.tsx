@@ -12,6 +12,7 @@ import {
   message,
 } from 'antd';
 import { healthApi, type HealthSample, type HealthSubject } from '@/modules/health/api';
+import { PageHeader } from '@/ui';
 
 const METRICS = [
   { value: 'WEIGHT', label: '体重 WEIGHT' },
@@ -90,7 +91,7 @@ export default function HealthSamplesPage() {
         metricCode: values.metricCode,
         valueNum: values.valueNum,
         unit: values.unit,
-        measuredAt: toIso(values.measuredAt),
+        measuredTime: toIso(values.measuredTime),
         quality: values.quality || 'NORMAL',
       });
       message.success('已录入');
@@ -117,8 +118,8 @@ export default function HealthSamplesPage() {
 
   return (
     <div className="ck-page">
-      <h2 className="ck-page-title">健康采样</h2>
-      <Space style={{ marginBottom: 16 }} wrap>
+      <PageHeader title="健康采样" />
+<Space style={{ marginBottom: 16 }} wrap>
         <Select
           allowClear
           placeholder="主体"
@@ -141,7 +142,7 @@ export default function HealthSamplesPage() {
           onClick={() => {
             form.setFieldsValue({
               subjectId,
-              measuredAt: toLocalInputValue(),
+              measuredTime: toLocalInputValue(),
               quality: 'NORMAL',
             });
             setOpen(true);
@@ -170,7 +171,7 @@ export default function HealthSamplesPage() {
           },
           { title: '数据源', dataIndex: 'providerCode', width: 100 },
           { title: '质量', dataIndex: 'quality', width: 100 },
-          { title: '测量时间', dataIndex: 'measuredAt', width: 200 },
+          { title: '测量时间', dataIndex: 'measuredTime', width: 200 },
           {
             title: '操作',
             width: 90,
@@ -204,7 +205,7 @@ export default function HealthSamplesPage() {
           <Form.Item name="unit" label="单位">
             <Input placeholder="空则使用默认单位" />
           </Form.Item>
-          <Form.Item name="measuredAt" label="测量时间" rules={[{ required: true }]}>
+          <Form.Item name="measuredTime" label="测量时间" rules={[{ required: true }]}>
             <Input placeholder="YYYY-MM-DDTHH:mm" />
           </Form.Item>
           <Form.Item name="quality" label="质量">

@@ -62,9 +62,9 @@ public class DishRepositoryImpl extends AbstractMybatisRepository<Dish, DishEnti
     }
 
     @Override
-    protected void setDomainTimestamps(Dish domain, Instant createdAt, Instant updatedAt) {
-        domain.setCreatedAt(createdAt);
-        domain.setUpdatedAt(updatedAt);
+    protected void setDomainTimestamps(Dish domain, Instant createTime, Instant lastModifyTime) {
+        domain.setCreateTime(createTime);
+        domain.setLastModifyTime(lastModifyTime);
     }
 
     /**
@@ -216,7 +216,7 @@ public class DishRepositoryImpl extends AbstractMybatisRepository<Dish, DishEnti
             img.setDishId(dishId);
             img.setUrl(url);
             img.setSortOrder(sort++);
-            img.setCreatedAt(Instant.now());
+            img.setCreateTime(Instant.now());
             dishImageMapper.insert(img);
         }
     }

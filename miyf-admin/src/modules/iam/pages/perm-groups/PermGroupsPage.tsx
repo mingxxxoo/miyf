@@ -1,22 +1,39 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, message } from 'antd';
-import PageTable from '@/components/PageTable';
+import {
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  Popconfirm,
+  Select,
+  Space,
+  Tree,
+  Typography,
+  message,
+} from 'antd';
+import type { DataNode } from 'antd/es/tree';
 import {
   iamPermGroupApi,
   iamPermissionApi,
   type IamPermGroup,
   type IamPermission,
 } from '@/modules/iam/api';
+import { FormItem, FormModal, PageHeader, EmptyState, SettingSection } from '@/ui';
+import { notifyError } from '@/api/errors';
+import { useSubmitting } from '@/hooks/useSubmitting';
 
+/**
+ * 权限组：按 product → 组 两级树 + 搜索 + 添加。
+ */
 export default function PermGroupsPage() {
   const [loading, setLoading] = useState(false);
   const [all, setAll] = useState<IamPermGroup[]>([]);
   const [permissions, setPermissions] = useState<IamPermission[]>([]);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [keyword, setKeyword] = useState('');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<IamPermGroup | null>(null);
   const [form] = Form.useForm();
+  const { submitting, run } = useSubmitting();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -24,9 +41,10 @@ export default function PermGroupsPage() {
       const [groups, perms] = await Promise.all([iamPermGroupApi.list(), iamPermissionApi.list()]);
       setAll(groups);
       setPermissions(perms);
-    } catch {
+    } catch (err) {
       setAll([]);
       setPermissions([]);
+      notifyError(err, '加载权限组失败');
     } finally {
       setLoading(false);
     }
@@ -36,152 +54,205 @@ export default function PermGroupsPage() {
     void fetchData();
   }, [fetchData]);
 
-  const data = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return all.slice(start, start + pageSize);
-  }, [all, page, pageSize]);
-
   const permOptions = useMemo(
     () =>
-      permissions.map((p) => ({
-        value: p.id,
-        label: `${p.code} · ${p.name}`,
-      })),
+      permissions
+        .filter((p) => p.nodeType === 'API' || !p.nodeType)
+        .map((p) => ({
+          value: p.id,
+          label: `${p.code} · ${p.name}`,
+        })),
     [permissions],
   );
 
-  const openCreate = () => {
-    setEditing(null);
-    form.resetFields();
-    form.setFieldsValue({ sortOrder: 0, permissionIds: [] });
-    setOpen(true);
-  };
+  const filtered = useMemo(() => {
+    const q = keyword.trim().toLowerCase();
+    if (!q) return all;
+    return all.filter(
+      (g) =>
+        g.name.toLowerCase().includes(q) ||
+        g.code.toLowerCase().includes(q) ||
+        (g.description || '').toLowerCase().includes(q),
+    );
+  }, [all, keyword]);
 
-  const openEdit = (row: IamPermGroup) => {
+  const openEdit = useCallback((row: IamPermGroup) => {
     setEditing(row);
-    const related = permissions.filter((p) => p.groupCode === row.code).map((p) => p.id);
     form.setFieldsValue({
       code: row.code,
       name: row.name,
       description: row.description,
       sortOrder: row.sortOrder ?? 0,
-      permissionIds: related,
+      product: row.product || 'system',
+      permissionIds: row.permissionIds ?? [],
     });
+    setOpen(true);
+  }, [form]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    await run(async () => {
+      try {
+        await iamPermGroupApi.remove(id);
+        message.success('已删除');
+        void fetchData();
+      } catch (err) {
+        notifyError(err, '删除失败');
+      }
+    });
+  }, [fetchData, run]);
+
+  const treeData = useMemo(() => {
+    const byProduct = new Map<string, IamPermGroup[]>();
+    for (const g of filtered) {
+      const product = normalizeProduct(g.product);
+      if (!byProduct.has(product)) byProduct.set(product, []);
+      byProduct.get(product)!.push(g);
+    }
+    const roots: DataNode[] = [];
+    for (const [product, groups] of [...byProduct.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+      groups.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.code.localeCompare(b.code));
+      roots.push({
+        key: `product:${product}`,
+        title: `${product} 工作台`,
+        children: groups.map((g) => ({
+          key: g.id,
+          title: (
+            <Space>
+              <span>{g.name}</span>
+              <Typography.Text type="secondary">({g.code})</Typography.Text>
+              <Typography.Link
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openEdit(g);
+                }}
+              >
+                编辑
+              </Typography.Link>
+              <Popconfirm title="确认删除该权限组？" onConfirm={() => void handleDelete(g.id)}>
+                <Typography.Link type="danger" onClick={(e) => e.stopPropagation()}>
+                  删除
+                </Typography.Link>
+              </Popconfirm>
+            </Space>
+          ),
+          isLeaf: true,
+        })),
+      });
+    }
+    return roots;
+  }, [filtered, openEdit, handleDelete]);
+
+  const openCreate = () => {
+    setEditing(null);
+    form.resetFields();
+    form.setFieldsValue({ sortOrder: 0, product: 'system', permissionIds: [] });
     setOpen(true);
   };
 
   const handleSubmit = async () => {
     const values = await form.validateFields();
-    try {
-      const payload = {
-        code: values.code as string,
-        name: values.name as string,
-        description: values.description as string | undefined,
-        sortOrder: values.sortOrder as number | undefined,
-        permissionIds: (values.permissionIds as string[] | undefined) ?? [],
-      };
-      if (editing) {
-        await iamPermGroupApi.update(editing.id, payload);
-        message.success('权限组已更新');
-      } else {
-        await iamPermGroupApi.create(payload);
-        message.success('权限组已创建');
+    await run(async () => {
+      try {
+        const payload = {
+          code: values.code as string,
+          name: values.name as string,
+          description: values.description as string | undefined,
+          sortOrder: values.sortOrder as number | undefined,
+          product: values.product as string | undefined,
+          permissionIds: (values.permissionIds as string[] | undefined) ?? [],
+        };
+        if (editing) {
+          await iamPermGroupApi.update(editing.id, payload);
+          message.success('权限组已更新');
+        } else {
+          await iamPermGroupApi.create(payload);
+          message.success('权限组已创建');
+        }
+        setOpen(false);
+        void fetchData();
+      } catch (err) {
+        notifyError(err, '保存失败');
       }
-      setOpen(false);
-      void fetchData();
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '保存失败');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      await iamPermGroupApi.remove(id);
-      message.success('已删除');
-      void fetchData();
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '删除失败');
-    }
+    });
   };
 
   return (
     <div className="ck-page">
-      <h2 className="ck-page-title">权限组</h2>
-      <PageTable<IamPermGroup>
+      <PageHeader title="权限组" description="按产品聚合可分配的权限集合" />
+      <SettingSection
         title="权限组列表"
-        loading={loading}
-        rowKey="id"
         extra={
-          <Button type="primary" onClick={openCreate}>
-            新增权限组
-          </Button>
+          <Space>
+            <Input.Search
+              allowClear
+              placeholder="请输入权限组名称"
+              style={{ width: 240 }}
+              onSearch={setKeyword}
+              onChange={(e) => {
+                if (!e.target.value) setKeyword('');
+              }}
+            />
+            <Button type="primary" onClick={openCreate}>
+              添加权限组
+            </Button>
+          </Space>
         }
-        columns={[
-          { title: '编码', dataIndex: 'code' },
-          { title: '名称', dataIndex: 'name' },
-          { title: '说明', dataIndex: 'description', render: (v?: string) => v || '—' },
-          { title: '排序', dataIndex: 'sortOrder', width: 80 },
-          {
-            title: '操作',
-            width: 160,
-            render: (_, row) => (
-              <Space>
-                <Button type="link" size="small" onClick={() => openEdit(row)}>
-                  编辑
-                </Button>
-                <Popconfirm title="确认删除该权限组？" onConfirm={() => void handleDelete(row.id)}>
-                  <Button type="link" size="small" danger>
-                    删除
-                  </Button>
-                </Popconfirm>
-              </Space>
-            ),
-          },
-        ]}
-        dataSource={data}
-        pagination={{
-          current: page,
-          pageSize,
-          total: all.length,
-          onChange: (p, ps) => {
-            setPage(p);
-            setPageSize(ps);
-          },
-        }}
-        locale={{ emptyText: '暂无权限组' }}
-      />
+      >
+        {loading ? (
+          <Typography.Text type="secondary">加载中…</Typography.Text>
+        ) : treeData.length === 0 ? (
+          <EmptyState description="暂无权限组" />
+        ) : (
+          <Tree showLine defaultExpandAll treeData={treeData} />
+        )}
+      </SettingSection>
 
-      <Modal
-        title={editing ? '编辑权限组' : '新增权限组'}
+      <FormModal
+        title={editing ? '编辑权限组' : '添加权限组'}
         open={open}
-        width={560}
+        form={form}
+        confirmLoading={submitting}
         onOk={() => void handleSubmit()}
         onCancel={() => setOpen(false)}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="code" label="编码" rules={[{ required: true }]}>
-            <Input placeholder="如：iam_user" disabled={!!editing} />
-          </Form.Item>
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="说明">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item name="sortOrder" label="排序">
-            <InputNumber style={{ width: '100%' }} min={0} />
-          </Form.Item>
-          <Form.Item name="permissionIds" label="包含权限">
-            <Select
-              mode="multiple"
-              allowClear
-              optionFilterProp="label"
-              options={permOptions}
-              placeholder="选择权限"
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
+        <FormItem name="code" label="编码" rules={[{ required: true }]}>
+          <Input placeholder="如：iam_user" disabled={!!editing} />
+        </FormItem>
+        <FormItem name="name" label="名称" rules={[{ required: true }]}>
+          <Input />
+        </FormItem>
+        <FormItem name="product" label="产品域" rules={[{ required: true }]}>
+          <Select
+            options={[
+              { value: 'system', label: '系统' },
+              { value: 'kitchen', label: '厨房业务' },
+              { value: 'health', label: '健康管理' },
+            ]}
+          />
+        </FormItem>
+        <FormItem name="sortOrder" label="排序">
+          <InputNumber style={{ width: '100%' }} min={0} />
+        </FormItem>
+        <FormItem name="description" label="说明" full>
+          <Input.TextArea rows={2} />
+        </FormItem>
+        <FormItem name="permissionIds" label="包含权限" full>
+          <Select
+            mode="multiple"
+            allowClear
+            optionFilterProp="label"
+            options={permOptions}
+            placeholder="选择权限"
+          />
+        </FormItem>
+      </FormModal>
     </div>
   );
+}
+
+function normalizeProduct(product?: string) {
+  if (!product) return 'system';
+  const p = product.toLowerCase();
+  if (p === 'iam') return 'system';
+  return p;
 }

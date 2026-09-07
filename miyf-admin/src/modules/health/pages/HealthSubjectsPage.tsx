@@ -9,10 +9,11 @@ import {
   Select,
   Space,
   Table,
-  Tag,
   message,
 } from 'antd';
 import { healthApi, type HealthSubject } from '@/modules/health/api';
+import { PageHeader, StatusBadge } from '@/ui';
+import { ENABLED_STATUS } from '@/constants/status';
 
 /**
  * 健康主体 CRUD。
@@ -89,8 +90,8 @@ export default function HealthSubjectsPage() {
 
   return (
     <div className="ck-page">
-      <h2 className="ck-page-title">健康主体</h2>
-      <Space style={{ marginBottom: 16 }} wrap>
+      <PageHeader title="健康主体" />
+<Space style={{ marginBottom: 16 }} wrap>
         <Input
           allowClear
           placeholder="搜索姓名"
@@ -118,8 +119,7 @@ export default function HealthSubjectsPage() {
             title: '状态',
             dataIndex: 'status',
             width: 100,
-            render: (v: string) =>
-              v === 'ENABLED' ? <Tag color="green">启用</Tag> : <Tag>停用</Tag>,
+            render: (v: string) => <StatusBadge code={v} map={ENABLED_STATUS} />,
           },
           { title: '备注', dataIndex: 'remark', ellipsis: true },
           {

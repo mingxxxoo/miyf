@@ -3,23 +3,26 @@ package cn.miyf.notification.controller;
 import cn.miyf.common.ApiResult;
 import cn.miyf.notification.InboxItem;
 import cn.miyf.notification.NotificationApplicationService;
-import cn.miyf.notification.NotificationChannel;
-import cn.miyf.notification.NotificationMessage;
+import cn.miyf.notification.dto.NotifySendDto;
+import cn.miyf.notification.dto.NotifyTemplateSaveDto;
+import cn.miyf.notification.vo.NotifySendLogVo;
+import cn.miyf.notification.vo.NotifyTemplateVo;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
-import cn.miyf.security.RequirePermission;
+import cn.miyf.security.SystemSettingsPopedom;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 通知管理 API。
@@ -28,7 +31,7 @@ import java.util.Map;
  * @since 2026-09-06
  */
 @Tag(name = "系统-通知")
-@PopedomGroup(value = "10040000", name = "系统设置", product = "system", sort = 8)
+@SystemSettingsPopedom
 @RestController
 @RequestMapping("/api/admin/system/notifications")
 public class AdminNotificationController {
@@ -39,24 +42,16 @@ public class AdminNotificationController {
         this.notificationApplicationService = notificationApplicationService;
     }
 
-    @Operation(summary = "发送通知（邮件/短信按适配器，站内信落库）")
-    @MiyfPermission(code = "sys:notify:send", name = "发送通知", groupCode = "sys_notify", groupName = "通知")
-    @RequirePermission({"sys:notify:send"})
+    @Operation(summary = "发送通知（直发或模板；写入发送流水）")
+    @MiyfPermission(code = "sys:notify:send")
     @PostMapping("/send")
-    public ApiResult<Void> send(@RequestBody Map<String, String> body) {
-        NotificationChannel channel = NotificationChannel.valueOf(
-                body.getOrDefault("channel", "INBOX").trim().toUpperCase());
-        notificationApplicationService.send(new NotificationMessage()
-                .setChannel(channel)
-                .setTo(body.get("to"))
-                .setTitle(body.getOrDefault("title", ""))
-                .setContent(body.getOrDefault("content", "")));
+    public ApiResult<Void> send(@RequestBody NotifySendDto body) {
+        notificationApplicationService.send(body);
         return ApiResult.ok();
     }
 
     @Operation(summary = "站内信列表")
-    @MiyfPermission(code = "sys:notify:list", name = "通知列表", groupCode = "sys_notify", groupName = "通知")
-    @RequirePermission({"sys:notify:list"})
+    @MiyfPermission(code = "sys:notify:list")
     @GetMapping("/inbox")
     public ApiResult<List<InboxItem>> inbox(@RequestParam String userKey,
                                             @RequestParam(required = false) Integer limit) {
@@ -64,11 +59,52 @@ public class AdminNotificationController {
     }
 
     @Operation(summary = "标记站内信已读")
-    @MiyfPermission(code = "sys:notify:read", name = "标记已读", groupCode = "sys_notify", groupName = "通知")
-    @RequirePermission({"sys:notify:read"})
+    @MiyfPermission(code = "sys:notify:read")
     @PostMapping("/inbox/{id}/read")
     public ApiResult<InboxItem> markRead(@PathVariable Long id,
                                          @RequestParam(required = false) String userKey) {
         return ApiResult.ok(notificationApplicationService.markRead(id, userKey));
+    }
+
+    @Operation(summary = "通知模板列表")
+    @MiyfPermission(code = "sys:notify:list")
+    @GetMapping("/templates")
+    public ApiResult<List<NotifyTemplateVo>> listTemplates(
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String status) {
+        return ApiResult.ok(notificationApplicationService.listTemplates(channel, status));
+    }
+
+    @Operation(summary = "创建通知模板")
+    @MiyfPermission(code = "sys:notify:send")
+    @PostMapping("/templates")
+    public ApiResult<NotifyTemplateVo> createTemplate(@Valid @RequestBody NotifyTemplateSaveDto dto) {
+        return ApiResult.ok(notificationApplicationService.createTemplate(dto));
+    }
+
+    @Operation(summary = "更新通知模板")
+    @MiyfPermission(code = "sys:notify:send")
+    @PutMapping("/templates/{id}")
+    public ApiResult<NotifyTemplateVo> updateTemplate(@PathVariable Long id,
+                                                      @Valid @RequestBody NotifyTemplateSaveDto dto) {
+        return ApiResult.ok(notificationApplicationService.updateTemplate(id, dto));
+    }
+
+    @Operation(summary = "删除通知模板")
+    @MiyfPermission(code = "sys:notify:send")
+    @DeleteMapping("/templates/{id}")
+    public ApiResult<Void> deleteTemplate(@PathVariable Long id) {
+        notificationApplicationService.deleteTemplate(id);
+        return ApiResult.ok();
+    }
+
+    @Operation(summary = "发送历史")
+    @MiyfPermission(code = "sys:notify:list")
+    @GetMapping("/send-logs")
+    public ApiResult<List<NotifySendLogVo>> listSendLogs(
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer limit) {
+        return ApiResult.ok(notificationApplicationService.listSendLogs(channel, status, limit));
     }
 }

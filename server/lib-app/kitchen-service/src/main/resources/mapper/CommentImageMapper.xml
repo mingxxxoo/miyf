@@ -6,7 +6,7 @@
 
     <select id="selectByCommentId"
             resultType="cn.miyf.kitchen.bean.entity.CommentImageEntity">
-        SELECT id, comment_id, image_url AS url, sort_order, created_at
+        SELECT id, comment_id, image_url AS url, sort_order, create_time
         FROM kitchen_comment_image
         WHERE comment_id = #{commentId}
         ORDER BY sort_order ASC

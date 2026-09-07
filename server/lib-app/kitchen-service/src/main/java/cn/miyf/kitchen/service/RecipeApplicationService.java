@@ -229,7 +229,7 @@ public class RecipeApplicationService extends BaseApplicationService {
                 .setSteps(recipe.getSteps())
                 .setTips(recipe.getTips())
                 .setNutrition(recipe.getNutrition())
-                .setUpdatedAt(recipe.getUpdatedAt());
+                .setLastModifyTime(recipe.getLastModifyTime());
         if (recipe.getDishId() != null) {
             dishRepository.findById(recipe.getDishId())
                     .ifPresent(dish -> vo.setDishName(dish.getName()));

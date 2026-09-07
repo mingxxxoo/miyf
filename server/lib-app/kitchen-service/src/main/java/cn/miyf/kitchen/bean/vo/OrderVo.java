@@ -54,10 +54,10 @@ public class OrderVo extends BaseVo {
     private String remark;
 
     @Schema(description = "创建时间")
-    private Instant createdAt;
+    private Instant createTime;
 
     @Schema(description = "更新时间")
-    private Instant updatedAt;
+    private Instant lastModifyTime;
 
     @Schema(description = "明细")
     private List<OrderItemVo> items;

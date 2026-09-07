@@ -43,6 +43,9 @@ public class LoginVo extends BaseVo {
     @Schema(description = "展示名")
     private String displayName;
 
+    @Schema(description = "登录名")
+    private String username;
+
     @Schema(description = "主体类型：USER/ADMIN")
     private String principalType;
 

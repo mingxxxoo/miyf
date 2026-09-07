@@ -4,8 +4,7 @@ import cn.miyf.bean.dto.SysConfigSaveDto;
 import cn.miyf.bean.entity.SysConfigEntity;
 import cn.miyf.common.ApiResult;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
-import cn.miyf.security.RequirePermission;
+import cn.miyf.security.SystemSettingsPopedom;
 import cn.miyf.service.SystemConfigApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +28,7 @@ import java.util.List;
  * @since 2026-09-06
  */
 @Tag(name = "系统-配置")
-@PopedomGroup(value = "10040000", name = "系统设置", product = "system", sort = 8)
+@SystemSettingsPopedom
 @RestController
 @RequestMapping("/api/admin/system/configs")
 public class AdminSysConfigController {
@@ -41,8 +40,7 @@ public class AdminSysConfigController {
     }
 
     @Operation(summary = "配置列表")
-    @MiyfPermission(code = "sys:config:list", name = "配置列表", groupCode = "sys_config", groupName = "系统配置")
-    @RequirePermission({"sys:config:list"})
+    @MiyfPermission(code = "sys:config:list")
     @GetMapping
     public ApiResult<List<SysConfigEntity>> list(
             @RequestParam(required = false) String groupCode,
@@ -51,32 +49,28 @@ public class AdminSysConfigController {
     }
 
     @Operation(summary = "按键查询配置")
-    @MiyfPermission(code = "sys:config:list", name = "配置列表", groupCode = "sys_config", groupName = "系统配置")
-    @RequirePermission({"sys:config:list"})
+    @MiyfPermission(code = "sys:config:list")
     @GetMapping("/key/{configKey}")
     public ApiResult<SysConfigEntity> getByKey(@PathVariable String configKey) {
         return ApiResult.ok(systemConfigApplicationService.getByKey(configKey));
     }
 
     @Operation(summary = "创建配置")
-    @MiyfPermission(code = "sys:config:create", name = "创建配置", groupCode = "sys_config", groupName = "系统配置")
-    @RequirePermission({"sys:config:create"})
+    @MiyfPermission(code = "sys:config:create")
     @PostMapping
     public ApiResult<SysConfigEntity> create(@Valid @RequestBody SysConfigSaveDto dto) {
         return ApiResult.ok(systemConfigApplicationService.create(dto));
     }
 
     @Operation(summary = "更新配置")
-    @MiyfPermission(code = "sys:config:update", name = "更新配置", groupCode = "sys_config", groupName = "系统配置")
-    @RequirePermission({"sys:config:update"})
+    @MiyfPermission(code = "sys:config:update")
     @PutMapping("/{id}")
     public ApiResult<SysConfigEntity> update(@PathVariable Long id, @Valid @RequestBody SysConfigSaveDto dto) {
         return ApiResult.ok(systemConfigApplicationService.update(id, dto));
     }
 
     @Operation(summary = "删除配置")
-    @MiyfPermission(code = "sys:config:delete", name = "删除配置", groupCode = "sys_config", groupName = "系统配置")
-    @RequirePermission({"sys:config:delete"})
+    @MiyfPermission(code = "sys:config:delete")
     @DeleteMapping("/{id}")
     public ApiResult<Void> delete(@PathVariable Long id) {
         systemConfigApplicationService.delete(id);

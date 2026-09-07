@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Upload, message, Image } from 'antd';
 import { PlusOutlined, LoadingOutlined } from '@ant-design/icons';
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
-import { getToken } from '@/api/http';
+import { uploadFile } from '@/api/upload';
+import { notifyError } from '@/api/errors';
 
 interface ImageUploaderProps {
   value?: string;
@@ -41,56 +42,13 @@ export default function ImageUploader({
     const file = options.file as File;
     setLoading(true);
     try {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
-        },
-        body: form,
-      });
-
-      let body: {
-        code?: number;
-        message?: string;
-        data?: { url?: string };
-        url?: string;
-      } = {};
-      try {
-        body = (await res.json()) as typeof body;
-      } catch {
-        body = {};
-      }
-
-      if (res.status === 401 || body.code === 40100) {
-        const err = new Error(body.message || '未登录或登录已过期');
-        options.onError?.(err);
-        message.error(err.message);
-        return;
-      }
-
-      if (!res.ok || (body.code != null && body.code !== 0)) {
-        const err = new Error(body.message || `上传失败 (${res.status})`);
-        options.onError?.(err);
-        message.error(err.message);
-        return;
-      }
-
-      const url = body.data?.url || body.url;
-      if (!url) {
-        const err = new Error('上传成功但未返回图片地址');
-        options.onError?.(err);
-        message.error(err.message);
-        return;
-      }
-
-      onChange?.(url);
-      options.onSuccess?.(body);
+      const data = await uploadFile(file);
+      onChange?.(data.url);
+      options.onSuccess?.(data);
       message.success('图片上传成功');
     } catch (err) {
       options.onError?.(err instanceof Error ? err : new Error('upload failed'));
-      message.error('图片上传失败');
+      notifyError(err, '图片上传失败');
     } finally {
       setLoading(false);
     }

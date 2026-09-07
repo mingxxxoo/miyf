@@ -22,4 +22,23 @@ public interface SysUserRoleMapper extends BaseMapper<SysUserRoleEntity> {
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
     int deleteByUserId(@Param("userId") Long userId);
+
+    /**
+     * 删除用户-角色绑定。
+     *
+     * @param userId 用户 ID
+     * @param roleId 角色 ID
+     * @return 影响行数
+     * @history 1.00 2026-09-07 XieMingJie Created.
+     */
+    int deleteByUserIdAndRoleId(@Param("userId") Long userId, @Param("roleId") Long roleId);
+
+    /**
+     * 统计角色下用户数。
+     *
+     * @param roleId 角色 ID
+     * @return 人数
+     * @history 1.00 2026-09-07 XieMingJie Created.
+     */
+    int countByRoleId(@Param("roleId") Long roleId);
 }

@@ -1,5 +1,6 @@
 package cn.miyf.health.spi;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -56,5 +57,5 @@ public interface HealthDataProvider {
      * @param request 请求
      * @return 草稿列表，不可为 null
      */
-    java.util.List<HealthSampleDraft> fetch(HealthFetchRequest request);
+    List<HealthSampleDraft> fetch(HealthFetchRequest request);
 }

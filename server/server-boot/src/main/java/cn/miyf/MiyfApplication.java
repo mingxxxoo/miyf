@@ -6,6 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+import java.util.TimeZone;
+
 /**
  * miyf 后端启动入口。
  * <p>
@@ -26,7 +28,7 @@ public class MiyfApplication {
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
     public static void main(String[] args) {
-        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Shanghai"));
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Shanghai"));
         SpringApplication.run(MiyfApplication.class, args);
     }
 }

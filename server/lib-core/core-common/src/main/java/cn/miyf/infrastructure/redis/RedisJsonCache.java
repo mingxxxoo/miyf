@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -85,7 +86,7 @@ public class RedisJsonCache {
             } else {
                 String json = objectMapper.writeValueAsString(value);
                 // 空集合也写短 TTL，减轻穿透
-                boolean emptyCollection = value instanceof java.util.Collection<?> c && c.isEmpty();
+                boolean emptyCollection = value instanceof Collection<?> c && c.isEmpty();
                 long ttl = emptyCollection ? properties.getCache().getEmptyTtlSeconds() : ttlSeconds;
                 stringRedisTemplate.opsForValue().set(key, json, Duration.ofSeconds(Math.max(ttl, 1)));
             }

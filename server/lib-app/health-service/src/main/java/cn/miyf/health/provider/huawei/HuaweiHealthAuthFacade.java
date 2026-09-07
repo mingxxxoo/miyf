@@ -58,8 +58,8 @@ public class HuaweiHealthAuthFacade {
         map.put("source", bundle == null ? null : bundle.getSource());
         map.put("hasRefreshToken", bundle != null && StringUtils.hasText(bundle.getRefreshToken()));
         map.put("openId", bundle == null ? null : mask(bundle.getOpenId()));
-        map.put("expiresAt", bundle == null || bundle.getExpiresAt() == null
-                ? null : bundle.getExpiresAt().toString());
+        map.put("expiresTime", bundle == null || bundle.getExpiresTime() == null
+                ? null : bundle.getExpiresTime().toString());
         return map;
     }
 
@@ -90,7 +90,7 @@ public class HuaweiHealthAuthFacade {
         map.put("authorized", true);
         map.put("source", bundle.getSource());
         map.put("openId", openId);
-        map.put("expiresAt", bundle.getExpiresAt() == null ? null : bundle.getExpiresAt().toString());
+        map.put("expiresTime", bundle.getExpiresTime() == null ? null : bundle.getExpiresTime().toString());
         return map;
     }
 

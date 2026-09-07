@@ -218,8 +218,8 @@ name
 icon
 sort
 status
-created_at
-updated_at
+create_time
+last_modify_time
 deleted
 ```
 
@@ -257,8 +257,8 @@ rating
 rating_count
 created_by
 updated_by
-created_at
-updated_at
+create_time
+last_modify_time
 deleted
 ```
 
@@ -394,8 +394,8 @@ seasonings
 steps
 tips
 nutrition
-created_at
-updated_at
+create_time
+last_modify_time
 ```
 
 ---
@@ -514,8 +514,8 @@ order_no
 user_id
 status
 remark
-created_at
-updated_at
+create_time
+last_modify_time
 ```
 
 禁止：
@@ -551,7 +551,7 @@ dish_name
 quantity
 unit
 remark
-created_at
+create_time
 ```
 
 必须保存预约时的：
@@ -820,8 +820,8 @@ order_id
 rating
 content
 status
-created_at
-updated_at
+create_time
+last_modify_time
 deleted
 ```
 
@@ -1436,7 +1436,7 @@ request_ip
 request_method
 request_uri
 operation_detail
-created_at
+create_time
 ```
 
 禁止记录：
@@ -1760,7 +1760,7 @@ dish.is_recommend
 orders.user_id
 orders.order_no
 orders.status
-orders.created_at
+orders.create_time
 
 order_items.order_id
 order_items.dish_id

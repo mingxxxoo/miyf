@@ -47,7 +47,7 @@ public class HealthSampleSaveDto {
 
     @NotNull
     @Schema(description = "测量时间")
-    private Instant measuredAt;
+    private Instant measuredTime;
 
     @Schema(description = "质量")
     private String quality;

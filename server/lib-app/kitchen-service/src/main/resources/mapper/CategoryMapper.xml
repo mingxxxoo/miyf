@@ -5,15 +5,15 @@
 <mapper namespace="cn.miyf.kitchen.repository.mapper.CategoryMapper">
 
     <select id="selectAllEnabled" resultType="cn.miyf.kitchen.bean.entity.CategoryEntity">
-        SELECT id, name, icon, sort_order, status, created_at, updated_at
+        SELECT id, name, icon, sort_order, status, create_time, last_modify_time
         FROM dish_category
         WHERE status = 'ENABLED'
-        ORDER BY sort_order ASC, created_at ASC
+        ORDER BY sort_order ASC, create_time ASC
     </select>
 
     <select id="selectAllOrdered" resultType="cn.miyf.kitchen.bean.entity.CategoryEntity">
-        SELECT id, name, icon, sort_order, status, created_at, updated_at
+        SELECT id, name, icon, sort_order, status, create_time, last_modify_time
         FROM dish_category
-        ORDER BY sort_order ASC, created_at ASC
+        ORDER BY sort_order ASC, create_time ASC
     </select>
 </mapper>

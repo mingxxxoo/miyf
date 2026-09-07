@@ -2,6 +2,7 @@ package cn.miyf.infrastructure.storage;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 对象键与公开 URL 工具。
@@ -27,7 +28,7 @@ public final class StoragePathUtils {
         String ext = FileUploadValidator.extensionOf(contentType);
         return DAY_DIR.format(LocalDate.now()) + "/"
                 + Long.toHexString(System.nanoTime())
-                + Integer.toHexString(java.util.concurrent.ThreadLocalRandom.current().nextInt())
+                + Integer.toHexString(ThreadLocalRandom.current().nextInt())
                 + ext;
     }
 

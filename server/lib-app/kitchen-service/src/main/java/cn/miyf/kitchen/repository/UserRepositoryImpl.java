@@ -44,9 +44,9 @@ public class UserRepositoryImpl extends AbstractMybatisRepository<User, UserEnti
     }
 
     @Override
-    protected void setDomainTimestamps(User domain, Instant createdAt, Instant updatedAt) {
-        domain.setCreatedAt(createdAt);
-        domain.setUpdatedAt(updatedAt);
+    protected void setDomainTimestamps(User domain, Instant createTime, Instant lastModifyTime) {
+        domain.setCreateTime(createTime);
+        domain.setLastModifyTime(lastModifyTime);
     }
 
     /**

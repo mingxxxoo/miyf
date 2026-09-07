@@ -5,8 +5,7 @@ import cn.miyf.kitchen.bean.dto.CategorySaveDto;
 import cn.miyf.kitchen.bean.vo.CategoryVo;
 import cn.miyf.kitchen.service.CategoryApplicationService;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
-import cn.miyf.security.RequirePermission;
+import cn.miyf.kitchen.security.KitchenAdminPopedom;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -28,7 +27,7 @@ import java.util.List;
  * @since 2026-09-04 17:30
  */
 @Tag(name = "管理端分类")
-@PopedomGroup(value = "11030000", name = "管理员", product = "kitchen", sort = 10)
+@KitchenAdminPopedom
 @RestController
 @RequestMapping("/api/admin/categories")
 public class AdminCategoryController {
@@ -52,8 +51,7 @@ public class AdminCategoryController {
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     @Operation(summary = "分类列表")
-    @MiyfPermission(code = "kitchen:category:list", name = "分类列表", groupCode = "kitchen_category", groupName = "分类管理")
-    @RequirePermission({"kitchen:category:list"})
+    @MiyfPermission(code = "kitchen:category:list")
     @GetMapping
     public ApiResult<List<CategoryVo>> list() {
         return ApiResult.ok(categoryApplicationService.listAll());
@@ -67,8 +65,7 @@ public class AdminCategoryController {
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     @Operation(summary = "创建分类")
-    @MiyfPermission(code = "kitchen:category:create", name = "创建分类", groupCode = "kitchen_category", groupName = "分类管理")
-    @RequirePermission({"kitchen:category:create"})
+    @MiyfPermission(code = "kitchen:category:create")
     @PostMapping
     public ApiResult<CategoryVo> create(@Valid @RequestBody CategorySaveDto dto) {
         return ApiResult.ok(categoryApplicationService.create(dto));
@@ -83,8 +80,7 @@ public class AdminCategoryController {
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     @Operation(summary = "更新分类")
-    @MiyfPermission(code = "kitchen:category:update", name = "更新分类", groupCode = "kitchen_category", groupName = "分类管理")
-    @RequirePermission({"kitchen:category:update"})
+    @MiyfPermission(code = "kitchen:category:update")
     @PutMapping("/{id}")
     public ApiResult<CategoryVo> update(@PathVariable Long id, @Valid @RequestBody CategorySaveDto dto) {
         return ApiResult.ok(categoryApplicationService.update(id, dto));
@@ -98,8 +94,7 @@ public class AdminCategoryController {
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     @Operation(summary = "删除分类")
-    @MiyfPermission(code = "kitchen:category:delete", name = "删除分类", groupCode = "kitchen_category", groupName = "分类管理")
-    @RequirePermission({"kitchen:category:delete"})
+    @MiyfPermission(code = "kitchen:category:delete")
     @DeleteMapping("/{id}")
     public ApiResult<Void> delete(@PathVariable Long id) {
         categoryApplicationService.delete(id);

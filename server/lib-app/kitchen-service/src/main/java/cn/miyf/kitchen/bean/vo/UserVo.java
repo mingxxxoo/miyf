@@ -41,11 +41,17 @@ public class UserVo extends BaseVo {
     @Schema(description = "昵称")
     private String nickname;
 
+    @Schema(description = "用户名")
+    private String username;
+
+    @Schema(description = "手机号")
+    private String phone;
+
+    @Schema(description = "微信号")
+    private String wechatId;
+
     @Schema(description = "头像")
     private String avatarUrl;
-
-    @Schema(description = "手机号（可空）")
-    private String phone;
 
     @Schema(description = "微信 openId")
     private String openId;
@@ -54,8 +60,8 @@ public class UserVo extends BaseVo {
     private String status;
 
     @Schema(description = "注册时间")
-    private Instant createdAt;
+    private Instant createTime;
 
     @Schema(description = "最近登录（可空）")
-    private Instant lastLoginAt;
+    private Instant lastLoginTime;
 }

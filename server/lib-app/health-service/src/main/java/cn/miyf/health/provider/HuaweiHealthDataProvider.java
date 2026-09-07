@@ -113,7 +113,7 @@ public class HuaweiHealthDataProvider implements HealthDataProvider {
                     .setMetricCode(HealthMetricCodes.WEIGHT)
                     .setValueNum(BigDecimal.valueOf(70.0 - day * 0.05))
                     .setUnit(HealthMetricCodes.defaultUnit(HealthMetricCodes.WEIGHT))
-                    .setMeasuredAt(cursor.plus(7, ChronoUnit.HOURS))
+                    .setMeasuredTime(cursor.plus(7, ChronoUnit.HOURS))
                     .setSourceSampleId("huawei-mock-weight-" + subjectId + "-" + key)
                     .setQuality("ESTIMATED"));
             drafts.add(new HealthSampleDraft()
@@ -121,7 +121,7 @@ public class HuaweiHealthDataProvider implements HealthDataProvider {
                     .setMetricCode(HealthMetricCodes.HEART_RATE)
                     .setValueNum(BigDecimal.valueOf(68 + (day % 5)))
                     .setUnit(HealthMetricCodes.defaultUnit(HealthMetricCodes.HEART_RATE))
-                    .setMeasuredAt(cursor.plus(8, ChronoUnit.HOURS))
+                    .setMeasuredTime(cursor.plus(8, ChronoUnit.HOURS))
                     .setSourceSampleId("huawei-mock-hr-" + subjectId + "-" + key)
                     .setQuality("ESTIMATED"));
             drafts.add(new HealthSampleDraft()
@@ -129,7 +129,7 @@ public class HuaweiHealthDataProvider implements HealthDataProvider {
                     .setMetricCode(HealthMetricCodes.STEPS)
                     .setValueNum(BigDecimal.valueOf(7500 + day * 120L))
                     .setUnit(HealthMetricCodes.defaultUnit(HealthMetricCodes.STEPS))
-                    .setMeasuredAt(cursor.plus(21, ChronoUnit.HOURS))
+                    .setMeasuredTime(cursor.plus(21, ChronoUnit.HOURS))
                     .setSourceSampleId("huawei-mock-steps-" + subjectId + "-" + key)
                     .setQuality("ESTIMATED"));
             cursor = cursor.plus(1, ChronoUnit.DAYS);

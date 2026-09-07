@@ -45,11 +45,11 @@ public abstract class BaseEntity implements Serializable {
     @Schema(description = "主键（雪花）", type = "string")
     private Long id;
 
-    @TableField(value = "created_at", fill = FieldFill.INSERT)
+    @TableField(value = "create_time", fill = FieldFill.INSERT)
     @Schema(description = "创建时间")
-    private Instant createdAt;
+    private Instant createTime;
 
-    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
-    @Schema(description = "更新时间")
-    private Instant updatedAt;
+    @TableField(value = "last_modify_time", fill = FieldFill.INSERT_UPDATE)
+    @Schema(description = "最后修改时间")
+    private Instant lastModifyTime;
 }

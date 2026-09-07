@@ -58,12 +58,14 @@ public class UserApplicationService extends BaseApplicationService {
     private UserVo toVo(User user) {
         return new UserVo()
                 .setId(user.getId())
+                .setUsername(user.getUsername())
                 .setNickname(user.getNickname())
                 .setAvatarUrl(user.getAvatarUrl())
-                .setPhone(null)
+                .setPhone(user.getPhone())
+                .setWechatId(user.getWechatId())
                 .setOpenId(user.getOpenid())
                 .setStatus(user.getStatus())
-                .setCreatedAt(user.getCreatedAt())
-                .setLastLoginAt(null);
+                .setCreateTime(user.getCreateTime())
+                .setLastLoginTime(null);
     }
 }

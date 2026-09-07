@@ -68,7 +68,7 @@ public abstract class AbstractCondition implements Serializable {
     private String keyword;
 
     @Getter(lombok.AccessLevel.NONE)
-    @Schema(description = "排序，如 created_at desc 或 name asc,created_at desc")
+    @Schema(description = "排序，如 create_time desc 或 name asc,create_time desc")
     private String sort;
 
     @Getter(lombok.AccessLevel.NONE)

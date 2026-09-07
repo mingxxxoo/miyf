@@ -1,4 +1,5 @@
 import { get, post, put, del } from './http';
+import { asPage, sid, toPageParams } from './page';
 import type {
   AdminUser,
   Category,
@@ -7,7 +8,6 @@ import type {
   Dish,
   DishRecipe,
   LoginVo,
-  OperationLog,
   Order,
   OrderItem,
   OrderStatus,
@@ -18,42 +18,11 @@ import type {
   User,
 } from '@/types';
 
-/** Map UI pageSize to backend rows */
-export function toPageParams(
-  params?: PageQuery | Record<string, unknown>,
-): Record<string, unknown> | undefined {
-  if (!params) return undefined;
-  const src = params as Record<string, unknown>;
-  const { pageSize, rows, page, ...rest } = src;
-  return {
-    ...rest,
-    page: (page as number | undefined) ?? 1,
-    rows: (rows as number | undefined) ?? (pageSize as number | undefined) ?? 10,
-  };
-}
-
-function asPage<T>(
-  raw: PageResult<T> | T[] | null | undefined,
-  fallbackPage = 1,
-  fallbackSize = 10,
-): PageResult<T> {
-  if (!raw) {
-    return { records: [], total: 0, page: fallbackPage, pageSize: fallbackSize };
-  }
-  if (Array.isArray(raw)) {
-    return { records: raw, total: raw.length, page: 1, pageSize: raw.length || fallbackSize };
-  }
-  return {
-    records: raw.records ?? [],
-    total: Number(raw.total ?? 0),
-    page: Number(raw.page ?? fallbackPage),
-    pageSize: Number(raw.pageSize ?? fallbackSize),
-  };
-}
-
-function sid(v: unknown): string {
-  return v == null ? '' : String(v);
-}
+export { toPageParams, asPage, slicePage, sid } from './page';
+export { notifyError, getErrorMessage } from './errors';
+export { uploadFile } from './upload';
+export { operationLogApi } from '@/modules/system/operationLog';
+export type { OperationLogQuery } from '@/modules/system/operationLog';
 
 function mapCategory(raw: Record<string, unknown>): Category {
   const status = String(raw.status ?? 'ENABLED').toUpperCase();
@@ -64,7 +33,7 @@ function mapCategory(raw: Record<string, unknown>): Category {
     sortOrder: Number(raw.sortOrder ?? 0),
     status,
     enabled: status === 'ENABLED',
-    updatedAt: raw.updatedAt ? String(raw.updatedAt) : undefined,
+    lastModifyTime: raw.lastModifyTime ? String(raw.lastModifyTime) : undefined,
   };
 }
 
@@ -134,7 +103,7 @@ function mapRecipe(raw: Record<string, unknown>): DishRecipe {
     steps: mapSteps(raw.steps),
     tips: raw.tips ? String(raw.tips) : undefined,
     nutrition: raw.nutrition as DishRecipe['nutrition'],
-    updatedAt: raw.updatedAt ? String(raw.updatedAt) : undefined,
+    lastModifyTime: raw.lastModifyTime ? String(raw.lastModifyTime) : undefined,
   };
 }
 
@@ -166,8 +135,8 @@ function mapOrder(raw: Record<string, unknown>): Order {
     items,
     note: remark,
     remark,
-    createdAt: String(raw.createdAt ?? ''),
-    updatedAt: raw.updatedAt ? String(raw.updatedAt) : undefined,
+    createTime: String(raw.createTime ?? ''),
+    lastModifyTime: raw.lastModifyTime ? String(raw.lastModifyTime) : undefined,
     displayTip: raw.displayTip ? String(raw.displayTip) : undefined,
   };
 }
@@ -187,7 +156,7 @@ function mapComment(raw: Record<string, unknown>): Comment {
     images: Array.isArray(raw.images) ? (raw.images as string[]) : undefined,
     status,
     hidden: status === 'HIDDEN',
-    createdAt: String(raw.createdAt ?? ''),
+    createTime: String(raw.createTime ?? ''),
   };
 }
 
@@ -230,8 +199,8 @@ export const authApi = {
       permissions,
       user: {
         id: sid(vo.userId),
-        username: vo.displayName || username,
-        nickname: vo.displayName || username,
+        username: vo.username || username,
+        nickname: vo.displayName || vo.username || username,
         roles,
       },
     };
@@ -247,8 +216,8 @@ export const authApi = {
       permissions,
       user: {
         id: sid(vo.userId),
-        username: vo.displayName || 'admin',
-        nickname: vo.displayName || 'admin',
+        username: vo.username || vo.displayName || 'admin',
+        nickname: vo.displayName || vo.username || 'admin',
         roles: vo.roles ?? [],
       },
     };
@@ -256,7 +225,19 @@ export const authApi = {
 };
 
 export const dashboardApi = {
-  stats: async (): Promise<DashboardStats> => get<DashboardStats>('/admin/dashboard/stats'),
+  stats: async (): Promise<DashboardStats> => {
+    const raw = await get<Partial<DashboardStats> | null>('/admin/dashboard/stats');
+    return {
+      userCount: Number(raw?.userCount ?? 0),
+      todayOrders: Number(raw?.todayOrders ?? 0),
+      dishCount: Number(raw?.dishCount ?? 0),
+      pendingComments: Number(raw?.pendingComments ?? 0),
+      reservationTrend: Array.isArray(raw?.reservationTrend) ? raw.reservationTrend : [],
+      hotDishes: Array.isArray(raw?.hotDishes) ? raw.hotDishes : [],
+      ratingDistribution: Array.isArray(raw?.ratingDistribution) ? raw.ratingDistribution : [],
+      userActivity: Array.isArray(raw?.userActivity) ? raw.userActivity : [],
+    };
+  },
 };
 
 export const userApi = {
@@ -449,11 +430,4 @@ export const commentApi = {
     mapComment(await post<Record<string, unknown>>(`/admin/comments/${id}/restore`)),
   remove: (id: string) => del<void>(`/admin/comments/${id}`),
   rebuildRating: (dishId: string) => post(`/admin/comments/rebuild-rating/${dishId}`),
-};
-
-export const operationLogApi = {
-  page: (params?: PageQuery) =>
-    get<PageResult<OperationLog>>('/admin/operation-logs', toPageParams(params)).then((r) =>
-      asPage(r, params?.page, params?.pageSize),
-    ),
 };

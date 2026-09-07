@@ -6,7 +6,7 @@ import cn.miyf.kitchen.bean.qo.UserPageQo;
 import cn.miyf.kitchen.bean.vo.UserVo;
 import cn.miyf.kitchen.service.UserApplicationService;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
+import cn.miyf.kitchen.security.KitchenAdminPopedom;
 import cn.miyf.security.RequirePermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2026-09-05
  */
 @Tag(name = "管理端用户")
-@PopedomGroup(value = "11030000", name = "管理员", product = "kitchen", sort = 10)
+@KitchenAdminPopedom
 @RestController
 @RequestMapping("/api/admin/users")
 public class AdminUserController {
@@ -47,8 +47,7 @@ public class AdminUserController {
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
     @Operation(summary = "厨房用户分页")
-    @MiyfPermission(code = "user:list", name = "厨房用户列表", groupCode = "kitchen_user", groupName = "厨房用户")
-    @RequirePermission({"user:list"})
+    @MiyfPermission(code = "user:list")
     @GetMapping
     public ApiResult<PageResult<UserVo>> page(UserPageQo qo) {
         return ApiResult.ok(userApplicationService.pageAdmin(qo));
@@ -62,7 +61,7 @@ public class AdminUserController {
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
     @Operation(summary = "厨房用户详情")
-    @MiyfPermission(code = "user:detail", name = "厨房用户详情", groupCode = "kitchen_user", groupName = "厨房用户")
+    @MiyfPermission(code = "user:detail")
     @RequirePermission({"user:detail", "user:list"})
     @GetMapping("/{id}")
     public ApiResult<UserVo> detail(@PathVariable Long id) {

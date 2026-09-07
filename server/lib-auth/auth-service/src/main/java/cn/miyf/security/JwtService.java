@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -15,7 +16,7 @@ import java.util.List;
 /**
  * JWT 签发与解析。
  * <p>
- * claim：uid / typ / perms；管理员与用户共用同一密钥，靠 typ 区分。
+ * claim：uid / typ / perms / org / ds；管理员与用户共用同一密钥，靠 typ 区分。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:06
@@ -26,19 +27,14 @@ public class JwtService {
     private static final String CLAIM_UID = "uid";
     private static final String CLAIM_TYP = "typ";
     private static final String CLAIM_PERMS = "perms";
+    private static final String CLAIM_ORG = "org";
+    private static final String CLAIM_DS = "ds";
 
     private final JwtProperties properties;
     private final SecretKey secretKey;
 
-    /**
-     * 构造 JWT 服务。
-     *
-     * @param properties JWT 配置
-     * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     */
     public JwtService(JwtProperties properties) {
         this.properties = properties;
-        // 密钥长度不足时按 UTF-8 字节补齐到 32，避免 jjwt 校验失败
         byte[] keyBytes = properties.getSecret().getBytes(StandardCharsets.UTF_8);
         if (keyBytes.length < 32) {
             keyBytes = Arrays.copyOf(keyBytes, 32);
@@ -46,34 +42,24 @@ public class JwtService {
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    /**
-     * 签发 Token。
-     *
-     * @param principal 登录主体
-     * @return JWT 字符串
-     * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     */
     public String createToken(AuthPrincipal principal) {
         Instant now = Instant.now();
         Instant exp = now.plusSeconds(properties.getExpireSeconds());
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(principal.getUsername())
                 .claim(CLAIM_UID, principal.getId().toString())
                 .claim(CLAIM_TYP, principal.getType().name())
                 .claim(CLAIM_PERMS, String.join(",", principal.getPermissions()))
+                .claim(CLAIM_DS, principal.getDataScope().name())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
-                .signWith(secretKey)
-                .compact();
+                .signWith(secretKey);
+        if (principal.getOrgUnitId() != null) {
+            builder.claim(CLAIM_ORG, principal.getOrgUnitId().toString());
+        }
+        return builder.compact();
     }
 
-    /**
-     * 解析 Token 为登录主体。
-     *
-     * @param token JWT
-     * @return 主体
-     * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     */
     public AuthPrincipal parseToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(secretKey)
@@ -86,15 +72,19 @@ public class JwtService {
         List<String> permissions = (perms == null || perms.isBlank())
                 ? List.of()
                 : Arrays.asList(perms.split(","));
-        return new AuthPrincipal(uid, claims.getSubject(), type, permissions, true);
+        Long orgUnitId = null;
+        String org = claims.get(CLAIM_ORG, String.class);
+        if (StringUtils.hasText(org)) {
+            try {
+                orgUnitId = Long.parseLong(org.trim());
+            } catch (NumberFormatException ignored) {
+                orgUnitId = null;
+            }
+        }
+        DataScope dataScope = DataScope.parse(claims.get(CLAIM_DS, String.class));
+        return new AuthPrincipal(uid, claims.getSubject(), type, permissions, true, orgUnitId, dataScope);
     }
 
-    /**
-     * 获取配置过期秒数。
-     *
-     * @return 过期秒数
-     * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     */
     public long getExpireSeconds() {
         return properties.getExpireSeconds();
     }

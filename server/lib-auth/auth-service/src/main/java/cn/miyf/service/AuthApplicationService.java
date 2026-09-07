@@ -10,6 +10,7 @@ import cn.miyf.common.ErrorCode;
 import cn.miyf.repository.mapper.SysUserMapper;
 import cn.miyf.security.AdminAuthAuthorityLoader;
 import cn.miyf.security.AuthPrincipal;
+import cn.miyf.security.DataScope;
 import cn.miyf.security.JwtService;
 import cn.miyf.security.PrincipalType;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,7 +34,7 @@ public class AuthApplicationService extends BaseApplicationService {
     private final LoginProtectService loginProtectService;
 
     /**
-     * 构造认证服务。
+     * 构造认证服务：接入验证码与阶梯封禁，权限加载委托 {@link AdminAuthAuthorityLoader}。
      *
      * @param sysUserMapper       系统用户 Mapper
      * @param authorityLoader     角色/权限加载
@@ -41,8 +42,6 @@ public class AuthApplicationService extends BaseApplicationService {
      * @param jwtService          JWT 服务
      * @param loginProtectService 登录风控
      * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     * @history 1.01 2026-09-06 XieMingJie 接入验证码与阶梯封禁。
-     * @history 1.02 2026-09-06 XieMingJie 权限加载委托 AdminAuthAuthorityLoader。
      */
     public AuthApplicationService(SysUserMapper sysUserMapper,
                                   AdminAuthAuthorityLoader authorityLoader,
@@ -78,12 +77,11 @@ public class AuthApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 管理员登录（sys_user）。
+     * 管理员登录（sys_user）：校验验证码与阶梯封禁后再鉴权发令牌。
      *
      * @param dto 登录请求
      * @return 登录结果
      * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     * @history 1.01 2026-09-06 XieMingJie 验证码与阶梯封禁。
      */
     public LoginVo adminLogin(AdminLoginDto dto) {
         String principalKey = principalKey(dto.getUsername());
@@ -101,15 +99,18 @@ public class AuthApplicationService extends BaseApplicationService {
             }
             List<String> roleCodes = authorityLoader.loadRoleCodes(user.getId());
             List<String> permissionCodes = authorityLoader.loadPermissionCodes(user.getId());
+            DataScope dataScope = DataScope.parse(authorityLoader.loadEffectiveDataScope(user.getId()));
             AuthPrincipal principal = new AuthPrincipal(
                     user.getId(),
                     user.getUsername(),
                     PrincipalType.ADMIN,
                     permissionCodes,
-                    true
+                    true,
+                    user.getOrgUnitId(),
+                    dataScope
             );
             loginProtectService.clear(principalKey);
-            return toLoginVo(principal, user.getNickname(), roleCodes);
+            return toLoginVo(principal, user.getNickname(), user.getUsername(), roleCodes);
         } catch (BusinessException ex) {
             if (ex.getCode() == ErrorCode.LOGIN_FAILED.getCode() && ex.getData() == null) {
                 throw loginFailed(principalKey);
@@ -146,12 +147,13 @@ public class AuthApplicationService extends BaseApplicationService {
      * @return LoginVo
      * @history 1.00 2026-09-04 17:06 XieMingJie Created.
      */
-    private LoginVo toLoginVo(AuthPrincipal principal, String displayName, List<String> roles) {
+    private LoginVo toLoginVo(AuthPrincipal principal, String displayName, String username, List<String> roles) {
         return new LoginVo()
                 .setToken(jwtService.createToken(principal))
                 .setExpireSeconds(jwtService.getExpireSeconds())
                 .setUserId(principal.getId())
                 .setDisplayName(displayName)
+                .setUsername(username)
                 .setPrincipalType(principal.getType().name())
                 .setPermissions(principal.getPermissions())
                 .setRoles(roles);

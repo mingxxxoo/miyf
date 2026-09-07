@@ -6,9 +6,9 @@
 
     <select id="selectByOrderId"
             resultType="cn.miyf.kitchen.bean.entity.OrderItemEntity">
-        SELECT id, order_id, dish_id, dish_name, quantity, unit, remark, created_at
+        SELECT id, order_id, dish_id, dish_name, quantity, unit, remark, create_time
         FROM kitchen_order_item
         WHERE order_id = #{orderId}
-        ORDER BY created_at ASC
+        ORDER BY create_time ASC
     </select>
 </mapper>

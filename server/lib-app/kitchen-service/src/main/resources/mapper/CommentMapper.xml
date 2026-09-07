@@ -16,12 +16,12 @@
     <update id="updateStatus">
         UPDATE kitchen_comment
         SET status = #{status},
-            updated_at = NOW()
+            last_modify_time = NOW()
         WHERE id = #{id}
     </update>
 
     <select id="selectByDishPage" resultType="cn.miyf.kitchen.bean.entity.CommentEntity">
-        SELECT id, user_id, dish_id, order_id, rating, content, status, created_at, updated_at
+        SELECT id, user_id, dish_id, order_id, rating, content, status, create_time, last_modify_time
         FROM kitchen_comment
 WHERE dish_id = #{dishId}
           AND status = 'NORMAL'
@@ -30,13 +30,13 @@ WHERE dish_id = #{dishId}
           </if>
         <choose>
             <when test="sort == 'rating_asc'">
-                ORDER BY rating ASC, created_at DESC
+                ORDER BY rating ASC, create_time DESC
             </when>
             <when test="sort == 'rating_desc'">
-                ORDER BY rating DESC, created_at DESC
+                ORDER BY rating DESC, create_time DESC
             </when>
             <otherwise>
-                ORDER BY created_at DESC
+                ORDER BY create_time DESC
             </otherwise>
         </choose>
         LIMIT #{limit} OFFSET #{offset}
@@ -53,8 +53,9 @@ WHERE dish_id = #{dishId}
     </select>
 
     <select id="selectAdminPage" resultType="cn.miyf.kitchen.bean.entity.CommentEntity">
-        SELECT id, user_id, dish_id, order_id, rating, content, status, created_at, updated_at
+        SELECT id, user_id, dish_id, order_id, rating, content, status, create_time, last_modify_time
         FROM kitchen_comment
+        WHERE 1 = 1
           <if test="dishId != null">
               AND dish_id = #{dishId}
           </if>
@@ -71,6 +72,7 @@ WHERE dish_id = #{dishId}
     <select id="countAdminPage" resultType="long">
         SELECT COUNT(1)
         FROM kitchen_comment
+        WHERE 1 = 1
           <if test="dishId != null">
               AND dish_id = #{dishId}
           </if>
@@ -83,10 +85,10 @@ WHERE dish_id = #{dishId}
     </select>
 
     <select id="selectByUserPage" resultType="cn.miyf.kitchen.bean.entity.CommentEntity">
-        SELECT id, user_id, dish_id, order_id, rating, content, status, created_at, updated_at
+        SELECT id, user_id, dish_id, order_id, rating, content, status, create_time, last_modify_time
         FROM kitchen_comment
 WHERE user_id = #{userId}
-        ORDER BY created_at DESC
+        ORDER BY create_time DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 

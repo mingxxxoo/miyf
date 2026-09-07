@@ -1,8 +1,8 @@
 package cn.miyf.controller;
 
 import cn.miyf.bean.vo.SysMenuTreeVo;
+import cn.miyf.security.IamAdminPopedom;
 import cn.miyf.common.ApiResult;
-import cn.miyf.security.PopedomGroup;
 import cn.miyf.service.PermissionApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,7 +19,7 @@ import java.util.List;
  * @since 2026-09-05
  */
 @Tag(name = "IAM-当前用户")
-@PopedomGroup(value = "10030000", name = "管理员", product = "iam", sort = 5)
+@IamAdminPopedom
 @RestController
 @RequestMapping("/api/iam/me")
 public class IamMeController {

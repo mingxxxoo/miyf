@@ -46,7 +46,7 @@ class AuthHttpIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/auth/wx-login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"code":"http-wx-1","nickname":"小程序用户"}
+                                {"code":"http-wx-1","username":"小程序用户","phone":"13800138999","wechatId":"wx_http_1","nickname":"小程序用户"}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))

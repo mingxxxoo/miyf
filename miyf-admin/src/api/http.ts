@@ -75,6 +75,15 @@ http.interceptors.response.use(
     if (body && typeof body === 'object' && 'code' in body && body.code !== 0) {
       return Promise.reject(new ApiError(body.message || '请求失败', body.code, body.data));
     }
+    if (status === 403) {
+      return Promise.reject(new ApiError('没有权限执行此操作', 403));
+    }
+    if (status && status >= 500) {
+      return Promise.reject(new ApiError('服务暂时不可用，请稍后重试', status));
+    }
+    if (!error.response) {
+      return Promise.reject(new ApiError('网络异常，请检查连接后重试', -1));
+    }
     return Promise.reject(error);
   },
 );

@@ -37,11 +37,14 @@ public final class EntityConverters {
         u.setId(e.getId());
         u.setOpenid(e.getOpenid());
         u.setUnionid(e.getUnionid());
+        u.setUsername(e.getUsername());
         u.setNickname(e.getNickname());
+        u.setPhone(e.getPhone());
+        u.setWechatId(e.getWechatId());
         u.setAvatarUrl(e.getAvatarUrl());
         u.setStatus(e.getStatus());
-        u.setCreatedAt(e.getCreatedAt());
-        u.setUpdatedAt(e.getUpdatedAt());
+        u.setCreateTime(e.getCreateTime());
+        u.setLastModifyTime(e.getLastModifyTime());
         return u;
     }
 
@@ -50,11 +53,14 @@ public final class EntityConverters {
         e.setId(u.getId());
         e.setOpenid(u.getOpenid());
         e.setUnionid(u.getUnionid());
+        e.setUsername(u.getUsername());
         e.setNickname(u.getNickname());
+        e.setPhone(u.getPhone());
+        e.setWechatId(u.getWechatId());
         e.setAvatarUrl(u.getAvatarUrl());
         e.setStatus(u.getStatus());
-        e.setCreatedAt(u.getCreatedAt());
-        e.setUpdatedAt(u.getUpdatedAt());
+        e.setCreateTime(u.getCreateTime());
+        e.setLastModifyTime(u.getLastModifyTime());
         return e;
     }
 
@@ -66,8 +72,8 @@ public final class EntityConverters {
         c.setIcon(e.getIcon());
         c.setSortOrder(e.getSortOrder() == null ? 0 : e.getSortOrder());
         c.setStatus(e.getStatus());
-        c.setCreatedAt(e.getCreatedAt());
-        c.setUpdatedAt(e.getUpdatedAt());
+        c.setCreateTime(e.getCreateTime());
+        c.setLastModifyTime(e.getLastModifyTime());
         return c;
     }
 
@@ -78,8 +84,8 @@ public final class EntityConverters {
         e.setIcon(c.getIcon());
         e.setSortOrder(c.getSortOrder());
         e.setStatus(c.getStatus());
-        e.setCreatedAt(c.getCreatedAt());
-        e.setUpdatedAt(c.getUpdatedAt());
+        e.setCreateTime(c.getCreateTime());
+        e.setLastModifyTime(c.getLastModifyTime());
         return e;
     }
 
@@ -102,8 +108,8 @@ public final class EntityConverters {
         d.setRatingCount(e.getRatingCount() == null ? 0 : e.getRatingCount());
         d.setCreatedBy(e.getCreatedBy());
         d.setUpdatedBy(e.getUpdatedBy());
-        d.setCreatedAt(e.getCreatedAt());
-        d.setUpdatedAt(e.getUpdatedAt());
+        d.setCreateTime(e.getCreateTime());
+        d.setLastModifyTime(e.getLastModifyTime());
         return d;
     }
 
@@ -125,8 +131,8 @@ public final class EntityConverters {
         e.setRatingCount(d.getRatingCount());
         e.setCreatedBy(d.getCreatedBy());
         e.setUpdatedBy(d.getUpdatedBy());
-        e.setCreatedAt(d.getCreatedAt());
-        e.setUpdatedAt(d.getUpdatedAt());
+        e.setCreateTime(d.getCreateTime());
+        e.setLastModifyTime(d.getLastModifyTime());
         return e;
     }
 
@@ -145,8 +151,8 @@ public final class EntityConverters {
         r.setSteps(e.getSteps());
         r.setTips(e.getTips());
         r.setNutrition(e.getNutrition());
-        r.setCreatedAt(e.getCreatedAt());
-        r.setUpdatedAt(e.getUpdatedAt());
+        r.setCreateTime(e.getCreateTime());
+        r.setLastModifyTime(e.getLastModifyTime());
         return r;
     }
 
@@ -164,8 +170,8 @@ public final class EntityConverters {
         e.setSteps(r.getSteps());
         e.setTips(r.getTips());
         e.setNutrition(r.getNutrition());
-        e.setCreatedAt(r.getCreatedAt());
-        e.setUpdatedAt(r.getUpdatedAt());
+        e.setCreateTime(r.getCreateTime());
+        e.setLastModifyTime(r.getLastModifyTime());
         return e;
     }
 
@@ -177,8 +183,8 @@ public final class EntityConverters {
         o.setUserId(e.getUserId());
         o.setStatus(e.getStatus());
         o.setRemark(e.getRemark());
-        o.setCreatedAt(e.getCreatedAt());
-        o.setUpdatedAt(e.getUpdatedAt());
+        o.setCreateTime(e.getCreateTime());
+        o.setLastModifyTime(e.getLastModifyTime());
         if (items != null) {
             o.setItems(items.stream().map(EntityConverters::toOrderItem).collect(Collectors.toCollection(ArrayList::new)));
         }
@@ -194,7 +200,7 @@ public final class EntityConverters {
         i.setQuantity(e.getQuantity());
         i.setUnit(e.getUnit());
         i.setRemark(e.getRemark());
-        i.setCreatedAt(e.getCreatedAt());
+        i.setCreateTime(e.getCreateTime());
         return i;
     }
 
@@ -205,8 +211,8 @@ public final class EntityConverters {
         e.setUserId(o.getUserId());
         e.setStatus(o.getStatus());
         e.setRemark(o.getRemark());
-        e.setCreatedAt(o.getCreatedAt());
-        e.setUpdatedAt(o.getUpdatedAt());
+        e.setCreateTime(o.getCreateTime());
+        e.setLastModifyTime(o.getLastModifyTime());
         return e;
     }
 
@@ -220,8 +226,8 @@ public final class EntityConverters {
         c.setRating(e.getRating());
         c.setContent(e.getContent());
         c.setStatus(e.getStatus());
-        c.setCreatedAt(e.getCreatedAt());
-        c.setUpdatedAt(e.getUpdatedAt());
+        c.setCreateTime(e.getCreateTime());
+        c.setLastModifyTime(e.getLastModifyTime());
         return c;
     }
 
@@ -234,8 +240,8 @@ public final class EntityConverters {
         e.setRating(c.getRating());
         e.setContent(c.getContent());
         e.setStatus(c.getStatus());
-        e.setCreatedAt(c.getCreatedAt());
-        e.setUpdatedAt(c.getUpdatedAt());
+        e.setCreateTime(c.getCreateTime());
+        e.setLastModifyTime(c.getLastModifyTime());
         return e;
     }
 
@@ -252,7 +258,7 @@ public final class EntityConverters {
         l.setRequestMethod(e.getRequestMethod());
         l.setRequestUri(e.getRequestUri());
         l.setOperationDetail(e.getOperationDetail());
-        l.setCreatedAt(e.getCreatedAt());
+        l.setCreateTime(e.getCreateTime());
         return l;
     }
 
@@ -269,7 +275,7 @@ public final class EntityConverters {
         e.setRequestMethod(l.getRequestMethod());
         e.setRequestUri(l.getRequestUri());
         e.setOperationDetail(l.getOperationDetail());
-        e.setCreatedAt(l.getCreatedAt());
+        e.setCreateTime(l.getCreateTime());
         return e;
     }
 }

@@ -75,7 +75,7 @@ public class DishApplicationService extends BaseApplicationService {
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     public PageResult<DishVo> pageUser(DishPageQo qo) {
-        return QueryConditionHolder.run(qo, "d.is_recommend DESC, d.sort_order ASC, d.created_at DESC", () -> {
+        return QueryConditionHolder.run(qo, "d.is_recommend DESC, d.sort_order ASC, d.create_time DESC", () -> {
             long page = pageOf(qo);
             long pageSize = pageSizeOf(qo);
             PageResult<Dish> result = dishRepository.pageUser(
@@ -145,7 +145,7 @@ public class DishApplicationService extends BaseApplicationService {
             requireTrue(ADMIN_STATUS.contains(status), ErrorCode.BAD_REQUEST, "菜品状态无效");
             qo.setStatus(status);
         }
-        return QueryConditionHolder.run(qo, "d.sort_order ASC, d.updated_at DESC", () -> {
+        return QueryConditionHolder.run(qo, "d.sort_order ASC, d.last_modify_time DESC", () -> {
             long page = pageOf(qo);
             long pageSize = pageSizeOf(qo);
             PageResult<Dish> result = dishRepository.pageAdmin(

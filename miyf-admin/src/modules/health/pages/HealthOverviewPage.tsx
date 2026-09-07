@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Card, Col, Row, Table, Tag, Typography, message } from 'antd';
+import { Card, Col, Row, Table, Typography, message } from 'antd';
 import { healthApi, type HealthOverview } from '@/modules/health/api';
+import { PageHeader, StatusBadge } from '@/ui';
+import { ENABLED_STATUS } from '@/constants/status';
 
 /**
  * 健康模块概览。
@@ -27,8 +29,8 @@ export default function HealthOverviewPage() {
 
   return (
     <div className="ck-page">
-      <h2 className="ck-page-title">健康概览</h2>
-      <Typography.Paragraph type="secondary">
+      <PageHeader title="健康概览" />
+<Typography.Paragraph type="secondary">
         通用健康数据管理：主体、采样与可插拔数据源（不绑定具体厂商）。
       </Typography.Paragraph>
       <Row gutter={[16, 16]}>
@@ -69,8 +71,9 @@ export default function HealthOverviewPage() {
               title: '状态',
               dataIndex: 'enabled',
               width: 100,
-              render: (v: boolean) =>
-                v ? <Tag color="green">启用</Tag> : <Tag>停用</Tag>,
+              render: (v: boolean) => (
+                <StatusBadge code={v ? 'ENABLED' : 'DISABLED'} map={ENABLED_STATUS} />
+              ),
             },
             {
               title: '远程拉取',

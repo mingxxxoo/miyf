@@ -61,6 +61,10 @@ public class SysMenuEntity extends BaseEntity {
     @Schema(description = "绑定权限码")
     private String permissionCode;
 
+    @TableField("product")
+    @Schema(description = "产品域，与 sys_app.code 对齐")
+    private String product;
+
     @TableField("sort_order")
     @Schema(description = "排序")
     private Integer sortOrder;

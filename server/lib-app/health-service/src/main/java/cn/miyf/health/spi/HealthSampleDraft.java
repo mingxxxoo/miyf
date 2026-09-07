@@ -16,7 +16,7 @@ public class HealthSampleDraft {
     private String metricCode;
     private BigDecimal valueNum;
     private String unit;
-    private Instant measuredAt;
+    private Instant measuredTime;
     private String sourceSampleId;
     private String quality = "NORMAL";
     private Map<String, Object> meta;
@@ -57,12 +57,12 @@ public class HealthSampleDraft {
         return this;
     }
 
-    public Instant getMeasuredAt() {
-        return measuredAt;
+    public Instant getMeasuredTime() {
+        return measuredTime;
     }
 
-    public HealthSampleDraft setMeasuredAt(Instant measuredAt) {
-        this.measuredAt = measuredAt;
+    public HealthSampleDraft setMeasuredTime(Instant measuredTime) {
+        this.measuredTime = measuredTime;
         return this;
     }
 

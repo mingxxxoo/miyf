@@ -13,6 +13,8 @@ import lombok.experimental.Accessors;
 
 import java.io.Serial;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 系统用户展示（不含密码哈希）。
@@ -50,9 +52,12 @@ public class SysUserVo extends BaseVo {
     @Schema(description = "状态：ENABLED/DISABLED")
     private String status;
 
+    @Schema(description = "角色 ID 列表", type = "array")
+    private List<String> roleIds = new ArrayList<>();
+
     @Schema(description = "创建时间")
-    private Instant createdAt;
+    private Instant createTime;
 
     @Schema(description = "更新时间")
-    private Instant updatedAt;
+    private Instant lastModifyTime;
 }

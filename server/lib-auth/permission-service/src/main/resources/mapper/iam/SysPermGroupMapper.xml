@@ -5,7 +5,7 @@
 <mapper namespace="cn.miyf.repository.mapper.SysPermGroupMapper">
 
     <select id="selectByCode" resultType="cn.miyf.bean.entity.SysPermGroupEntity">
-        SELECT id, code, name, description, sort_order, created_at, updated_at
+        SELECT id, code, name, description, sort_order, create_time, last_modify_time
         FROM sys_perm_group
 WHERE code = #{code}
         LIMIT 1
@@ -13,7 +13,7 @@ WHERE code = #{code}
 
     <select id="findByRoleId" resultType="cn.miyf.bean.entity.SysPermGroupEntity">
         SELECT g.id, g.code, g.name, g.description, g.sort_order,
-               g.created_at, g.updated_at
+               g.create_time, g.last_modify_time
         FROM sys_perm_group g
                  INNER JOIN sys_role_perm_group rpg ON rpg.group_id = g.id
         WHERE rpg.role_id = #{roleId}

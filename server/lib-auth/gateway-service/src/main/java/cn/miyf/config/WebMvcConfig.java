@@ -17,11 +17,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final RateLimitInterceptor rateLimitInterceptor;
 
     /**
-     * 构造配置。
+     * 构造配置（本地上传静态映射已迁至 oss-service）。
      *
      * @param rateLimitInterceptor 限流拦截器
      * @history 1.00 2026-09-05 09:13 XieMingJie Created.
-     * @history 1.01 2026-09-06 XieMingJie 本地上传映射迁至 oss-service。
      */
     public WebMvcConfig(RateLimitInterceptor rateLimitInterceptor) {
         this.rateLimitInterceptor = rateLimitInterceptor;

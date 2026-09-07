@@ -66,7 +66,7 @@ export default function OrderDetailPage() {
           <StatusBadge status={currentOrder.status} />
         </View>
         <Text className='order-detail__time'>
-          下单时间：{String(currentOrder.createdAt || '').replace('T', ' ').slice(0, 16)}
+          下单时间：{String(currentOrder.createTime || '').replace('T', ' ').slice(0, 16)}
         </Text>
       </View>
 

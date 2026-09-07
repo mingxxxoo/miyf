@@ -12,11 +12,14 @@ public class User {
     private Long id;
     private String openid;
     private String unionid;
+    private String username;
     private String nickname;
+    private String phone;
+    private String wechatId;
     private String avatarUrl;
     private String status;
-    private Instant createdAt;
-    private Instant updatedAt;
+    private Instant createTime;
+    private Instant lastModifyTime;
 
     public Long getId() {
         return id;
@@ -42,12 +45,36 @@ public class User {
         this.unionid = unionid;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
     public String getNickname() {
         return nickname;
     }
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getWechatId() {
+        return wechatId;
+    }
+
+    public void setWechatId(String wechatId) {
+        this.wechatId = wechatId;
     }
 
     public String getAvatarUrl() {
@@ -66,19 +93,19 @@ public class User {
         this.status = status;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public Instant getCreateTime() {
+        return createTime;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public void setCreateTime(Instant createTime) {
+        this.createTime = createTime;
     }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
+    public Instant getLastModifyTime() {
+        return lastModifyTime;
     }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setLastModifyTime(Instant lastModifyTime) {
+        this.lastModifyTime = lastModifyTime;
     }
 }

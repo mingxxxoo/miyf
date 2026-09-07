@@ -79,5 +79,5 @@ public class RecipeVo extends BaseVo {
     private Map<String, Object> nutrition;
 
     @Schema(description = "更新时间")
-    private Instant updatedAt;
+    private Instant lastModifyTime;
 }

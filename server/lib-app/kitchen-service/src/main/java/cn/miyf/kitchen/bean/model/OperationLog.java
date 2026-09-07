@@ -19,7 +19,7 @@ public class OperationLog {
     private String requestMethod;
     private String requestUri;
     private String operationDetail;
-    private Instant createdAt;
+    private Instant createTime;
 
     public Long getId() {
         return id;
@@ -101,11 +101,11 @@ public class OperationLog {
         this.operationDetail = operationDetail;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public Instant getCreateTime() {
+        return createTime;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public void setCreateTime(Instant createTime) {
+        this.createTime = createTime;
     }
 }

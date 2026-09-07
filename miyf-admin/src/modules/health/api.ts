@@ -29,7 +29,7 @@ export interface HealthSubject {
   externalUserId?: string;
   status: string;
   remark?: string;
-  updatedAt?: string;
+  lastModifyTime?: string;
 }
 
 export interface HealthSample {
@@ -38,7 +38,7 @@ export interface HealthSample {
   metricCode: string;
   valueNum?: number;
   unit?: string;
-  measuredAt?: string;
+  measuredTime?: string;
   providerCode?: string;
   quality?: string;
 }
@@ -53,7 +53,7 @@ function mapSubject(raw: Record<string, unknown>): HealthSubject {
     externalUserId: raw.externalUserId == null ? undefined : sid(raw.externalUserId),
     status: String(raw.status ?? 'ENABLED'),
     remark: raw.remark ? String(raw.remark) : undefined,
-    updatedAt: raw.updatedAt ? String(raw.updatedAt) : undefined,
+    lastModifyTime: raw.lastModifyTime ? String(raw.lastModifyTime) : undefined,
   };
 }
 
@@ -64,7 +64,7 @@ function mapSample(raw: Record<string, unknown>): HealthSample {
     metricCode: String(raw.metricCode ?? ''),
     valueNum: raw.valueNum == null ? undefined : Number(raw.valueNum),
     unit: raw.unit ? String(raw.unit) : undefined,
-    measuredAt: raw.measuredAt ? String(raw.measuredAt) : undefined,
+    measuredTime: raw.measuredTime ? String(raw.measuredTime) : undefined,
     providerCode: raw.providerCode ? String(raw.providerCode) : undefined,
     quality: raw.quality ? String(raw.quality) : undefined,
   };
@@ -133,7 +133,7 @@ export const healthApi = {
     metricCode: string;
     valueNum: number;
     unit?: string;
-    measuredAt: string;
+    measuredTime: string;
     quality?: string;
   }) => {
     const raw = await post<Record<string, unknown>>('/admin/health/samples', payload);
@@ -168,7 +168,7 @@ export const healthApi = {
           : undefined,
         credentialRef: raw.credentialRef ? String(raw.credentialRef) : undefined,
         status: String(raw.status ?? 'ACTIVE'),
-        lastSyncAt: raw.lastSyncAt ? String(raw.lastSyncAt) : undefined,
+        lastSyncTime: raw.lastSyncTime ? String(raw.lastSyncTime) : undefined,
       }),
     );
   },
@@ -194,7 +194,7 @@ export const healthApi = {
         : undefined,
       credentialRef: raw.credentialRef ? String(raw.credentialRef) : undefined,
       status: String(raw.status ?? 'ACTIVE'),
-      lastSyncAt: raw.lastSyncAt ? String(raw.lastSyncAt) : undefined,
+      lastSyncTime: raw.lastSyncTime ? String(raw.lastSyncTime) : undefined,
     } satisfies HealthBinding;
   },
   sync: async (
@@ -233,7 +233,7 @@ export const healthApi = {
       subjectId: sid(raw.subjectId),
       authorized: Boolean(raw.authorized),
       openId: raw.openId ? String(raw.openId) : undefined,
-      expiresAt: raw.expiresAt ? String(raw.expiresAt) : undefined,
+      expiresTime: raw.expiresTime ? String(raw.expiresTime) : undefined,
     };
   },
   huaweiOAuthStatus: async (subjectId: string) => {
@@ -246,7 +246,7 @@ export const healthApi = {
       source: raw.source ? String(raw.source) : undefined,
       openId: raw.openId ? String(raw.openId) : undefined,
       hasRefreshToken: Boolean(raw.hasRefreshToken),
-      expiresAt: raw.expiresAt ? String(raw.expiresAt) : undefined,
+      expiresTime: raw.expiresTime ? String(raw.expiresTime) : undefined,
     };
   },
   huaweiRevoke: (subjectId: string) =>
@@ -261,7 +261,7 @@ export const healthApi = {
     const raw = await get<Record<string, unknown>>('/admin/health/trends', params);
     const points = ((raw.points as Record<string, unknown>[]) ?? []).map(
       (p): HealthTrendPoint => ({
-        measuredAt: p.measuredAt ? String(p.measuredAt) : undefined,
+        measuredTime: p.measuredTime ? String(p.measuredTime) : undefined,
         value: p.value == null ? undefined : Number(p.value),
         providerCode: p.providerCode ? String(p.providerCode) : undefined,
         quality: p.quality ? String(p.quality) : undefined,
@@ -275,7 +275,7 @@ export const healthApi = {
       max: raw.max == null ? undefined : Number(raw.max),
       avg: raw.avg == null ? undefined : Number(raw.avg),
       latest: raw.latest == null ? undefined : Number(raw.latest),
-      latestAt: raw.latestAt ? String(raw.latestAt) : undefined,
+      latestTime: raw.latestTime ? String(raw.latestTime) : undefined,
       pointCount: Number(raw.pointCount ?? points.length),
       points,
     } satisfies HealthTrend;
@@ -283,7 +283,7 @@ export const healthApi = {
 };
 
 export interface HealthTrendPoint {
-  measuredAt?: string;
+  measuredTime?: string;
   value?: number;
   providerCode?: string;
   quality?: string;
@@ -297,7 +297,7 @@ export interface HealthTrend {
   max?: number;
   avg?: number;
   latest?: number;
-  latestAt?: string;
+  latestTime?: string;
   pointCount: number;
   points: HealthTrendPoint[];
 }
@@ -309,7 +309,7 @@ export interface HealthBinding {
   externalAccountId?: string;
   credentialRef?: string;
   status: string;
-  lastSyncAt?: string;
+  lastSyncTime?: string;
 }
 
 export interface HealthSyncRun {
@@ -320,8 +320,8 @@ export interface HealthSyncRun {
   fetchedCount?: number;
   ingestedCount?: number;
   errorMessage?: string;
-  startedAt?: string;
-  finishedAt?: string;
+  startedTime?: string;
+  finishedTime?: string;
 }
 
 function mapSyncRun(raw: Record<string, unknown>): HealthSyncRun {
@@ -333,7 +333,7 @@ function mapSyncRun(raw: Record<string, unknown>): HealthSyncRun {
     fetchedCount: raw.fetchedCount == null ? undefined : Number(raw.fetchedCount),
     ingestedCount: raw.ingestedCount == null ? undefined : Number(raw.ingestedCount),
     errorMessage: raw.errorMessage ? String(raw.errorMessage) : undefined,
-    startedAt: raw.startedAt ? String(raw.startedAt) : undefined,
-    finishedAt: raw.finishedAt ? String(raw.finishedAt) : undefined,
+    startedTime: raw.startedTime ? String(raw.startedTime) : undefined,
+    finishedTime: raw.finishedTime ? String(raw.finishedTime) : undefined,
   };
 }

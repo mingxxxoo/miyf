@@ -1,9 +1,25 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Col, Progress, Row, Space, Table, Tag, Typography, message } from 'antd';
-import { sysMonitorApi, type MonitorOverview } from '@/pages/system/api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, Col, Row, Table, Typography } from 'antd';
+import { notifyError } from '@/api/errors';
+import type { StatusMeta } from '@/constants/status';
+import { sysMonitorApi, type MonitorComponent, type MonitorOverview } from '@/modules/system/api';
+import {
+  EmptyState,
+  MetricCard,
+  PageHeader,
+  SettingSection,
+  StatusBadge,
+} from '@/ui';
+
+const COMP_STATUS: Record<string, StatusMeta> = {
+  UP: { color: 'success', text: '正常' },
+  DOWN: { color: 'error', text: '异常' },
+  DISABLED: { color: 'default', text: '未启用' },
+  UNKNOWN: { color: 'processing', text: '未知' },
+};
 
 function formatBytes(n?: number) {
-  if (n == null || Number.isNaN(n) || n < 0) return '-';
+  if (n == null || Number.isNaN(n) || n < 0) return '—';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let v = n;
   let i = 0;
@@ -14,26 +30,24 @@ function formatBytes(n?: number) {
   return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
+function formatPct(ratio?: number) {
+  if (ratio == null || ratio < 0) return '—';
+  return `${(ratio * 100).toFixed(1)}%`;
+}
+
 function formatUptime(ms?: number) {
-  if (ms == null || ms < 0) return '-';
+  if (ms == null || ms < 0) return '—';
   const s = Math.floor(ms / 1000);
   const d = Math.floor(s / 86400);
   const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
-  if (d > 0) return `${d}天 ${h}时 ${m}分`;
+  if (d > 0) return `${d}天 ${h}时`;
   if (h > 0) return `${h}时 ${m}分`;
-  return `${m}分 ${s % 60}秒`;
-}
-
-function statusColor(status?: string) {
-  if (status === 'UP') return 'success';
-  if (status === 'DOWN') return 'error';
-  if (status === 'DISABLED') return 'default';
-  return 'processing';
+  return `${m}分`;
 }
 
 /**
- * 系统监控：JVM / 磁盘 / Redis / DB。
+ * 系统监控：指标卡 + 组件表 + 连接池/近期错误（来自 details）。
  */
 export default function SystemMonitorPage() {
   const [loading, setLoading] = useState(false);
@@ -45,7 +59,7 @@ export default function SystemMonitorPage() {
       setData(await sysMonitorApi.overview());
     } catch (err) {
       setData(null);
-      message.error(err instanceof Error ? err.message : '加载失败');
+      notifyError(err, '加载失败');
     } finally {
       setLoading(false);
     }
@@ -59,102 +73,174 @@ export default function SystemMonitorPage() {
 
   const jvm = data?.jvm;
   const disk = data?.disk;
-  const heapPct =
-    jvm?.heapMax && jvm.heapMax > 0
-      ? Math.min(100, Math.round(((jvm.heapUsed ?? 0) / jvm.heapMax) * 100))
-      : 0;
-  const diskPct =
-    disk?.total && disk.total > 0
-      ? Math.min(100, Math.round(((disk.total - (disk.free ?? 0)) / disk.total) * 100))
-      : 0;
+
+  const cpuValue = useMemo(() => {
+    if (jvm?.processCpuLoad != null && jvm.processCpuLoad >= 0) {
+      return formatPct(jvm.processCpuLoad);
+    }
+    if (jvm?.systemCpuLoad != null && jvm.systemCpuLoad >= 0) {
+      return formatPct(jvm.systemCpuLoad);
+    }
+    return '—';
+  }, [jvm?.processCpuLoad, jvm?.systemCpuLoad]);
+
+  const memValue = useMemo(() => {
+    if (jvm?.heapUsed == null) return '—';
+    return `${formatBytes(jvm.heapUsed)} / ${formatBytes(jvm.heapMax)}`;
+  }, [jvm?.heapUsed, jvm?.heapMax]);
+
+  const diskValue = useMemo(() => {
+    if (!disk?.total) return '—';
+    const used = disk.total - (disk.free ?? 0);
+    return `${Math.round((used / disk.total) * 100)}%`;
+  }, [disk]);
+
+  const poolDetails = useMemo(() => {
+    for (const c of data?.components ?? []) {
+      const d = c.details;
+      if (!d) continue;
+      if (
+        d.pool != null ||
+        d.connectionPool != null ||
+        d.activeConnections != null ||
+        d.maxConnections != null ||
+        d.idleConnections != null
+      ) {
+        return d;
+      }
+    }
+    return null;
+  }, [data?.components]);
+
+  const recentErrors = useMemo(() => {
+    if (data?.recentErrors != null) {
+      const top = data.recentErrors;
+      if (Array.isArray(top) && top.length === 0) return null;
+      return top;
+    }
+    for (const c of data?.components ?? []) {
+      const d = c.details;
+      if (!d) continue;
+      if (d.recentErrors != null || d.errors != null || d.lastError != null) {
+        return d.recentErrors ?? d.errors ?? d.lastError ?? d;
+      }
+    }
+    return null;
+  }, [data?.components, data?.recentErrors]);
 
   return (
     <div className="ck-page">
-      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }} wrap>
-        <h2 className="ck-page-title" style={{ margin: 0 }}>
-          系统监控
-        </h2>
-        <Button loading={loading} onClick={() => void fetchData()}>
-          刷新
-        </Button>
-      </Space>
+      <PageHeader
+        title="系统监控"
+        description="CPU / 内存 / 磁盘 / JVM 与依赖组件状态"
+        extra={
+          <Button loading={loading} onClick={() => void fetchData()}>
+            刷新
+          </Button>
+        }
+      />
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={12} lg={8}>
-          <Card title="JVM 堆内存" loading={loading && !data}>
-            <Progress percent={heapPct} status={heapPct > 85 ? 'exception' : 'active'} />
-            <Typography.Text type="secondary">
-              {formatBytes(jvm?.heapUsed)} / {formatBytes(jvm?.heapMax)}
-            </Typography.Text>
-            <div style={{ marginTop: 12 }}>
-              <div>运行时长：{formatUptime(jvm?.uptimeMs)}</div>
-              <div>线程：{jvm?.threadCount ?? '-'}（峰值 {jvm?.peakThreadCount ?? '-'}）</div>
-              <div>
-                CPU Load：进程{' '}
-                {jvm?.processCpuLoad != null && jvm.processCpuLoad >= 0
-                  ? `${(jvm.processCpuLoad * 100).toFixed(1)}%`
-                  : '-'}{' '}
-                / 系统{' '}
-                {jvm?.systemCpuLoad != null && jvm.systemCpuLoad >= 0
-                  ? `${(jvm.systemCpuLoad * 100).toFixed(1)}%`
-                  : '-'}
-              </div>
-              <div>
-                {jvm?.osName ?? '-'} · Java {jvm?.javaVersion ?? '-'}
-              </div>
-            </div>
-          </Card>
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={12} md={6}>
+          <MetricCard
+            label="CPU"
+            value={cpuValue}
+            hint={
+              jvm?.systemCpuLoad != null && jvm.systemCpuLoad >= 0
+                ? `系统 ${formatPct(jvm.systemCpuLoad)}`
+                : jvm?.processors
+                  ? `${jvm.processors} 核`
+                  : undefined
+            }
+          />
         </Col>
-        <Col xs={24} md={12} lg={8}>
-          <Card title="工作目录磁盘" loading={loading && !data}>
-            <Progress percent={diskPct} status={diskPct > 90 ? 'exception' : 'active'} />
-            <Typography.Text type="secondary">
-              已用 {formatBytes((disk?.total ?? 0) - (disk?.free ?? 0))} / {formatBytes(disk?.total)}
-            </Typography.Text>
-            <div style={{ marginTop: 12 }}>
-              <div>可用：{formatBytes(disk?.usable)}</div>
-              <Typography.Paragraph
-                type="secondary"
-                ellipsis={{ rows: 2, tooltip: disk?.path }}
-                style={{ marginBottom: 0 }}
-              >
-                {disk?.path}
-              </Typography.Paragraph>
-            </div>
-          </Card>
+        <Col xs={12} md={6}>
+          <MetricCard label="内存 (Heap)" value={memValue} hint={`非堆 ${formatBytes(jvm?.nonHeapUsed)}`} />
         </Col>
-        <Col xs={24} md={24} lg={8}>
-          <Card title="采集时间" loading={loading && !data}>
-            <Typography.Title level={4} style={{ marginTop: 0 }}>
-              {data?.collectedAt ? new Date(data.collectedAt).toLocaleString() : '-'}
-            </Typography.Title>
-            <Typography.Text type="secondary">每 15 秒自动刷新</Typography.Text>
-          </Card>
+        <Col xs={12} md={6}>
+          <MetricCard
+            label="磁盘"
+            value={diskValue}
+            hint={
+              disk?.total
+                ? `可用 ${formatBytes(disk.usable ?? disk.free)} / ${formatBytes(disk.total)}`
+                : undefined
+            }
+          />
+        </Col>
+        <Col xs={12} md={6}>
+          <MetricCard
+            label="JVM"
+            value={formatUptime(jvm?.uptimeMs)}
+            hint={
+              jvm
+                ? `线程 ${jvm.threadCount ?? '—'} · Java ${jvm.javaVersion ?? '—'}`
+                : data?.collectedTime
+                  ? new Date(data.collectedTime).toLocaleString()
+                  : '—'
+            }
+          />
         </Col>
       </Row>
 
-      <Card title="组件状态" style={{ marginTop: 16 }} loading={loading && !data}>
-        <Table
+      <SettingSection title="组件状态" description="API / 数据库 / Redis 等依赖探测结果">
+        <Table<MonitorComponent>
           rowKey="name"
+          loading={loading && !data}
           pagination={false}
           dataSource={data?.components ?? []}
+          locale={{ emptyText: <EmptyState description="暂无组件数据" /> }}
           columns={[
             { title: '组件', dataIndex: 'name', width: 160 },
             {
               title: '状态',
               dataIndex: 'status',
               width: 120,
-              render: (v: string) => <Tag color={statusColor(v)}>{v}</Tag>,
+              render: (v: string) => <StatusBadge code={v || 'UNKNOWN'} map={COMP_STATUS} />,
             },
             {
               title: '详情',
               dataIndex: 'details',
-              render: (details: Record<string, unknown>) =>
-                details ? JSON.stringify(details) : '-',
+              render: (details?: Record<string, unknown>) =>
+                details && Object.keys(details).length ? (
+                  <Typography.Text
+                    ellipsis={{ tooltip: JSON.stringify(details) }}
+                    style={{ maxWidth: 480, display: 'inline-block' }}
+                  >
+                    {JSON.stringify(details)}
+                  </Typography.Text>
+                ) : (
+                  '—'
+                ),
             },
           ]}
         />
-      </Card>
+      </SettingSection>
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <SettingSection title="连接池" description="来自组件 details 中的连接池字段">
+            {poolDetails ? (
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: 12 }}>
+                {JSON.stringify(poolDetails, null, 2)}
+              </pre>
+            ) : (
+              <EmptyState description="暂无连接池指标" />
+            )}
+          </SettingSection>
+        </Col>
+        <Col xs={24} lg={12}>
+          <SettingSection title="近期错误" description="组件探测失败时的进程内错误环">
+            {recentErrors != null ? (
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: 12 }}>
+                {JSON.stringify(recentErrors, null, 2)}
+              </pre>
+            ) : (
+              <EmptyState description="暂无近期错误" />
+            )}
+          </SettingSection>
+        </Col>
+      </Row>
     </div>
   );
 }

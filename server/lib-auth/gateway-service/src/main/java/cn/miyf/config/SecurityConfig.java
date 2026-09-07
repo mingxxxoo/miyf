@@ -12,8 +12,12 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.io.IOException;
 
 /**
  * Spring Security 过滤链：无状态 JWT；细粒度权限由方法级 AuthorizationManager / {@code @PreAuthorize} 控制。
@@ -37,6 +41,19 @@ public class SecurityConfig {
     public SecurityConfig(JwtAuthFilter jwtAuthFilter, ObjectMapper objectMapper) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.objectMapper = objectMapper;
+    }
+
+    /**
+     * 禁用 Boot 默认内存用户（避免生成开发密码日志）；认证走 JWT。
+     *
+     * @return UserDetailsService
+     * @history 1.00 2026-09-07 XieMingJie Created.
+     */
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return username -> {
+            throw new UsernameNotFoundException("JWT only: " + username);
+        };
     }
 
     /**
@@ -87,14 +104,13 @@ public class SecurityConfig {
     }
 
     /**
-     * 写出统一错误 JSON；鉴权类错误使用对应 HTTP 状态，便于前端拦截器识别。
+     * 写出统一错误 JSON；鉴权类错误使用对应 HTTP 状态（401/403），便于前端拦截器识别。
      *
      * @param response  响应
      * @param errorCode 错误码
      * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     * @history 1.01 2026-09-06 XieMingJie 401/403 对齐 HTTP 状态码。
      */
-    private void writeJson(HttpServletResponse response, ErrorCode errorCode) throws java.io.IOException {
+    private void writeJson(HttpServletResponse response, ErrorCode errorCode) throws IOException {
         int httpStatus = HttpServletResponse.SC_OK;
         if (errorCode == ErrorCode.UNAUTHORIZED) {
             httpStatus = HttpServletResponse.SC_UNAUTHORIZED;

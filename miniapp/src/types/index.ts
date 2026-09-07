@@ -78,14 +78,14 @@ export interface Order {
   userId?: string
   status: OrderStatus
   items: OrderItem[]
-  createdAt: string
-  updatedAt?: string
+  createTime: string
+  lastModifyTime?: string
   /** 展示用：整单备注 */
   note?: string
   remark?: string
   displayTip?: string
   /** 草稿辅助字段，后端无对应列 */
-  scheduledAt?: string
+  scheduledTime?: string
   guestCount?: number
 }
 
@@ -97,16 +97,18 @@ export interface Comment {
   content?: string
   images?: string[]
   status?: string
-  createdAt: string
+  createTime: string
   userNickname?: string
   userAvatar?: string
 }
 
 export interface User {
   id: string
+  username?: string
   nickname: string
   avatarUrl?: string
   phone?: string
+  wechatId?: string
   bio?: string
 }
 

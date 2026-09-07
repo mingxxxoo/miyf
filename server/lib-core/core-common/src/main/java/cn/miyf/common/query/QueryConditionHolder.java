@@ -26,7 +26,7 @@ public final class QueryConditionHolder {
      * 绑定条件并执行，结束自动清理。
      *
      * @param condition    QO，可空
-     * @param defaultOrder 无 sort 时的默认排序，如 {@code created_at DESC}
+     * @param defaultOrder 无 sort 时的默认排序，如 {@code create_time DESC}
      * @param action       业务动作
      * @param <T>          返回类型
      * @return 动作结果

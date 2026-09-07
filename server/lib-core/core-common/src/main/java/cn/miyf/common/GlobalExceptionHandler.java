@@ -25,12 +25,11 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
-     * 处理可预期的业务异常；未登录/无权限时对齐 HTTP 401/403。
+     * 处理可预期的业务异常；未登录/无权限时返回对应 HTTP 状态（401/403）。
      *
      * @param ex 业务异常
      * @return 统一失败响应
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
-     * @history 1.01 2026-09-06 XieMingJie 鉴权类错误返回对应 HTTP 状态。
      */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResult<Object>> handleBusiness(BusinessException ex) {

@@ -6,7 +6,7 @@
 
     <select id="selectByUsername" resultType="cn.miyf.bean.entity.SysUserEntity">
         SELECT id, org_unit_id, username, password_hash, nickname, status,
-               created_at, updated_at
+               create_time, last_modify_time
         FROM sys_user
 WHERE username = #{username}
         LIMIT 1

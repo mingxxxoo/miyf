@@ -31,6 +31,14 @@ public interface SysRolePermGroupMapper extends BaseMapper<SysRolePermGroupEntit
      * @return 绑定记录
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
-    SysRolePermGroupEntity selectByRoleAndGroup(@Param("roleId") Long roleId,
-                                                @Param("groupId") Long groupId);
+    SysRolePermGroupEntity selectByRoleAndGroup(@Param("roleId") Long roleId, @Param("groupId") Long groupId);
+
+    /**
+     * 按权限组删除角色绑定。
+     *
+     * @param groupId 权限组 ID
+     * @return 影响行数
+     * @history 1.00 2026-09-07 XieMingJie Created.
+     */
+    int deleteByGroupId(@Param("groupId") Long groupId);
 }

@@ -36,11 +36,19 @@
     margin-bottom: 8px;
   }
 
+  &__meta {
+    display: block;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+    line-height: 1.6;
+  }
+
   &__bio {
     display: block;
     font-size: $ck-font-caption;
     color: $ck-muted;
     line-height: 1.5;
+    margin-top: 8px;
   }
 
   &__guest {
@@ -69,9 +77,35 @@
     margin-bottom: 24px;
   }
 
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+    text-align: left;
+  }
+
+  &__input {
+    height: 80px;
+    padding: 0 24px;
+    border-radius: $ck-radius-sm;
+    background: rgba($ck-primary, 0.08);
+    border: 1px solid $ck-border;
+    font-size: $ck-font-body;
+    color: $ck-text;
+  }
+
   &__login-btn {
     max-width: 360px;
     margin: 0 auto;
+  }
+
+  &__hint {
+    display: block;
+    text-align: center;
+    margin-top: 24px;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
   }
 
   &__menu {

@@ -24,8 +24,8 @@ public class Recipe {
     private List<Map<String, Object>> steps = new ArrayList<>();
     private String tips;
     private Map<String, Object> nutrition;
-    private Instant createdAt;
-    private Instant updatedAt;
+    private Instant createTime;
+    private Instant lastModifyTime;
 
     public Long getId() {
         return id;
@@ -123,19 +123,19 @@ public class Recipe {
         this.nutrition = nutrition;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public Instant getCreateTime() {
+        return createTime;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public void setCreateTime(Instant createTime) {
+        this.createTime = createTime;
     }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
+    public Instant getLastModifyTime() {
+        return lastModifyTime;
     }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setLastModifyTime(Instant lastModifyTime) {
+        this.lastModifyTime = lastModifyTime;
     }
 }

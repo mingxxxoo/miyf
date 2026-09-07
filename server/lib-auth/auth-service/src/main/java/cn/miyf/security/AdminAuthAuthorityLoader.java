@@ -25,4 +25,14 @@ public interface AdminAuthAuthorityLoader {
      * @return 权限码
      */
     List<String> loadPermissionCodes(Long userId);
+
+    /**
+     * 用户有效数据范围（多角色取最宽）。
+     *
+     * @param userId 用户 ID
+     * @return 数据范围枚举名
+     */
+    default String loadEffectiveDataScope(Long userId) {
+        return DataScope.ALL.name();
+    }
 }

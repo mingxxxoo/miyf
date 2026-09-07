@@ -10,7 +10,7 @@
 
     <select id="selectByDishId"
             resultType="cn.miyf.kitchen.bean.entity.DishImageEntity">
-        SELECT id, dish_id, image_url AS url, sort_order, created_at
+        SELECT id, dish_id, image_url AS url, sort_order, create_time
         FROM dish_image
         WHERE dish_id = #{dishId}
         ORDER BY sort_order ASC

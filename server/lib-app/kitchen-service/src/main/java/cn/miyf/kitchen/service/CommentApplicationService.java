@@ -143,7 +143,7 @@ public class CommentApplicationService extends BaseApplicationService {
         if (qo.getRating() != null) {
             requireTrue(qo.getRating() >= 1 && qo.getRating() <= 5, ErrorCode.BAD_REQUEST, "星级筛选无效");
         }
-        return QueryConditionHolder.run(qo, "created_at DESC", () -> {
+        return QueryConditionHolder.run(qo, "create_time DESC", () -> {
             long page = pageOf(qo);
             long pageSize = pageSizeOf(qo);
             PageResult<Comment> result = commentRepository.pageAdmin(
@@ -255,6 +255,6 @@ public class CommentApplicationService extends BaseApplicationService {
                 .setContent(comment.getContent())
                 .setStatus(comment.getStatus())
                 .setImages(comment.getImages())
-                .setCreatedAt(comment.getCreatedAt());
+                .setCreateTime(comment.getCreateTime());
     }
 }

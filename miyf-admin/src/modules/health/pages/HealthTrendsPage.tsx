@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, Col, Empty, Row, Select, Space, Statistic, Typography, message } from 'antd';
 import ReactECharts from 'echarts-for-react';
 import { healthApi, type HealthSubject, type HealthTrend } from '@/modules/health/api';
+import { PageHeader } from '@/ui';
 
 const METRICS = [
   { value: 'WEIGHT', label: '体重' },
@@ -63,7 +64,7 @@ export default function HealthTrendsPage() {
   const chartOption = useMemo(() => {
     const points = trend?.points ?? [];
     const dates = points.map((p) =>
-      p.measuredAt ? new Date(p.measuredAt).toLocaleString() : '',
+      p.measuredTime ? new Date(p.measuredTime).toLocaleString() : '',
     );
     const values = points.map((p) => p.value ?? null);
     const metricLabel = METRICS.find((m) => m.value === metricCode)?.label || metricCode;
@@ -95,8 +96,8 @@ export default function HealthTrendsPage() {
 
   return (
     <div className="ck-page">
-      <h2 className="ck-page-title">健康趋势</h2>
-      <Typography.Paragraph type="secondary">
+      <PageHeader title="健康趋势" />
+<Typography.Paragraph type="secondary">
         按主体与指标查看时间序列，支持体重、心率等规范编码。
       </Typography.Paragraph>
       <Space style={{ marginBottom: 16 }} wrap>

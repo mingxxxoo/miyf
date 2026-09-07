@@ -19,7 +19,8 @@ export interface IamUser {
   username: string;
   nickname?: string;
   status: string;
-  createdAt?: string;
+  roleIds?: string[];
+  createTime?: string;
 }
 
 export interface IamRole {
@@ -27,7 +28,24 @@ export interface IamRole {
   code: string;
   name: string;
   description?: string;
-  createdAt?: string;
+  isDefault?: boolean;
+  product?: string;
+  dataScope?: string;
+  userCount?: number;
+  groupIds?: string[];
+  createTime?: string;
+}
+
+export interface IamRoleUser {
+  id: string;
+  username: string;
+  nickname?: string;
+  status: string;
+}
+
+export interface RoleAuthSummary {
+  roleCount: number;
+  userCount: number;
 }
 
 export interface IamPermission {
@@ -51,7 +69,7 @@ export interface IamOrgUnit {
   name: string;
   sortOrder?: number;
   status: string;
-  createdAt?: string;
+  createTime?: string;
 }
 
 export interface IamMenu {
@@ -63,6 +81,7 @@ export interface IamMenu {
   icon?: string;
   menuType: string;
   permissionCode?: string;
+  product?: string;
   sortOrder?: number;
   visible?: boolean;
   status: string;
@@ -75,7 +94,9 @@ export interface IamPermGroup {
   name: string;
   description?: string;
   sortOrder?: number;
-  createdAt?: string;
+  product?: string;
+  permissionIds?: string[];
+  createTime?: string;
 }
 
 function sid(v: unknown): string {
@@ -83,23 +104,40 @@ function sid(v: unknown): string {
 }
 
 function mapUser(raw: Record<string, unknown>): IamUser {
+  const roleIdsRaw = Array.isArray(raw.roleIds) ? raw.roleIds : [];
   return {
     id: sid(raw.id),
     orgUnitId: raw.orgUnitId != null ? sid(raw.orgUnitId) : undefined,
     username: String(raw.username ?? ''),
     nickname: raw.nickname ? String(raw.nickname) : undefined,
     status: String(raw.status ?? 'ENABLED').toUpperCase(),
-    createdAt: raw.createdAt ? String(raw.createdAt) : undefined,
+    roleIds: roleIdsRaw.map((g) => sid(g)),
+    createTime: raw.createTime ? String(raw.createTime) : undefined,
   };
 }
 
 function mapRole(raw: Record<string, unknown>): IamRole {
+  const groupIdsRaw = Array.isArray(raw.groupIds) ? raw.groupIds : [];
   return {
     id: sid(raw.id),
     code: String(raw.code ?? ''),
     name: String(raw.name ?? ''),
     description: raw.description ? String(raw.description) : undefined,
-    createdAt: raw.createdAt ? String(raw.createdAt) : undefined,
+    isDefault: Boolean(raw.isDefault),
+    product: raw.product ? String(raw.product) : 'system',
+    dataScope: raw.dataScope ? String(raw.dataScope).toUpperCase() : 'ALL',
+    userCount: raw.userCount != null ? Number(raw.userCount) : 0,
+    groupIds: groupIdsRaw.map((g) => sid(g)),
+    createTime: raw.createTime ? String(raw.createTime) : undefined,
+  };
+}
+
+function mapRoleUser(raw: Record<string, unknown>): IamRoleUser {
+  return {
+    id: sid(raw.id),
+    username: String(raw.username ?? ''),
+    nickname: raw.nickname ? String(raw.nickname) : undefined,
+    status: String(raw.status ?? 'ENABLED').toUpperCase(),
   };
 }
 
@@ -192,32 +230,81 @@ export const iamUserApi = {
 
 /** IAM 角色 */
 export const iamRoleApi = {
-  list: async (): Promise<IamRole[]> => {
-    const list = await get<Record<string, unknown>[]>('/iam/roles');
+  list: async (product?: string): Promise<IamRole[]> => {
+    const list = await get<Record<string, unknown>[]>('/iam/roles', product ? { product } : undefined);
     return (list || []).map(mapRole);
   },
-  create: async (data: { code: string; name: string; description?: string; groupIds?: string[] }) => {
+  authSummary: async (product?: string): Promise<RoleAuthSummary> => {
+    const raw = await get<Record<string, unknown>>('/iam/roles/auth-summary', product ? { product } : undefined);
+    return {
+      roleCount: Number(raw?.roleCount ?? 0),
+      userCount: Number(raw?.userCount ?? 0),
+    };
+  },
+  create: async (data: {
+    code: string;
+    name: string;
+    description?: string;
+    product?: string;
+    dataScope?: string;
+    groupIds?: string[];
+  }) => {
     const raw = await post<Record<string, unknown>>('/iam/roles', {
       code: data.code,
       name: data.name,
       description: data.description,
+      product: data.product,
+      dataScope: data.dataScope,
       groupIds: data.groupIds,
     });
     return mapRole(raw);
   },
   update: async (
     id: string,
-    data: { code: string; name: string; description?: string; groupIds?: string[] },
+    data: {
+      code: string;
+      name: string;
+      description?: string;
+      product?: string;
+      dataScope?: string;
+      groupIds?: string[];
+    },
   ) => {
     const raw = await put<Record<string, unknown>>(`/iam/roles/${id}`, {
       code: data.code,
       name: data.name,
       description: data.description,
+      product: data.product,
+      dataScope: data.dataScope,
       groupIds: data.groupIds,
     });
     return mapRole(raw);
   },
+  setDefault: async (id: string, isDefault: boolean) => {
+    const raw = await put<Record<string, unknown>>(`/iam/roles/${id}/default`, { isDefault });
+    return mapRole(raw);
+  },
   remove: (id: string) => del<void>(`/iam/roles/${id}`),
+  listUsers: async (id: string): Promise<IamRoleUser[]> => {
+    const list = await get<Record<string, unknown>[]>(`/iam/roles/${id}/users`);
+    return (list || []).map(mapRoleUser);
+  },
+  addUsers: (id: string, userIds: string[]) => post<void>(`/iam/roles/${id}/users`, { userIds }),
+  removeUser: (id: string, userId: string) => del<void>(`/iam/roles/${id}/users/${userId}`),
+  exportUsers: async (id: string) => {
+    const token = localStorage.getItem('ck_admin_token');
+    const res = await fetch(`/api/iam/roles/${id}/users/export`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error('导出失败');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `role-${id}-users.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 };
 
 /** IAM 权限（只读，启动扫描写入） */
@@ -236,7 +323,7 @@ function mapOrgUnit(raw: Record<string, unknown>): IamOrgUnit {
     name: String(raw.name ?? ''),
     sortOrder: raw.sortOrder != null ? Number(raw.sortOrder) : undefined,
     status: String(raw.status ?? 'ENABLED').toUpperCase(),
-    createdAt: raw.createdAt ? String(raw.createdAt) : undefined,
+    createTime: raw.createTime ? String(raw.createTime) : undefined,
   };
 }
 
@@ -250,6 +337,7 @@ function mapMenu(raw: Record<string, unknown>): IamMenu {
     icon: raw.icon ? String(raw.icon) : undefined,
     menuType: String(raw.menuType ?? 'MENU').toUpperCase(),
     permissionCode: raw.permissionCode ? String(raw.permissionCode) : undefined,
+    product: raw.product ? String(raw.product) : 'system',
     sortOrder: raw.sortOrder != null ? Number(raw.sortOrder) : undefined,
     visible: raw.visible == null ? true : Boolean(raw.visible),
     status: String(raw.status ?? 'ENABLED').toUpperCase(),
@@ -257,13 +345,16 @@ function mapMenu(raw: Record<string, unknown>): IamMenu {
 }
 
 function mapPermGroup(raw: Record<string, unknown>): IamPermGroup {
+  const permissionIdsRaw = Array.isArray(raw.permissionIds) ? raw.permissionIds : [];
   return {
     id: sid(raw.id),
     code: String(raw.code ?? ''),
     name: String(raw.name ?? ''),
     description: raw.description ? String(raw.description) : undefined,
     sortOrder: raw.sortOrder != null ? Number(raw.sortOrder) : undefined,
-    createdAt: raw.createdAt ? String(raw.createdAt) : undefined,
+    product: raw.product ? String(raw.product) : 'system',
+    permissionIds: permissionIdsRaw.map((g) => sid(g)),
+    createTime: raw.createTime ? String(raw.createTime) : undefined,
   };
 }
 
@@ -345,6 +436,7 @@ export const iamMenuApi = {
     component?: string;
     icon?: string;
     permissionCode?: string;
+    product?: string;
     sortOrder?: number;
     visible?: boolean;
     status?: string;
@@ -357,6 +449,7 @@ export const iamMenuApi = {
       component: data.component,
       icon: data.icon,
       permissionCode: data.permissionCode,
+      product: data.product,
       sortOrder: data.sortOrder ?? 0,
       visible: data.visible ?? true,
       status: data.status ?? 'ENABLED',
@@ -373,6 +466,7 @@ export const iamMenuApi = {
       component?: string;
       icon?: string;
       permissionCode?: string;
+      product?: string;
       sortOrder?: number;
       visible?: boolean;
       status?: string;
@@ -386,6 +480,7 @@ export const iamMenuApi = {
       component: data.component,
       icon: data.icon,
       permissionCode: data.permissionCode,
+      product: data.product,
       sortOrder: data.sortOrder ?? 0,
       visible: data.visible ?? true,
       status: data.status ?? 'ENABLED',
@@ -406,6 +501,7 @@ export const iamPermGroupApi = {
     name: string;
     description?: string;
     sortOrder?: number;
+    product?: string;
     permissionIds?: string[];
   }) => {
     const raw = await post<Record<string, unknown>>('/iam/perm-groups', {
@@ -413,6 +509,7 @@ export const iamPermGroupApi = {
       name: data.name,
       description: data.description,
       sortOrder: data.sortOrder ?? 0,
+      product: data.product,
       permissionIds: data.permissionIds,
     });
     return mapPermGroup(raw);
@@ -424,6 +521,7 @@ export const iamPermGroupApi = {
       name: string;
       description?: string;
       sortOrder?: number;
+      product?: string;
       permissionIds?: string[];
     },
   ) => {
@@ -432,6 +530,7 @@ export const iamPermGroupApi = {
       name: data.name,
       description: data.description,
       sortOrder: data.sortOrder ?? 0,
+      product: data.product,
       permissionIds: data.permissionIds,
     });
     return mapPermGroup(raw);

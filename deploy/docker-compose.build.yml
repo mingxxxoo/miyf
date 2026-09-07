@@ -3,9 +3,6 @@
 #   docker compose -f docker-compose.yml -f docker-compose.build.yml build
 # Apple Silicon 跨架构时可先设：DOCKER_DEFAULT_PLATFORM=linux/amd64
 #
-# provenance/sbom 关闭：阿里云 ACR 对 OCI attestation（empty.v1+json）不兼容，
-# 开启时 push 会报 unknown manifest class for application/vnd.oci.empty.v1+json
-#
 # 服务器生产环境不要使用本文件。
 
 services:
@@ -13,8 +10,6 @@ services:
     build:
       context: ../server
       dockerfile: Dockerfile
-      provenance: false
-      sbom: false
       args:
         MAVEN_IMAGE: ${BASE_MAVEN_IMAGE:-maven:3.9.9-eclipse-temurin-21}
         JRE_IMAGE: ${BASE_JRE_IMAGE:-eclipse-temurin:21-jre-alpine}
@@ -24,8 +19,6 @@ services:
     build:
       context: ..
       dockerfile: deploy/nginx/Dockerfile
-      provenance: false
-      sbom: false
       args:
         NODE_IMAGE: ${BASE_NODE_IMAGE:-node:20-alpine}
         NGINX_IMAGE: ${BASE_NGINX_IMAGE:-nginx:1.27-alpine}

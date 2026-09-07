@@ -7,7 +7,7 @@
 
     <select id="selectByDishId" resultType="cn.miyf.kitchen.bean.entity.RecipeEntity">
         SELECT id, dish_id, description, difficulty, prepare_minutes, cook_minutes, servings,
-               ingredients, seasonings, steps, tips, nutrition, created_at, updated_at
+               ingredients, seasonings, steps, tips, nutrition, create_time, last_modify_time
         FROM dish_recipe
 WHERE dish_id = #{dishId}
         LIMIT 1
@@ -15,8 +15,8 @@ WHERE dish_id = #{dishId}
 
     <select id="selectAll" resultType="cn.miyf.kitchen.bean.entity.RecipeEntity">
         SELECT id, dish_id, description, difficulty, prepare_minutes, cook_minutes, servings,
-               ingredients, seasonings, steps, tips, nutrition, created_at, updated_at
+               ingredients, seasonings, steps, tips, nutrition, create_time, last_modify_time
         FROM dish_recipe
-ORDER BY updated_at DESC
+ORDER BY last_modify_time DESC
     </select>
 </mapper>

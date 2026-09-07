@@ -53,7 +53,7 @@ public class InboxNotificationSender implements NotificationSender {
         int size = limit == null || limit <= 0 ? 50 : Math.min(limit, 200);
         return sysInboxMessageMapper.selectList(new LambdaQueryWrapper<SysInboxMessageEntity>()
                         .eq(SysInboxMessageEntity::getUserKey, userKey.trim())
-                        .orderByDesc(SysInboxMessageEntity::getCreatedAt)
+                        .orderByDesc(SysInboxMessageEntity::getCreateTime)
                         .last("LIMIT " + size))
                 .stream()
                 .map(this::toItem)
@@ -81,7 +81,7 @@ public class InboxNotificationSender implements NotificationSender {
                 entity.getUserKey(),
                 entity.getTitle(),
                 entity.getContent(),
-                entity.getCreatedAt(),
+                entity.getCreateTime(),
                 Boolean.TRUE.equals(entity.getReadFlag())
         );
     }

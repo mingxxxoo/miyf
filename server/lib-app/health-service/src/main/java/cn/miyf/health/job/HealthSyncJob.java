@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 健康数据源定时同步：遍历 ACTIVE 且支持远程拉取的绑定，按 lastSyncAt 增量拉取。
+ * 健康数据源定时同步：遍历 ACTIVE 且支持远程拉取的绑定，按 lastSyncTime 增量拉取。
  * <p>
  * 可在系统任务控制台启停 / 手动触发；默认每小时整点后 15 分执行。
  *
@@ -64,9 +64,9 @@ public class HealthSyncJob {
                 try {
                     HealthSyncRequestDto dto = new HealthSyncRequestDto()
                             .setSubjectId(String.valueOf(binding.getSubjectId()));
-                    if (binding.getLastSyncAt() != null) {
+                    if (binding.getLastSyncTime() != null) {
                         // 重叠窗口，避免边界漏数（入库幂等）
-                        dto.setFrom(binding.getLastSyncAt().minus(Duration.ofHours(1)));
+                        dto.setFrom(binding.getLastSyncTime().minus(Duration.ofHours(1)));
                     }
                     dto.setTo(Instant.now());
                     HealthSyncRunEntity run = healthApplicationService.sync(binding.getProviderCode(), dto);

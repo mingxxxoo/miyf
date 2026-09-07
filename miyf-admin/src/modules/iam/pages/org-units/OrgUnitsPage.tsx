@@ -1,23 +1,51 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Tag, message } from 'antd';
+import { Button, Form, Input, InputNumber, Popconfirm, Select, Space, message } from 'antd';
 import PageTable from '@/components/PageTable';
+import {
+  EmptyState,
+  FormItem,
+  FormModal,
+  PageHeader,
+  PageToolbar,
+  StatusBadge,
+} from '@/ui';
 import { iamOrgUnitApi, type IamOrgUnit } from '@/modules/iam/api';
+import { useClientPager } from '@/hooks/useClientPager';
+import { useSubmitting } from '@/hooks/useSubmitting';
+import { ENABLED_STATUS } from '@/constants/status';
+import { notifyError } from '@/api/errors';
 
+/**
+ * 组织架构：单位列表 CRUD（客户端分页）。
+ */
 export default function OrgUnitsPage() {
   const [loading, setLoading] = useState(false);
   const [all, setAll] = useState<IamOrgUnit[]>([]);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [keyword, setKeyword] = useState('');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<IamOrgUnit | null>(null);
   const [form] = Form.useForm();
+  const { submitting, run } = useSubmitting();
+
+  const filtered = useMemo(() => {
+    const q = keyword.trim().toLowerCase();
+    if (!q) return all;
+    return all.filter(
+      (u) =>
+        u.code.toLowerCase().includes(q) ||
+        u.name.toLowerCase().includes(q),
+    );
+  }, [all, keyword]);
+
+  const { data, pagination, setPage } = useClientPager(filtered);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       setAll(await iamOrgUnitApi.list());
-    } catch {
+    } catch (err) {
       setAll([]);
+      notifyError(err, '加载组织架构失败');
     } finally {
       setLoading(false);
     }
@@ -26,11 +54,6 @@ export default function OrgUnitsPage() {
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
-
-  const data = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return all.slice(start, start + pageSize);
-  }, [all, page, pageSize]);
 
   const parentOptions = useMemo(
     () =>
@@ -59,9 +82,9 @@ export default function OrgUnitsPage() {
     setOpen(true);
   };
 
-  const handleSubmit = async () => {
-    const values = await form.validateFields();
-    try {
+  const handleSubmit = () =>
+    void run(async () => {
+      const values = await form.validateFields();
       const payload = {
         code: values.code as string,
         name: values.name as string,
@@ -69,42 +92,64 @@ export default function OrgUnitsPage() {
         sortOrder: values.sortOrder as number | undefined,
         status: values.status as string,
       };
-      if (editing) {
-        await iamOrgUnitApi.update(editing.id, payload);
-        message.success('单位已更新');
-      } else {
-        await iamOrgUnitApi.create(payload);
-        message.success('单位已创建');
+      try {
+        if (editing) {
+          await iamOrgUnitApi.update(editing.id, payload);
+          message.success('单位已更新');
+        } else {
+          await iamOrgUnitApi.create(payload);
+          message.success('单位已创建');
+        }
+        setOpen(false);
+        void fetchData();
+      } catch (err) {
+        notifyError(err, '保存失败');
       }
-      setOpen(false);
-      void fetchData();
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '保存失败');
-    }
-  };
+    });
 
-  const handleDelete = async (id: string) => {
-    try {
-      await iamOrgUnitApi.remove(id);
-      message.success('已删除');
-      void fetchData();
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '删除失败');
-    }
-  };
+  const handleDelete = (id: string) =>
+    void run(async () => {
+      try {
+        await iamOrgUnitApi.remove(id);
+        message.success('已删除');
+        void fetchData();
+      } catch (err) {
+        notifyError(err, '删除失败');
+      }
+    });
 
   return (
     <div className="ck-page">
-      <h2 className="ck-page-title">单位管理</h2>
-      <PageTable<IamOrgUnit>
-        title="组织单位"
-        loading={loading}
-        rowKey="id"
-        extra={
+      <PageHeader title="组织架构" description="维护组织单位层级与状态" />
+      <PageToolbar
+        left={
+          <Input.Search
+            allowClear
+            placeholder="搜索编码 / 名称"
+            style={{ width: 220 }}
+            onSearch={(v) => {
+              setPage(1);
+              setKeyword(v);
+            }}
+            onChange={(e) => {
+              if (!e.target.value) {
+                setPage(1);
+                setKeyword('');
+              }
+            }}
+          />
+        }
+        right={
           <Button type="primary" onClick={openCreate}>
             新增单位
           </Button>
         }
+      />
+
+      <PageTable<IamOrgUnit>
+        title="组织单位"
+        loading={loading}
+        rowKey="id"
         columns={[
           { title: '编码', dataIndex: 'code' },
           { title: '名称', dataIndex: 'name' },
@@ -121,8 +166,7 @@ export default function OrgUnitsPage() {
           {
             title: '状态',
             dataIndex: 'status',
-            render: (v?: string) =>
-              v === 'DISABLED' ? <Tag>停用</Tag> : <Tag color="success">启用</Tag>,
+            render: (v?: string) => <StatusBadge code={v} map={ENABLED_STATUS} />,
           },
           {
             title: '操作',
@@ -132,7 +176,7 @@ export default function OrgUnitsPage() {
                 <Button type="link" size="small" onClick={() => openEdit(row)}>
                   编辑
                 </Button>
-                <Popconfirm title="确认删除该单位？" onConfirm={() => void handleDelete(row.id)}>
+                <Popconfirm title="确认删除该单位？" onConfirm={() => handleDelete(row.id)}>
                   <Button type="link" size="small" danger>
                     删除
                   </Button>
@@ -142,47 +186,39 @@ export default function OrgUnitsPage() {
           },
         ]}
         dataSource={data}
-        pagination={{
-          current: page,
-          pageSize,
-          total: all.length,
-          onChange: (p, ps) => {
-            setPage(p);
-            setPageSize(ps);
-          },
-        }}
-        locale={{ emptyText: '暂无组织单位' }}
+        pagination={pagination}
+        locale={{ emptyText: <EmptyState description="暂无组织单位" /> }}
       />
 
-      <Modal
+      <FormModal
         title={editing ? '编辑单位' : '新增单位'}
         open={open}
-        onOk={() => void handleSubmit()}
+        form={form}
+        confirmLoading={submitting}
+        onOk={handleSubmit}
         onCancel={() => setOpen(false)}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="code" label="编码" rules={[{ required: true }]}>
-            <Input placeholder="如：HQ" />
-          </Form.Item>
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}>
-            <Input placeholder="如：总部" />
-          </Form.Item>
-          <Form.Item name="parentId" label="上级单位">
-            <Select allowClear options={parentOptions} placeholder="无则留空" />
-          </Form.Item>
-          <Form.Item name="sortOrder" label="排序">
-            <InputNumber style={{ width: '100%' }} min={0} />
-          </Form.Item>
-          <Form.Item name="status" label="状态" rules={[{ required: true }]}>
-            <Select
-              options={[
-                { value: 'ENABLED', label: '启用' },
-                { value: 'DISABLED', label: '停用' },
-              ]}
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
+        <FormItem name="code" label="编码" rules={[{ required: true }]}>
+          <Input placeholder="如：HQ" />
+        </FormItem>
+        <FormItem name="name" label="名称" rules={[{ required: true }]}>
+          <Input placeholder="如：总部" />
+        </FormItem>
+        <FormItem name="parentId" label="上级单位">
+          <Select allowClear options={parentOptions} placeholder="无则留空" />
+        </FormItem>
+        <FormItem name="sortOrder" label="排序">
+          <InputNumber style={{ width: '100%' }} min={0} />
+        </FormItem>
+        <FormItem name="status" label="状态" rules={[{ required: true }]}>
+          <Select
+            options={[
+              { value: 'ENABLED', label: '启用' },
+              { value: 'DISABLED', label: '停用' },
+            ]}
+          />
+        </FormItem>
+      </FormModal>
     </div>
   );
 }

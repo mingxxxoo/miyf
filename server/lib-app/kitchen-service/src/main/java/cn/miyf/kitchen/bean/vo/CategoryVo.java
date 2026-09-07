@@ -52,5 +52,5 @@ public class CategoryVo extends BaseVo {
     private String status;
 
     @Schema(description = "更新时间")
-    private Instant updatedAt;
+    private Instant lastModifyTime;
 }

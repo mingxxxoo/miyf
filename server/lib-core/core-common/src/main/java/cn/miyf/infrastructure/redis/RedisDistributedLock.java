@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -77,7 +78,7 @@ public class RedisDistributedLock {
         if (!properties.isEnabled()) {
             return supplier.get();
         }
-        String token = java.util.UUID.randomUUID().toString();
+        String token = UUID.randomUUID().toString();
         boolean locked = false;
         try {
             Boolean ok = stringRedisTemplate.opsForValue()

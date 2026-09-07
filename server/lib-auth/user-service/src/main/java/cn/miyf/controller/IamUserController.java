@@ -4,8 +4,7 @@ import cn.miyf.bean.dto.SysUserSaveDto;
 import cn.miyf.bean.vo.SysUserVo;
 import cn.miyf.common.ApiResult;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
-import cn.miyf.security.RequirePermission;
+import cn.miyf.security.IamAdminPopedom;
 import cn.miyf.service.SysUserApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,7 +27,7 @@ import java.util.List;
  * @since 2026-09-05
  */
 @Tag(name = "IAM-用户")
-@PopedomGroup(value = "10030000", name = "管理员", product = "iam", sort = 5)
+@IamAdminPopedom
 @RestController
 @RequestMapping("/api/iam/users")
 public class IamUserController {
@@ -40,32 +39,28 @@ public class IamUserController {
     }
 
     @Operation(summary = "用户列表")
-    @MiyfPermission(code = "iam:user:list", name = "用户列表", groupCode = "iam_user", groupName = "人员管理")
-    @RequirePermission({"iam:user:list"})
+    @MiyfPermission(code = "iam:user:list")
     @GetMapping
     public ApiResult<List<SysUserVo>> list() {
         return ApiResult.ok(sysUserApplicationService.listUsers());
     }
 
     @Operation(summary = "创建用户")
-    @MiyfPermission(code = "iam:user:create", name = "创建用户", groupCode = "iam_user", groupName = "人员管理")
-    @RequirePermission({"iam:user:create"})
+    @MiyfPermission(code = "iam:user:create")
     @PostMapping
     public ApiResult<SysUserVo> create(@Valid @RequestBody SysUserSaveDto dto) {
         return ApiResult.ok(sysUserApplicationService.createUser(dto));
     }
 
     @Operation(summary = "更新用户")
-    @MiyfPermission(code = "iam:user:update", name = "更新用户", groupCode = "iam_user", groupName = "人员管理")
-    @RequirePermission({"iam:user:update"})
+    @MiyfPermission(code = "iam:user:update")
     @PutMapping("/{id}")
     public ApiResult<SysUserVo> update(@PathVariable Long id, @Valid @RequestBody SysUserSaveDto dto) {
         return ApiResult.ok(sysUserApplicationService.updateUser(id, dto));
     }
 
     @Operation(summary = "删除用户")
-    @MiyfPermission(code = "iam:user:delete", name = "删除用户", groupCode = "iam_user", groupName = "人员管理")
-    @RequirePermission({"iam:user:delete"})
+    @MiyfPermission(code = "iam:user:delete")
     @DeleteMapping("/{id}")
     public ApiResult<Void> delete(@PathVariable Long id) {
         sysUserApplicationService.deleteUser(id);

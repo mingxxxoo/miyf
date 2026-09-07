@@ -13,6 +13,9 @@ import {
   message,
 } from 'antd';
 import { useSearchParams } from 'react-router-dom';
+import { PageHeader } from '@/ui';
+import { notifyError } from '@/api/errors';
+import { useSubmitting } from '@/hooks/useSubmitting';
 import {
   healthApi,
   type HealthBinding,
@@ -23,8 +26,9 @@ import {
 
 /**
  * 健康数据源：列表、主体绑定、华为 OAuth、触发同步、运行记录。
+ * embedded=true 时用于系统管理中心嵌套，不重复外层标题。
  */
-export default function HealthProvidersPage() {
+export default function HealthProvidersPage({ embedded = false }: { embedded?: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [providers, setProviders] = useState<HealthProvider[]>([]);
@@ -38,6 +42,7 @@ export default function HealthProvidersPage() {
   const [syncProvider, setSyncProvider] = useState<string | undefined>();
   const [bindForm] = Form.useForm();
   const [syncForm] = Form.useForm();
+  const { submitting, run } = useSubmitting();
 
   const refreshProviders = useCallback(async () => {
     setProviders(await healthApi.listProviders());
@@ -83,7 +88,7 @@ export default function HealthProvidersPage() {
       await Promise.all([refreshProviders(), refreshSubjects()]);
       await Promise.all([refreshBindings(), refreshRuns(), refreshHuaweiStatus()]);
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '加载失败');
+      notifyError(err, '加载失败');
     } finally {
       setLoading(false);
     }
@@ -136,7 +141,7 @@ export default function HealthProvidersPage() {
         await refreshHuaweiStatus();
       } catch (err) {
         if (!cancelled) {
-          message.error(err instanceof Error ? err.message : '华为授权失败');
+          notifyError(err, '华为授权失败');
           setSearchParams({}, { replace: true });
         }
       }
@@ -152,31 +157,35 @@ export default function HealthProvidersPage() {
       return;
     }
     const values = await bindForm.validateFields();
-    try {
-      await healthApi.upsertBinding(subjectId, values);
-      message.success('绑定已保存');
-      setBindOpen(false);
-      bindForm.resetFields();
-      await refreshBindings();
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '保存失败');
-    }
+    await run(async () => {
+      try {
+        await healthApi.upsertBinding(subjectId, values);
+        message.success('绑定已保存');
+        setBindOpen(false);
+        bindForm.resetFields();
+        await refreshBindings();
+      } catch (err) {
+        notifyError(err, '保存失败');
+      }
+    });
   };
 
   const onSync = async () => {
     const values = await syncForm.validateFields();
     const code = syncProvider || values.providerCode;
-    try {
-      const run = await healthApi.sync(code, {
-        subjectId: values.subjectId,
-      });
-      message.success(`同步结束：${run.status}`);
-      setSyncOpen(false);
-      await refreshRuns();
-      await refreshBindings();
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '同步失败');
-    }
+    await run(async () => {
+      try {
+        const runResult = await healthApi.sync(code, {
+          subjectId: values.subjectId,
+        });
+        message.success(`同步结束：${runResult.status}`);
+        setSyncOpen(false);
+        await refreshRuns();
+        await refreshBindings();
+      } catch (err) {
+        notifyError(err, '同步失败');
+      }
+    });
   };
 
   const onHuaweiAuthorize = async () => {
@@ -184,35 +193,39 @@ export default function HealthProvidersPage() {
       message.warning('请先选择主体');
       return;
     }
-    try {
-      const { authorizeUrl } = await healthApi.huaweiAuthorizeUrl(subjectId);
-      if (!authorizeUrl) {
-        message.error('未返回授权地址');
-        return;
+    await run(async () => {
+      try {
+        const { authorizeUrl } = await healthApi.huaweiAuthorizeUrl(subjectId);
+        if (!authorizeUrl) {
+          message.error('未返回授权地址');
+          return;
+        }
+        window.location.href = authorizeUrl;
+      } catch (err) {
+        notifyError(err, '获取授权地址失败');
       }
-      window.location.href = authorizeUrl;
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '获取授权地址失败');
-    }
+    });
   };
 
   const onHuaweiRevoke = async () => {
     if (!subjectId) return;
-    try {
-      await healthApi.huaweiRevoke(subjectId);
-      message.success('已撤销该主体的华为授权');
-      setHuaweiAuth(false);
-      await refreshBindings();
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '撤销失败');
-    }
+    await run(async () => {
+      try {
+        await healthApi.huaweiRevoke(subjectId);
+        message.success('已撤销该主体的华为授权');
+        setHuaweiAuth(false);
+        await refreshBindings();
+      } catch (err) {
+        notifyError(err, '撤销失败');
+      }
+    });
   };
 
   const huaweiEnabled = providers.some((p) => p.code === 'huawei' && p.enabled);
 
   return (
-    <div className="ck-page">
-      <h2 className="ck-page-title">健康数据源</h2>
+    <div className={embedded ? undefined : 'ck-page'}>
+      {embedded ? null : <PageHeader title="健康数据源" />}
       <Typography.Paragraph type="secondary">
         管理可插拔 Provider（含华为运动健康 OAuth）、主体绑定与同步。manual 源同步会记为 SKIPPED。
       </Typography.Paragraph>
@@ -336,7 +349,7 @@ export default function HealthProvidersPage() {
             { title: '外部账号', dataIndex: 'externalAccountId' },
             { title: '凭证引用', dataIndex: 'credentialRef', ellipsis: true },
             { title: '状态', dataIndex: 'status', width: 110 },
-            { title: '最近同步', dataIndex: 'lastSyncAt', width: 200 },
+            { title: '最近同步', dataIndex: 'lastSyncTime', width: 200 },
           ]}
         />
       </Card>
@@ -367,8 +380,8 @@ export default function HealthProvidersPage() {
             },
             { title: '拉取', dataIndex: 'fetchedCount', width: 80 },
             { title: '入库', dataIndex: 'ingestedCount', width: 80 },
-            { title: '开始', dataIndex: 'startedAt', width: 180 },
-            { title: '结束', dataIndex: 'finishedAt', width: 180 },
+            { title: '开始', dataIndex: 'startedTime', width: 180 },
+            { title: '结束', dataIndex: 'finishedTime', width: 180 },
             { title: '错误', dataIndex: 'errorMessage', ellipsis: true },
           ]}
         />
@@ -379,6 +392,7 @@ export default function HealthProvidersPage() {
         open={bindOpen}
         onCancel={() => setBindOpen(false)}
         onOk={() => void onBind()}
+        confirmLoading={submitting}
         destroyOnClose
       >
         <Form form={bindForm} layout="vertical">
@@ -413,6 +427,7 @@ export default function HealthProvidersPage() {
         open={syncOpen}
         onCancel={() => setSyncOpen(false)}
         onOk={() => void onSync()}
+        confirmLoading={submitting}
         destroyOnClose
       >
         <Form form={syncForm} layout="vertical">

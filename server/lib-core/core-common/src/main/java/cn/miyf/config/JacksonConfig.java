@@ -1,5 +1,6 @@
 package cn.miyf.config;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -8,6 +9,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+
+import java.util.TimeZone;
 
 /**
  * 提供 {@link ObjectMapper} Bean（Spring Boot 4 默认偏向 tools.jackson，业务侧仍使用 com.fasterxml）。
@@ -34,8 +37,8 @@ public class JacksonConfig {
         longAsString.addSerializer(Long.TYPE, ToStringSerializer.instance);
         mapper.registerModule(longAsString);
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        mapper.setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
-        mapper.setTimeZone(java.util.TimeZone.getTimeZone("Asia/Shanghai"));
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.setTimeZone(TimeZone.getTimeZone("Asia/Shanghai"));
         return mapper;
     }
 }

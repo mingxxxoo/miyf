@@ -31,8 +31,8 @@ public class Dish {
     private int ratingCount;
     private Long createdBy;
     private Long updatedBy;
-    private Instant createdAt;
-    private Instant updatedAt;
+    private Instant createTime;
+    private Instant lastModifyTime;
     private List<String> images = new ArrayList<>();
     private Recipe recipe;
 
@@ -172,20 +172,20 @@ public class Dish {
         this.updatedBy = updatedBy;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public Instant getCreateTime() {
+        return createTime;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public void setCreateTime(Instant createTime) {
+        this.createTime = createTime;
     }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
+    public Instant getLastModifyTime() {
+        return lastModifyTime;
     }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setLastModifyTime(Instant lastModifyTime) {
+        this.lastModifyTime = lastModifyTime;
     }
 
     public List<String> getImages() {

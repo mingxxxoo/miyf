@@ -96,6 +96,7 @@ public class AdminAuthController {
         LoginVo vo = new LoginVo()
                 .setUserId(principal.getId())
                 .setDisplayName(principal.getUsername())
+                .setUsername(principal.getUsername())
                 .setPrincipalType(principal.getType().name())
                 .setPermissions(principal.getPermissions());
         return ApiResult.ok(vo);

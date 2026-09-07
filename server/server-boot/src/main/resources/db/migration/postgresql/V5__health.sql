@@ -10,8 +10,8 @@ CREATE TABLE health_subject
     external_user_id BIGINT,
     status           VARCHAR(32)  NOT NULL DEFAULT 'ENABLED',
     remark           VARCHAR(255),
-    created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT ck_health_subject_gender CHECK (gender IN ('UNKNOWN', 'MALE', 'FEMALE')),
     CONSTRAINT ck_health_subject_status CHECK (status IN ('ENABLED', 'DISABLED'))
 );
@@ -25,18 +25,18 @@ CREATE TABLE health_sample
     metric_code      VARCHAR(64)    NOT NULL,
     value_num        NUMERIC(18, 6) NOT NULL,
     unit             VARCHAR(32)    NOT NULL,
-    measured_at      TIMESTAMPTZ    NOT NULL,
+    measured_time      TIMESTAMPTZ    NOT NULL,
     provider_code    VARCHAR(64)    NOT NULL DEFAULT 'manual',
     source_sample_id VARCHAR(128),
     quality          VARCHAR(16)    NOT NULL DEFAULT 'NORMAL',
     meta_json        TEXT,
-    created_at       TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
-    updated_at       TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    create_time       TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    last_modify_time       TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
     CONSTRAINT ck_health_sample_quality CHECK (quality IN ('NORMAL', 'ESTIMATED', 'SUSPECT'))
 );
 
 CREATE INDEX idx_health_sample_subject_metric_time
-    ON health_sample (subject_id, metric_code, measured_at DESC);
+    ON health_sample (subject_id, metric_code, measured_time DESC);
 
 CREATE INDEX idx_health_sample_provider ON health_sample (provider_code);
 
@@ -51,9 +51,9 @@ CREATE TABLE health_provider_binding
     external_account_id VARCHAR(128),
     credential_ref      VARCHAR(255),
     status              VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
-    last_sync_at        TIMESTAMPTZ,
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_sync_time        TIMESTAMPTZ,
+    create_time          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_modify_time          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_health_provider_binding UNIQUE (subject_id, provider_code),
     CONSTRAINT ck_health_provider_binding_status CHECK (status IN ('ACTIVE', 'INACTIVE', 'REVOKED'))
 );
@@ -67,11 +67,11 @@ CREATE TABLE health_sync_run
     fetched_count  INT         NOT NULL DEFAULT 0,
     ingested_count INT         NOT NULL DEFAULT 0,
     error_message  VARCHAR(512),
-    started_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    finished_at    TIMESTAMPTZ,
-    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    started_time     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    finished_time    TIMESTAMPTZ,
+    create_time     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_modify_time     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT ck_health_sync_run_status CHECK (status IN ('RUNNING', 'SUCCESS', 'FAILED', 'SKIPPED'))
 );
 
-CREATE INDEX idx_health_sync_run_provider_started ON health_sync_run (provider_code, started_at DESC);
+CREATE INDEX idx_health_sync_run_provider_started ON health_sync_run (provider_code, started_time DESC);

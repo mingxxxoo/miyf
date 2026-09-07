@@ -38,12 +38,12 @@ public class OperationLogRepositoryImpl implements OperationLogRepository {
     @Override
     public void save(OperationLog log) {
         OperationLogEntity entity = EntityConverters.toLogEntity(log);
-        if (entity.getCreatedAt() == null) {
-            entity.setCreatedAt(Instant.now());
+        if (entity.getCreateTime() == null) {
+            entity.setCreateTime(Instant.now());
         }
         operationLogMapper.insert(entity);
         log.setId(entity.getId());
-        log.setCreatedAt(entity.getCreatedAt());
+        log.setCreateTime(entity.getCreateTime());
     }
 
     /**

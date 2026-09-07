@@ -7,19 +7,19 @@
     <update id="updateStatus">
         UPDATE kitchen_order
         SET status = #{status},
-            updated_at = NOW()
+            last_modify_time = NOW()
         WHERE id = #{id}
           AND status = #{fromStatus}
     </update>
 
     <select id="selectUserPage" resultType="cn.miyf.kitchen.bean.entity.OrderEntity">
-        SELECT id, order_no, user_id, status, remark, created_at, updated_at
+        SELECT id, order_no, user_id, status, remark, create_time, last_modify_time
         FROM kitchen_order
         WHERE user_id = #{userId}
           <if test="status != null and status != ''">
               AND status = #{status}
           </if>
-        ORDER BY created_at DESC
+        ORDER BY create_time DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
@@ -33,7 +33,7 @@
     </select>
 
     <select id="selectAdminPage" resultType="cn.miyf.kitchen.bean.entity.OrderEntity">
-        SELECT id, order_no, user_id, status, remark, created_at, updated_at
+        SELECT id, order_no, user_id, status, remark, create_time, last_modify_time
         FROM kitchen_order
         WHERE 1 = 1
           <if test="status != null and status != ''">
@@ -45,7 +45,7 @@
           <if test="userId != null">
               AND user_id = #{userId}
           </if>
-        ORDER BY created_at DESC
+        ORDER BY create_time DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
@@ -69,7 +69,7 @@
         FROM kitchen_order
         WHERE status = #{status}
           <if test="since != null">
-              AND created_at &gt;= #{since}
+              AND create_time &gt;= #{since}
           </if>
     </select>
 
@@ -78,7 +78,7 @@
         FROM kitchen_order
         WHERE 1 = 1
           <if test="since != null">
-              AND created_at &gt;= #{since}
+              AND create_time &gt;= #{since}
           </if>
     </select>
 
@@ -89,21 +89,21 @@
     </select>
 
     <select id="countDailySince" resultType="map">
-        SELECT TO_CHAR(created_at AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD') AS day_key,
-               TO_CHAR(created_at AT TIME ZONE 'Asia/Shanghai', 'MM-DD') AS day_label,
+        SELECT TO_CHAR(create_time AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD') AS day_key,
+               TO_CHAR(create_time AT TIME ZONE 'Asia/Shanghai', 'MM-DD') AS day_label,
                COUNT(1) AS cnt
         FROM kitchen_order
-        WHERE created_at &gt;= #{since}
+        WHERE create_time &gt;= #{since}
         GROUP BY day_key, day_label
         ORDER BY day_key
     </select>
 
     <select id="countActiveUsersDailySince" resultType="map">
-        SELECT TO_CHAR(created_at AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD') AS day_key,
-               TO_CHAR(created_at AT TIME ZONE 'Asia/Shanghai', 'MM-DD') AS day_label,
+        SELECT TO_CHAR(create_time AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD') AS day_key,
+               TO_CHAR(create_time AT TIME ZONE 'Asia/Shanghai', 'MM-DD') AS day_label,
                COUNT(DISTINCT user_id) AS cnt
         FROM kitchen_order
-        WHERE created_at &gt;= #{since}
+        WHERE create_time &gt;= #{since}
         GROUP BY day_key, day_label
         ORDER BY day_key
     </select>
@@ -113,7 +113,7 @@
                SUM(oi.quantity) AS cnt
         FROM kitchen_order_item oi
                  INNER JOIN kitchen_order o ON o.id = oi.order_id
-        WHERE o.created_at &gt;= #{since}
+        WHERE o.create_time &gt;= #{since}
         GROUP BY oi.dish_name
         ORDER BY cnt DESC
         LIMIT #{limit}

@@ -8,8 +8,8 @@ CREATE TABLE users (
     nickname        VARCHAR(64),
     avatar_url      VARCHAR(512),
     status          VARCHAR(32)  NOT NULL DEFAULT 'ENABLED',
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     deleted         BOOLEAN      NOT NULL DEFAULT FALSE,
     CONSTRAINT uk_users_openid UNIQUE (openid)
 );
@@ -20,8 +20,8 @@ CREATE TABLE admin_users (
     password_hash   VARCHAR(100) NOT NULL,
     nickname        VARCHAR(64),
     status          VARCHAR(32)  NOT NULL DEFAULT 'ENABLED',
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     deleted         BOOLEAN      NOT NULL DEFAULT FALSE,
     CONSTRAINT uk_admin_users_username UNIQUE (username)
 );
@@ -31,8 +31,8 @@ CREATE TABLE roles (
     code            VARCHAR(64)  NOT NULL,
     name            VARCHAR(64)  NOT NULL,
     description     VARCHAR(255),
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     deleted         BOOLEAN      NOT NULL DEFAULT FALSE,
     CONSTRAINT uk_roles_code UNIQUE (code)
 );
@@ -42,8 +42,8 @@ CREATE TABLE permissions (
     code            VARCHAR(64)  NOT NULL,
     name            VARCHAR(64)  NOT NULL,
     description     VARCHAR(255),
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     deleted         BOOLEAN      NOT NULL DEFAULT FALSE,
     CONSTRAINT uk_permissions_code UNIQUE (code)
 );
@@ -66,8 +66,8 @@ CREATE TABLE dish_category (
     icon            VARCHAR(512),
     sort_order      INT          NOT NULL DEFAULT 0,
     status          VARCHAR(32)  NOT NULL DEFAULT 'ENABLED',
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     deleted         BOOLEAN      NOT NULL DEFAULT FALSE
 );
 
@@ -88,8 +88,8 @@ CREATE TABLE dish (
     rating_count    INT          NOT NULL DEFAULT 0,
     created_by      UUID,
     updated_by      UUID,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     deleted         BOOLEAN      NOT NULL DEFAULT FALSE,
     CONSTRAINT ck_dish_stock_type CHECK (stock_type IN ('LIMITED', 'UNLIMITED')),
     CONSTRAINT ck_dish_status CHECK (status IN ('DRAFT', 'ON_SALE', 'OFF_SALE')),
@@ -106,7 +106,7 @@ CREATE TABLE dish_image (
     dish_id         UUID         NOT NULL REFERENCES dish(id),
     image_url       VARCHAR(512) NOT NULL,
     sort_order      INT          NOT NULL DEFAULT 0,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_dish_image_dish_id ON dish_image(dish_id);
@@ -124,8 +124,8 @@ CREATE TABLE dish_recipe (
     steps           JSONB        NOT NULL DEFAULT '[]'::jsonb,
     tips            TEXT,
     nutrition       JSONB,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     deleted         BOOLEAN      NOT NULL DEFAULT FALSE
 );
 
@@ -139,8 +139,8 @@ CREATE TABLE orders (
     user_id         UUID         NOT NULL REFERENCES users(id),
     status          VARCHAR(32)  NOT NULL DEFAULT 'PENDING',
     remark          VARCHAR(512),
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     deleted         BOOLEAN      NOT NULL DEFAULT FALSE,
     CONSTRAINT uk_orders_order_no UNIQUE (order_no),
     CONSTRAINT ck_orders_status CHECK (status IN (
@@ -150,7 +150,7 @@ CREATE TABLE orders (
 
 CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_orders_created_at ON orders(created_at);
+CREATE INDEX idx_orders_create_time ON orders(create_time);
 
 CREATE TABLE order_items (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -160,7 +160,7 @@ CREATE TABLE order_items (
     quantity        INT          NOT NULL,
     unit            VARCHAR(32)  NOT NULL DEFAULT '份',
     remark          VARCHAR(255),
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT ck_order_items_qty CHECK (quantity > 0)
 );
 
@@ -175,8 +175,8 @@ CREATE TABLE comments (
     rating          INT          NOT NULL,
     content         VARCHAR(1000),
     status          VARCHAR(32)  NOT NULL DEFAULT 'NORMAL',
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     deleted         BOOLEAN      NOT NULL DEFAULT FALSE,
     CONSTRAINT uk_comments_order_dish_user UNIQUE (order_id, dish_id, user_id),
     CONSTRAINT ck_comments_rating CHECK (rating >= 1 AND rating <= 5),
@@ -193,7 +193,7 @@ CREATE TABLE comment_images (
     comment_id      UUID         NOT NULL REFERENCES comments(id),
     image_url       VARCHAR(512) NOT NULL,
     sort_order      INT          NOT NULL DEFAULT 0,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    create_time      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_comment_images_comment_id ON comment_images(comment_id);
@@ -209,8 +209,8 @@ CREATE TABLE operation_logs (
     request_method    VARCHAR(16),
     request_uri       VARCHAR(255),
     operation_detail  TEXT,
-    created_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    create_time        TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_operation_logs_created_at ON operation_logs(created_at);
+CREATE INDEX idx_operation_logs_create_time ON operation_logs(create_time);
 CREATE INDEX idx_operation_logs_operator_id ON operation_logs(operator_id);

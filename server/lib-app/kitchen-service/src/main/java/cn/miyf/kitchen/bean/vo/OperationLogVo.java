@@ -48,6 +48,9 @@ public class OperationLogVo extends BaseVo {
     @Schema(description = "动作")
     private String action;
 
+    @Schema(description = "操作类型")
+    private String operationType;
+
     @Schema(description = "模块")
     private String module;
 
@@ -57,6 +60,12 @@ public class OperationLogVo extends BaseVo {
     @Schema(description = "IP")
     private String ip;
 
+    @Schema(description = "请求方法")
+    private String requestMethod;
+
+    @Schema(description = "请求路径")
+    private String requestUri;
+
     @Schema(description = "创建时间")
-    private Instant createdAt;
+    private Instant createTime;
 }

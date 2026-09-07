@@ -4,8 +4,7 @@ import cn.miyf.bean.dto.SysMenuSaveDto;
 import cn.miyf.bean.entity.SysMenuEntity;
 import cn.miyf.common.ApiResult;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
-import cn.miyf.security.RequirePermission;
+import cn.miyf.security.IamAdminPopedom;
 import cn.miyf.service.PermissionApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,7 +27,7 @@ import java.util.List;
  * @since 2026-09-05
  */
 @Tag(name = "IAM-菜单")
-@PopedomGroup(value = "10030000", name = "管理员", product = "iam", sort = 5)
+@IamAdminPopedom
 @RestController
 @RequestMapping("/api/iam/menus")
 public class IamMenuController {
@@ -40,32 +39,28 @@ public class IamMenuController {
     }
 
     @Operation(summary = "菜单列表")
-    @MiyfPermission(code = "iam:menu:list", name = "菜单列表", groupCode = "iam_menu", groupName = "菜单")
-    @RequirePermission({"iam:menu:list"})
+    @MiyfPermission(code = "iam:menu:list")
     @GetMapping
     public ApiResult<List<SysMenuEntity>> list() {
         return ApiResult.ok(permissionApplicationService.listMenus());
     }
 
     @Operation(summary = "创建菜单")
-    @MiyfPermission(code = "iam:menu:create", name = "创建菜单", groupCode = "iam_menu", groupName = "菜单")
-    @RequirePermission({"iam:menu:create"})
+    @MiyfPermission(code = "iam:menu:create")
     @PostMapping
     public ApiResult<SysMenuEntity> create(@Valid @RequestBody SysMenuSaveDto dto) {
         return ApiResult.ok(permissionApplicationService.createMenu(dto));
     }
 
     @Operation(summary = "更新菜单")
-    @MiyfPermission(code = "iam:menu:update", name = "更新菜单", groupCode = "iam_menu", groupName = "菜单")
-    @RequirePermission({"iam:menu:update"})
+    @MiyfPermission(code = "iam:menu:update")
     @PutMapping("/{id}")
     public ApiResult<SysMenuEntity> update(@PathVariable Long id, @Valid @RequestBody SysMenuSaveDto dto) {
         return ApiResult.ok(permissionApplicationService.updateMenu(id, dto));
     }
 
     @Operation(summary = "删除菜单")
-    @MiyfPermission(code = "iam:menu:delete", name = "删除菜单", groupCode = "iam_menu", groupName = "菜单")
-    @RequirePermission({"iam:menu:delete"})
+    @MiyfPermission(code = "iam:menu:delete")
     @DeleteMapping("/{id}")
     public ApiResult<Void> delete(@PathVariable Long id) {
         permissionApplicationService.deleteMenu(id);

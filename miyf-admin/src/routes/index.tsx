@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 import PermissionGuard from '@/components/PermissionGuard';
 import AdminLayout from '@/layouts/AdminLayout';
+import SystemLayout, { firstSystemPath } from '@/layouts/SystemLayout';
 import LoginPage from '@/pages/login/LoginPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import UsersPage from '@/modules/kitchen/pages/users/UsersPage';
@@ -14,23 +15,26 @@ import OrdersPage from '@/modules/kitchen/pages/orders/OrdersPage';
 import OrderDetailPage from '@/modules/kitchen/pages/orders/OrderDetailPage';
 import CommentsPage from '@/modules/kitchen/pages/comments/CommentsPage';
 import OperationLogsPage from '@/modules/kitchen/pages/operation-logs/OperationLogsPage';
-import AdminsPage from '@/modules/iam/pages/admins/AdminsPage';
 import RolesPage from '@/modules/iam/pages/roles/RolesPage';
+import RoleAuthPage from '@/modules/iam/pages/roles/RoleAuthPage';
 import PermissionsPage from '@/modules/iam/pages/permissions/PermissionsPage';
 import OrgUnitsPage from '@/modules/iam/pages/org-units/OrgUnitsPage';
 import MenusPage from '@/modules/iam/pages/menus/MenusPage';
 import PermGroupsPage from '@/modules/iam/pages/perm-groups/PermGroupsPage';
-import SystemHomePage from '@/pages/system/SystemHomePage';
 import SystemConfigPage from '@/pages/system/SystemConfigPage';
+import SystemAppsPage from '@/pages/system/SystemAppsPage';
 import SystemDictPage from '@/pages/system/SystemDictPage';
 import SystemNotifyPage from '@/pages/system/SystemNotifyPage';
 import SystemJobsPage from '@/pages/system/SystemJobsPage';
 import SystemMonitorPage from '@/pages/system/SystemMonitorPage';
+import SystemOverviewPage from '@/pages/system/SystemOverviewPage';
+import SystemHealthSyncPage from '@/pages/system/SystemHealthSyncPage';
 import HealthOverviewPage from '@/modules/health/pages/HealthOverviewPage';
 import HealthSubjectsPage from '@/modules/health/pages/HealthSubjectsPage';
 import HealthSamplesPage from '@/modules/health/pages/HealthSamplesPage';
 import HealthProvidersPage from '@/modules/health/pages/HealthProvidersPage';
 import HealthTrendsPage from '@/modules/health/pages/HealthTrendsPage';
+import { usePermissionStore } from '@/stores/permissionStore';
 
 /** 旧路径 /dishes/:id/edit → /kitchen/dishes/:id/edit */
 function LegacyDishEditRedirect() {
@@ -48,6 +52,12 @@ function LegacyOrderDetailRedirect() {
 function LegacyUserDetailRedirect() {
   const { id } = useParams();
   return <Navigate to={`/kitchen/users/${id}`} replace />;
+}
+
+function SystemIndexRedirect() {
+  const hasPermission = usePermissionStore((s) => s.hasPermission);
+  const hasAnyPermission = usePermissionStore((s) => s.hasAnyPermission);
+  return <Navigate to={firstSystemPath(hasPermission, hasAnyPermission)} replace />;
 }
 
 function Guard({
@@ -70,6 +80,7 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+
       <Route
         element={
           <PermissionGuard>
@@ -79,7 +90,6 @@ export default function AppRoutes() {
       >
         <Route path="/dashboard" element={<DashboardPage />} />
 
-        {/* kitchen 业务（路径对齐 sys_menu 种子） */}
         <Route
           path="/kitchen/categories"
           element={
@@ -169,108 +179,8 @@ export default function AppRoutes() {
           }
         />
 
-        {/* IAM */}
-        <Route
-          path="/iam/users"
-          element={
-            <Guard permission="iam:user:list">
-              <AdminsPage />
-            </Guard>
-          }
-        />
-        <Route
-          path="/iam/roles"
-          element={
-            <Guard permission="iam:role:list">
-              <RolesPage />
-            </Guard>
-          }
-        />
-        <Route
-          path="/iam/permissions"
-          element={
-            <Guard permission="iam:permission:list">
-              <PermissionsPage />
-            </Guard>
-          }
-        />
-        <Route
-          path="/iam/org-units"
-          element={
-            <Guard permission="iam:org:list">
-              <OrgUnitsPage />
-            </Guard>
-          }
-        />
-        <Route
-          path="/iam/perm-groups"
-          element={
-            <Guard permission="iam:perm-group:list">
-              <PermGroupsPage />
-            </Guard>
-          }
-        />
-        <Route
-          path="/iam/menus"
-          element={
-            <Guard permission="iam:menu:list">
-              <MenusPage />
-            </Guard>
-          }
-        />
+        <Route path="/iam/org-units" element={<Navigate to="/system/org-units" replace />} />
 
-        {/* 系统设置（系统管理员） */}
-        <Route path="/system" element={<SystemHomePage />} />
-        <Route
-          path="/system/permissions"
-          element={
-            <Guard permission="iam:permission:list">
-              <PermissionsPage />
-            </Guard>
-          }
-        />
-        <Route
-          path="/system/config"
-          element={
-            <Guard permission="sys:config:list">
-              <SystemConfigPage />
-            </Guard>
-          }
-        />
-        <Route
-          path="/system/dicts"
-          element={
-            <Guard permission="sys:dict:list">
-              <SystemDictPage />
-            </Guard>
-          }
-        />
-        <Route
-          path="/system/notifications"
-          element={
-            <Guard permissions={['sys:notify:list', 'sys:notify:send']}>
-              <SystemNotifyPage />
-            </Guard>
-          }
-        />
-        <Route
-          path="/system/jobs"
-          element={
-            <Guard permission="sys:job:list">
-              <SystemJobsPage />
-            </Guard>
-          }
-        />
-        <Route
-          path="/system/monitor"
-          element={
-            <Guard permission="sys:monitor:view">
-              <SystemMonitorPage />
-            </Guard>
-          }
-        />
-
-        {/* 健康管理 */}
         <Route
           path="/health/overview"
           element={
@@ -324,9 +234,146 @@ export default function AppRoutes() {
         <Route path="/users" element={<Navigate to="/kitchen/users" replace />} />
         <Route path="/users/:id" element={<LegacyUserDetailRedirect />} />
         <Route path="/operation-logs" element={<Navigate to="/kitchen/operation-logs" replace />} />
-        <Route path="/admins" element={<Navigate to="/iam/users" replace />} />
-        <Route path="/roles" element={<Navigate to="/iam/roles" replace />} />
-        <Route path="/permissions" element={<Navigate to="/iam/permissions" replace />} />
+        <Route path="/admins" element={<Navigate to="/system/role-auth" replace />} />
+        <Route path="/roles" element={<Navigate to="/system/roles" replace />} />
+        <Route path="/permissions" element={<Navigate to="/system/permissions" replace />} />
+        <Route path="/iam/users" element={<Navigate to="/system/role-auth" replace />} />
+        <Route path="/iam/roles" element={<Navigate to="/system/roles" replace />} />
+        <Route path="/iam/permissions" element={<Navigate to="/system/permissions" replace />} />
+        <Route path="/iam/perm-groups" element={<Navigate to="/system/perm-groups" replace />} />
+        <Route path="/iam/menus" element={<Navigate to="/system/menus" replace />} />
+      </Route>
+
+      {/* 系统跳转模块 */}
+      <Route
+        path="/system"
+        element={
+          <PermissionGuard>
+            <SystemLayout />
+          </PermissionGuard>
+        }
+      >
+        <Route index element={<SystemIndexRedirect />} />
+        <Route
+          path="overview"
+          element={
+            <Guard permissions={['sys:monitor:view', 'sys:settings:view', 'iam:role:list']}>
+              <SystemOverviewPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="roles"
+          element={
+            <Guard permission="iam:role:list">
+              <RolesPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="role-auth"
+          element={
+            <Guard permission="iam:role:list">
+              <RoleAuthPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="org-units"
+          element={
+            <Guard permission="iam:org:list">
+              <OrgUnitsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="menus"
+          element={
+            <Guard permission="iam:menu:list">
+              <MenusPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="permissions"
+          element={
+            <Guard permission="iam:permission:list">
+              <PermissionsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="perm-groups"
+          element={
+            <Guard permission="iam:perm-group:list">
+              <PermGroupsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="apps"
+          element={
+            <Guard permission="sys:app:list">
+              <SystemAppsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="config"
+          element={
+            <Guard permission="sys:config:list">
+              <SystemConfigPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="dicts"
+          element={
+            <Guard permission="sys:dict:list">
+              <SystemDictPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="notifications"
+          element={
+            <Guard permissions={['sys:notify:list', 'sys:notify:send']}>
+              <SystemNotifyPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="jobs"
+          element={
+            <Guard permission="sys:job:list">
+              <SystemJobsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="monitor"
+          element={
+            <Guard permission="sys:monitor:view">
+              <SystemMonitorPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="operation-logs"
+          element={
+            <Guard permission="operation-log:list">
+              <OperationLogsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="health-sync"
+          element={
+            <Guard permissions={['health:provider:list', 'health:sync:trigger']}>
+              <SystemHealthSyncPage />
+            </Guard>
+          }
+        />
       </Route>
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -8,4 +8,16 @@
         DELETE FROM sys_user_role
         WHERE user_id = #{userId}
     </delete>
+
+    <delete id="deleteByUserIdAndRoleId">
+        DELETE FROM sys_user_role
+        WHERE user_id = #{userId}
+          AND role_id = #{roleId}
+    </delete>
+
+    <select id="countByRoleId" resultType="int">
+        SELECT COUNT(1)
+        FROM sys_user_role
+        WHERE role_id = #{roleId}
+    </select>
 </mapper>

@@ -12,7 +12,7 @@ public class HuaweiTokenBundle {
 
     private String accessToken;
     private String refreshToken;
-    private Instant expiresAt;
+    private Instant expiresTime;
     private String openId;
     private String scope;
     /**
@@ -38,12 +38,12 @@ public class HuaweiTokenBundle {
         return this;
     }
 
-    public Instant getExpiresAt() {
-        return expiresAt;
+    public Instant getExpiresTime() {
+        return expiresTime;
     }
 
-    public HuaweiTokenBundle setExpiresAt(Instant expiresAt) {
-        this.expiresAt = expiresAt;
+    public HuaweiTokenBundle setExpiresTime(Instant expiresTime) {
+        this.expiresTime = expiresTime;
         return this;
     }
 
@@ -81,9 +81,9 @@ public class HuaweiTokenBundle {
         if (accessToken == null || accessToken.isBlank()) {
             return false;
         }
-        if (expiresAt == null) {
+        if (expiresTime == null) {
             return true;
         }
-        return expiresAt.isAfter(now.plusSeconds(60));
+        return expiresTime.isAfter(now.plusSeconds(60));
     }
 }

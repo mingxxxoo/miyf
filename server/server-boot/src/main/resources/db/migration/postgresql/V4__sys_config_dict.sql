@@ -11,8 +11,8 @@ CREATE TABLE sys_config
     description  VARCHAR(255),
     status       VARCHAR(32)  NOT NULL DEFAULT 'ENABLED',
     sort_order   INT          NOT NULL DEFAULT 0,
-    created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_sys_config_key UNIQUE (config_key),
     CONSTRAINT ck_sys_config_value_type CHECK (value_type IN ('STRING', 'NUMBER', 'BOOLEAN', 'JSON')),
     CONSTRAINT ck_sys_config_status CHECK (status IN ('ENABLED', 'DISABLED'))
@@ -28,8 +28,8 @@ CREATE TABLE sys_dict_type
     description VARCHAR(255),
     status      VARCHAR(32)  NOT NULL DEFAULT 'ENABLED',
     sort_order  INT          NOT NULL DEFAULT 0,
-    created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_sys_dict_type_code UNIQUE (code),
     CONSTRAINT ck_sys_dict_type_status CHECK (status IN ('ENABLED', 'DISABLED'))
 );
@@ -43,8 +43,8 @@ CREATE TABLE sys_dict_item
     sort_order INT          NOT NULL DEFAULT 0,
     status     VARCHAR(32)  NOT NULL DEFAULT 'ENABLED',
     remark     VARCHAR(255),
-    created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    create_time TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    last_modify_time TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uk_sys_dict_item UNIQUE (type_id, item_value),
     CONSTRAINT ck_sys_dict_item_status CHECK (status IN ('ENABLED', 'DISABLED'))
 );

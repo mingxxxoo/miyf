@@ -58,7 +58,7 @@ public class HealthProviderBindingEntity extends BaseEntity {
     @Schema(description = "ACTIVE/INACTIVE/REVOKED")
     private String status;
 
-    @TableField("last_sync_at")
+    @TableField("last_sync_time")
     @Schema(description = "最近同步时间")
-    private Instant lastSyncAt;
+    private Instant lastSyncTime;
 }

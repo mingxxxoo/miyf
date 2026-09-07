@@ -87,8 +87,8 @@ public class SystemConfigApplicationService {
         Instant now = Instant.now();
         SysConfigEntity entity = mapDto(new SysConfigEntity(), dto);
         entity.setId(snowflakeIdGenerator.nextId());
-        entity.setCreatedAt(now);
-        entity.setUpdatedAt(now);
+        entity.setCreateTime(now);
+        entity.setLastModifyTime(now);
         configMapper.insert(entity);
         return entity;
     }
@@ -106,7 +106,7 @@ public class SystemConfigApplicationService {
         SysConfigEntity entity = require(id);
         assertKeyUnique(dto.getConfigKey(), id);
         mapDto(entity, dto);
-        entity.setUpdatedAt(Instant.now());
+        entity.setLastModifyTime(Instant.now());
         configMapper.updateById(entity);
         return entity;
     }

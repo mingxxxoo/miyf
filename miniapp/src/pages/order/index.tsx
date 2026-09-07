@@ -29,11 +29,15 @@ export default function OrderIndexPage() {
     submitOrder,
     clearDraft
   } = useOrderStore()
-  const { isLoggedIn, login } = useUserStore()
+  const { isLoggedIn, requireLogin } = useUserStore()
   const [tab, setTab] = useState<'ALL' | OrderStatus>('ALL')
 
   useDidShow(() => {
-    if (isLoggedIn) void fetchOrders(tab === 'ALL' ? undefined : tab)
+    if (!isLoggedIn) {
+      void requireLogin()
+      return
+    }
+    void fetchOrders(tab === 'ALL' ? undefined : tab)
   })
 
   useEffect(() => {
@@ -42,7 +46,7 @@ export default function OrderIndexPage() {
 
   const ensureLogin = async () => {
     if (isLoggedIn) return true
-    return login()
+    return requireLogin()
   }
 
   const handleSubmit = async () => {
@@ -59,7 +63,7 @@ export default function OrderIndexPage() {
   }
 
   const handlePickTime = (e: { detail: { value: string } }) => {
-    updateDraft({ scheduledAt: String(e.detail.value) })
+    updateDraft({ scheduledTime: String(e.detail.value) })
   }
 
   const handlePickGuest = (e: { detail: { value: string | number } }) => {
@@ -67,16 +71,8 @@ export default function OrderIndexPage() {
     updateDraft({ guestCount: guests[Number(e.detail.value)] || 2 })
   }
 
-  if (!isLoggedIn && !draft.items.length) {
-    return (
-      <EmptyState
-        emoji='🔑'
-        title='登录后查看预约'
-        description='登录后可以提交与管理你的预约单'
-        actionText='去登录'
-        onAction={() => void login()}
-      />
-    )
+  if (!isLoggedIn) {
+    return <Loading fullscreen text='正在前往登录…' />
   }
 
   if (loading && !orders.length && !draft.items.length) {
@@ -97,9 +93,9 @@ export default function OrderIndexPage() {
 
           <View className='order-page__field'>
             <Text className='order-page__label'>期望日期（选填）</Text>
-            <Picker mode='date' value={draft.scheduledAt || ''} onChange={handlePickTime}>
+            <Picker mode='date' value={draft.scheduledTime || ''} onChange={handlePickTime}>
               <View className='order-page__picker'>
-                {draft.scheduledAt || '选择日期'}
+                {draft.scheduledTime || '选择日期'}
               </View>
             </Picker>
           </View>

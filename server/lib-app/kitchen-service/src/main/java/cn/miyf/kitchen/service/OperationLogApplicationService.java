@@ -51,9 +51,12 @@ public class OperationLogApplicationService extends BaseApplicationService {
                 .setOperatorId(log.getOperatorId())
                 .setOperatorName(log.getOperatorName())
                 .setAction(log.getOperationType())
+                .setOperationType(log.getOperationType())
                 .setModule(log.getTargetType())
                 .setDetail(log.getOperationDetail())
                 .setIp(log.getRequestIp())
-                .setCreatedAt(log.getCreatedAt());
+                .setRequestMethod(log.getRequestMethod())
+                .setRequestUri(log.getRequestUri())
+                .setCreateTime(log.getCreateTime());
     }
 }

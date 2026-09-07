@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.miyf.notification.repository.mapper.SysNotifyTemplateMapper">
+
+    <select id="selectByCode" resultType="cn.miyf.notification.entity.SysNotifyTemplateEntity">
+        SELECT id, code, name, channel, title_template, content_template, status, create_time, last_modify_time
+        FROM sys_notify_template
+        WHERE code = #{code}
+        LIMIT 1
+    </select>
+</mapper>

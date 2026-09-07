@@ -44,9 +44,9 @@ public class CategoryRepositoryImpl extends AbstractMybatisRepository<Category, 
     }
 
     @Override
-    protected void setDomainTimestamps(Category domain, Instant createdAt, Instant updatedAt) {
-        domain.setCreatedAt(createdAt);
-        domain.setUpdatedAt(updatedAt);
+    protected void setDomainTimestamps(Category domain, Instant createTime, Instant lastModifyTime) {
+        domain.setCreateTime(createTime);
+        domain.setLastModifyTime(lastModifyTime);
     }
 
     /**

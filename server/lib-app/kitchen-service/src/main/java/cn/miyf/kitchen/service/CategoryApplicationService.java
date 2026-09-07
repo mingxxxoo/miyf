@@ -175,7 +175,7 @@ public class CategoryApplicationService extends BaseApplicationService {
                 .setIcon(category.getIcon())
                 .setSortOrder(category.getSortOrder())
                 .setStatus(category.getStatus())
-                .setUpdatedAt(category.getUpdatedAt());
+                .setLastModifyTime(category.getLastModifyTime());
     }
 }
 

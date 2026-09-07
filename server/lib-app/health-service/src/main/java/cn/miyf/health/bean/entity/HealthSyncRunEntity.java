@@ -62,11 +62,11 @@ public class HealthSyncRunEntity extends BaseEntity {
     @Schema(description = "错误信息")
     private String errorMessage;
 
-    @TableField("started_at")
+    @TableField("started_time")
     @Schema(description = "开始时间")
-    private Instant startedAt;
+    private Instant startedTime;
 
-    @TableField("finished_at")
+    @TableField("finished_time")
     @Schema(description = "结束时间")
-    private Instant finishedAt;
+    private Instant finishedTime;
 }

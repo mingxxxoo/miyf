@@ -1,32 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, Descriptions, Empty, Select, Space, Spin, Table, Tag, message } from 'antd';
+import { Button, Card, Descriptions, Space, Spin, Steps, Table, message } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import { orderApi } from '@/api';
+import { notifyError, orderApi } from '@/api';
 import type { Order, OrderStatus } from '@/types';
+import { ORDER_NEXT_STATUS, ORDER_STATUS, statusOf } from '@/constants/status';
+import { EmptyState, PageHeader, StatusBadge } from '@/ui';
 
-const statusMeta: Record<OrderStatus, { color: string; text: string }> = {
-  PENDING: { color: 'gold', text: '待确认' },
-  CONFIRMED: { color: 'blue', text: '已确认' },
-  PREPARING: { color: 'processing', text: '准备中' },
-  READY: { color: 'cyan', text: '待取餐' },
-  COMPLETED: { color: 'success', text: '已完成' },
-  CANCELLED: { color: 'default', text: '已取消' },
-};
-
-const nextStatus: Partial<Record<OrderStatus, OrderStatus[]>> = {
-  PENDING: ['CONFIRMED', 'CANCELLED'],
-  CONFIRMED: ['PREPARING'],
-  PREPARING: ['READY'],
-  READY: ['COMPLETED'],
-};
+const FLOW: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED'];
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
-  const [next, setNext] = useState<OrderStatus | undefined>();
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -35,10 +22,9 @@ export default function OrderDetailPage() {
     try {
       const data = await orderApi.detail(id);
       setOrder(data);
-      setNext(undefined);
-    } catch {
+    } catch (err) {
       setOrder(null);
-      message.warning('无法加载预约详情');
+      notifyError(err, '无法加载预约详情');
     } finally {
       setLoading(false);
     }
@@ -49,15 +35,24 @@ export default function OrderDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleStatus = async () => {
-    if (!id || !next) return;
+  const nextOptions = order ? ORDER_NEXT_STATUS[order.status] ?? [] : [];
+
+  const stepCurrent = useMemo(() => {
+    if (!order) return 0;
+    if (order.status === 'CANCELLED') return -1;
+    const idx = FLOW.indexOf(order.status);
+    return idx >= 0 ? idx : 0;
+  }, [order]);
+
+  const handleStatus = async (next: OrderStatus) => {
+    if (!id) return;
     setSaving(true);
     try {
       const updated = await orderApi.updateStatus(id, next);
       setOrder(updated);
-      message.success('状态已更新');
+      message.success(`状态已更新为「${statusOf(ORDER_STATUS, next).text}」`);
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '更新失败');
+      notifyError(err, '更新失败');
     } finally {
       setSaving(false);
     }
@@ -73,70 +68,79 @@ export default function OrderDetailPage() {
       >
         返回预约列表
       </Button>
-      <h2 className="ck-page-title">预约详情</h2>
+      <PageHeader
+        title="预约详情"
+        description={order ? `单号 ${order.orderNo}` : undefined}
+        extra={
+          order && nextOptions.length ? (
+            <Space wrap>
+              {nextOptions.map((s) => (
+                <Button
+                  key={s}
+                  type={s === 'CANCELLED' ? 'default' : 'primary'}
+                  danger={s === 'CANCELLED'}
+                  loading={saving}
+                  onClick={() => void handleStatus(s as OrderStatus)}
+                >
+                  {s === 'CANCELLED' ? '取消预约' : `流转到${statusOf(ORDER_STATUS, s).text}`}
+                </Button>
+              ))}
+            </Space>
+          ) : null
+        }
+      />
+
       <Spin spinning={loading}>
         {!order && !loading ? (
-          <Empty description="未找到该预约单" />
-        ) : (
+          <EmptyState description="未找到该预约单" actionText="返回列表" onAction={() => navigate('/kitchen/orders')} />
+        ) : order ? (
           <>
             <Card bordered={false} style={{ marginBottom: 16 }}>
-              <Descriptions column={2}>
-                <Descriptions.Item label="预约单号">{order?.orderNo}</Descriptions.Item>
-                <Descriptions.Item label="用户">{order?.userNickname ?? '—'}</Descriptions.Item>
+              {order.status === 'CANCELLED' ? (
+                <StatusBadge code="CANCELLED" map={ORDER_STATUS} />
+              ) : (
+                <Steps
+                  size="small"
+                  current={stepCurrent}
+                  items={FLOW.map((s) => ({
+                    title: statusOf(ORDER_STATUS, s).text,
+                  }))}
+                  style={{ marginBottom: 24 }}
+                />
+              )}
+              <Descriptions column={{ xs: 1, sm: 2 }}>
+                <Descriptions.Item label="预约单号">{order.orderNo}</Descriptions.Item>
+                <Descriptions.Item label="用户">{order.userNickname ?? '—'}</Descriptions.Item>
                 <Descriptions.Item label="状态">
-                  {order && (
-                    <Tag color={statusMeta[order.status]?.color}>
-                      {statusMeta[order.status]?.text ?? order.status}
-                    </Tag>
-                  )}
+                  <StatusBadge code={order.status} map={ORDER_STATUS} />
                 </Descriptions.Item>
                 <Descriptions.Item label="创建时间">
-                  {String(order?.createdAt || '').replace('T', ' ').slice(0, 16) || '—'}
+                  {String(order.createTime || '').replace('T', ' ').slice(0, 16) || '—'}
                 </Descriptions.Item>
                 <Descriptions.Item label="更新时间">
-                  {String(order?.updatedAt || '').replace('T', ' ').slice(0, 16) || '—'}
+                  {String(order.lastModifyTime || '').replace('T', ' ').slice(0, 16) || '—'}
                 </Descriptions.Item>
                 <Descriptions.Item label="备注" span={2}>
-                  {order?.remark || order?.note || '无'}
+                  {order.remark || order.note || '无'}
                 </Descriptions.Item>
               </Descriptions>
-              {order && nextStatus[order.status]?.length ? (
-                <Space style={{ marginTop: 16 }}>
-                  <Select
-                    placeholder="流转到"
-                    style={{ width: 160 }}
-                    value={next}
-                    onChange={setNext}
-                    options={(nextStatus[order.status] ?? []).map((s) => ({
-                      value: s,
-                      label: statusMeta[s].text,
-                    }))}
-                  />
-                  <Button type="primary" disabled={!next} loading={saving} onClick={() => void handleStatus()}>
-                    更新状态
-                  </Button>
-                </Space>
-              ) : null}
             </Card>
-            <Card title="预约菜品" bordered={false}>
+
+            <Card bordered={false} title="菜品明细">
               <Table
-                rowKey={(r) => `${r.dishId}-${r.dishName}`}
+                rowKey={(_, i) => String(i)}
                 pagination={false}
-                dataSource={order?.items ?? []}
+                dataSource={order.items ?? []}
                 columns={[
                   { title: '菜品', dataIndex: 'dishName' },
-                  { title: '份数', dataIndex: 'quantity', width: 100 },
-                  {
-                    title: '备注',
-                    key: 'note',
-                    render: (_, r) => r.note || r.remark || '—',
-                  },
+                  { title: '数量', dataIndex: 'quantity', width: 100 },
+                  { title: '备注', dataIndex: 'remark', render: (v?: string) => v || '—' },
                 ]}
                 locale={{ emptyText: '无菜品明细' }}
               />
             </Card>
           </>
-        )}
+        ) : null}
       </Spin>
     </div>
   );

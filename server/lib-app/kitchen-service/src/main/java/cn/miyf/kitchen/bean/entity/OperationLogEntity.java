@@ -77,7 +77,7 @@ public class OperationLogEntity implements Serializable {
     @Schema(description = "操作详情（已脱敏）")
     private String operationDetail;
 
-    @TableField("created_at")
+    @TableField("create_time")
     @Schema(description = "创建时间")
-    private Instant createdAt;
+    private Instant createTime;
 }

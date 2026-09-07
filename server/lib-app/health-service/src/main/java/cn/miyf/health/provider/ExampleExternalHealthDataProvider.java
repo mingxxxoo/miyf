@@ -70,7 +70,7 @@ public class ExampleExternalHealthDataProvider implements HealthDataProvider {
                     .setMetricCode(HealthMetricCodes.WEIGHT)
                     .setValueNum(BigDecimal.valueOf(68.0 + day * 0.1))
                     .setUnit(HealthMetricCodes.defaultUnit(HealthMetricCodes.WEIGHT))
-                    .setMeasuredAt(cursor.plus(8, ChronoUnit.HOURS))
+                    .setMeasuredTime(cursor.plus(8, ChronoUnit.HOURS))
                     .setSourceSampleId("example-weight-" + request.getSubjectId() + "-" + dayKey)
                     .setQuality("ESTIMATED"));
             drafts.add(new HealthSampleDraft()
@@ -78,7 +78,7 @@ public class ExampleExternalHealthDataProvider implements HealthDataProvider {
                     .setMetricCode(HealthMetricCodes.STEPS)
                     .setValueNum(BigDecimal.valueOf(6000 + day * 300L))
                     .setUnit(HealthMetricCodes.defaultUnit(HealthMetricCodes.STEPS))
-                    .setMeasuredAt(cursor.plus(20, ChronoUnit.HOURS))
+                    .setMeasuredTime(cursor.plus(20, ChronoUnit.HOURS))
                     .setSourceSampleId("example-steps-" + request.getSubjectId() + "-" + dayKey)
                     .setQuality("ESTIMATED"));
             cursor = cursor.plus(1, ChronoUnit.DAYS);

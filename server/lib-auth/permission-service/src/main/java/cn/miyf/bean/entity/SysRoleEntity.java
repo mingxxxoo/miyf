@@ -44,4 +44,16 @@ public class SysRoleEntity extends BaseEntity {
     @TableField("description")
     @Schema(description = "描述")
     private String description;
+
+    @TableField("is_default")
+    @Schema(description = "是否默认角色")
+    private Boolean isDefault;
+
+    @TableField("product")
+    @Schema(description = "产品域：kitchen / health / system")
+    private String product;
+
+    @TableField("data_scope")
+    @Schema(description = "数据范围：ALL / ORG / ORG_CHILD / SELF")
+    private String dataScope;
 }

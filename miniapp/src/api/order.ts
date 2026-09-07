@@ -20,8 +20,8 @@ interface OrderRaw {
   userId?: string
   status: string
   remark?: string
-  createdAt: string
-  updatedAt?: string
+  createTime: string
+  lastModifyTime?: string
   items?: OrderItemRaw[]
   displayTip?: string
 }
@@ -46,8 +46,8 @@ function mapOrder(raw: OrderRaw): Order {
     userId: asOptionalId(raw.userId),
     status: String(raw.status).toUpperCase() as Order['status'],
     items: (raw.items || []).map(mapItem),
-    createdAt: raw.createdAt,
-    updatedAt: raw.updatedAt,
+    createTime: raw.createTime,
+    lastModifyTime: raw.lastModifyTime,
     note: raw.remark,
     remark: raw.remark,
     displayTip: raw.displayTip

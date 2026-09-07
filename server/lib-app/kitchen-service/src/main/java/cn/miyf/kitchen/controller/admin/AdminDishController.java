@@ -7,8 +7,7 @@ import cn.miyf.kitchen.bean.qo.DishPageQo;
 import cn.miyf.kitchen.bean.vo.DishVo;
 import cn.miyf.kitchen.service.DishApplicationService;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
-import cn.miyf.security.RequirePermission;
+import cn.miyf.kitchen.security.KitchenAdminPopedom;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2026-09-04 17:30
  */
 @Tag(name = "管理端菜品")
-@PopedomGroup(value = "11030000", name = "管理员", product = "kitchen", sort = 10)
+@KitchenAdminPopedom
 @RestController
 @RequestMapping("/api/admin/dishes")
 public class AdminDishController {
@@ -54,8 +53,7 @@ public class AdminDishController {
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     @Operation(summary = "菜品分页")
-    @MiyfPermission(code = "kitchen:dish:list", name = "菜品列表", groupCode = "kitchen_dish", groupName = "菜品管理")
-    @RequirePermission({"kitchen:dish:list"})
+    @MiyfPermission(code = "kitchen:dish:list")
     @GetMapping
     public ApiResult<PageResult<DishVo>> page(DishPageQo qo) {
         return ApiResult.ok(dishApplicationService.pageAdmin(qo));
@@ -69,8 +67,7 @@ public class AdminDishController {
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     @Operation(summary = "菜品详情")
-    @MiyfPermission(code = "kitchen:dish:list", name = "菜品列表", groupCode = "kitchen_dish", groupName = "菜品管理")
-    @RequirePermission({"kitchen:dish:list"})
+    @MiyfPermission(code = "kitchen:dish:list")
     @GetMapping("/{id}")
     public ApiResult<DishVo> detail(@PathVariable Long id) {
         return ApiResult.ok(dishApplicationService.getAdminDetail(id));
@@ -84,8 +81,7 @@ public class AdminDishController {
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     @Operation(summary = "创建菜品")
-    @MiyfPermission(code = "kitchen:dish:create", name = "创建菜品", groupCode = "kitchen_dish", groupName = "菜品管理")
-    @RequirePermission({"kitchen:dish:create"})
+    @MiyfPermission(code = "kitchen:dish:create")
     @PostMapping
     public ApiResult<DishVo> create(@Valid @RequestBody DishSaveDto dto) {
         return ApiResult.ok(dishApplicationService.create(dto));
@@ -100,8 +96,7 @@ public class AdminDishController {
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     @Operation(summary = "更新菜品")
-    @MiyfPermission(code = "kitchen:dish:update", name = "更新菜品", groupCode = "kitchen_dish", groupName = "菜品管理")
-    @RequirePermission({"kitchen:dish:update"})
+    @MiyfPermission(code = "kitchen:dish:update")
     @PutMapping("/{id}")
     public ApiResult<DishVo> update(@PathVariable Long id, @Valid @RequestBody DishSaveDto dto) {
         return ApiResult.ok(dishApplicationService.update(id, dto));
@@ -115,8 +110,7 @@ public class AdminDishController {
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     @Operation(summary = "删除菜品")
-    @MiyfPermission(code = "kitchen:dish:delete", name = "删除菜品", groupCode = "kitchen_dish", groupName = "菜品管理")
-    @RequirePermission({"kitchen:dish:delete"})
+    @MiyfPermission(code = "kitchen:dish:delete")
     @DeleteMapping("/{id}")
     public ApiResult<Void> delete(@PathVariable Long id) {
         dishApplicationService.delete(id);
@@ -131,8 +125,7 @@ public class AdminDishController {
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     @Operation(summary = "上架菜品")
-    @MiyfPermission(code = "kitchen:dish:publish", name = "上架菜品", groupCode = "kitchen_dish", groupName = "菜品管理")
-    @RequirePermission({"kitchen:dish:publish"})
+    @MiyfPermission(code = "kitchen:dish:publish")
     @PostMapping("/{id}/publish")
     public ApiResult<DishVo> publish(@PathVariable Long id) {
         return ApiResult.ok(dishApplicationService.publish(id));
@@ -146,8 +139,7 @@ public class AdminDishController {
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     @Operation(summary = "下架菜品")
-    @MiyfPermission(code = "kitchen:dish:unpublish", name = "下架菜品", groupCode = "kitchen_dish", groupName = "菜品管理")
-    @RequirePermission({"kitchen:dish:unpublish"})
+    @MiyfPermission(code = "kitchen:dish:unpublish")
     @PostMapping("/{id}/unpublish")
     public ApiResult<DishVo> unpublish(@PathVariable Long id) {
         return ApiResult.ok(dishApplicationService.unpublish(id));

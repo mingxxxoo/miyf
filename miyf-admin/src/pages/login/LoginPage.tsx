@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Card, Form, Input, Space } from 'antd';
+import { Alert, Button, Card, Form, Input } from 'antd';
 import { LockOutlined, ReloadOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
 import { authApi, type LoginRisk } from '@/api';
 import { ApiError } from '@/api/http';
@@ -188,35 +188,40 @@ export default function LoginPage() {
 
           {captchaRequired && (
             <Form.Item
-              name="captchaCode"
-              rules={[{ required: true, message: '请输入验证码' }]}
               extra="连续失败 3 次后需验证码；6 次起将临时锁定账号"
+              className="login-captcha-item"
             >
-              <Space.Compact style={{ width: '100%' }}>
-                <Input
-                  prefix={<SafetyCertificateOutlined />}
-                  placeholder="验证码"
-                  maxLength={6}
-                  autoComplete="off"
-                />
-                <Button
-                  type="default"
-                  loading={captchaLoading}
-                  icon={<ReloadOutlined />}
+              <div className="login-captcha-row">
+                <Form.Item name="captchaCode" noStyle rules={[{ required: true, message: '请输入验证码' }]}>
+                  <Input
+                    prefix={<SafetyCertificateOutlined />}
+                    placeholder="验证码"
+                    maxLength={6}
+                    autoComplete="off"
+                  />
+                </Form.Item>
+                <button
+                  type="button"
+                  className="login-captcha-trigger"
+                  disabled={captchaLoading || locked}
                   onClick={() => void refreshCaptcha()}
-                  style={{ width: 120, padding: 0, height: 40 }}
+                  title="点击刷新验证码"
+                  aria-label="刷新验证码"
                 >
                   {captchaImg ? (
                     <img
                       src={`data:image/png;base64,${captchaImg}`}
-                      alt="captcha"
-                      style={{ height: 36, display: 'block', margin: '0 auto' }}
+                      alt="验证码"
+                      className="login-captcha-img"
                     />
                   ) : (
-                    '获取'
+                    <span className="login-captcha-placeholder">
+                      {captchaLoading ? '加载中' : '获取验证码'}
+                    </span>
                   )}
-                </Button>
-              </Space.Compact>
+                  <ReloadOutlined className={`login-captcha-reload${captchaLoading ? ' is-spinning' : ''}`} />
+                </button>
+              </div>
             </Form.Item>
           )}
 

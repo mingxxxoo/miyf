@@ -43,7 +43,7 @@ public class AuthController {
      * @return 登录结果
      * @history 1.00 2026-09-04 17:06 XieMingJie Created.
      */
-    @Operation(summary = "微信小程序登录")
+    @Operation(summary = "微信小程序登录（须提交用户名、手机号、微信号）")
     @SecurityRequirements
     @PostMapping("/wx-login")
     public ApiResult<LoginVo> wxLogin(@Valid @RequestBody WxLoginDto dto) {

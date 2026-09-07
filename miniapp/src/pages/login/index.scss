@@ -1,0 +1,67 @@
+.login-page {
+  min-height: 100vh;
+  padding: 80px 40px 48px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 20% 0%, rgba($ck-primary, 0.22), transparent 42%),
+    radial-gradient(circle at 90% 10%, rgba($ck-secondary, 0.18), transparent 36%),
+    $ck-bg;
+
+  &--loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__loading-text {
+    font-size: $ck-font-body;
+    color: $ck-muted;
+  }
+
+  &__card {
+    padding: 48px 36px;
+  }
+
+  &__brand {
+    display: block;
+    font-size: 44px;
+    font-weight: 700;
+    color: $ck-text;
+    margin-bottom: 12px;
+  }
+
+  &__title {
+    display: block;
+    font-size: 32px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  &__desc {
+    display: block;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+    margin-bottom: 36px;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  &__input {
+    height: 88px;
+    padding: 0 24px;
+    border-radius: $ck-radius-sm;
+    background: rgba($ck-primary, 0.08);
+    border: 1px solid $ck-border;
+    font-size: $ck-font-body;
+    color: $ck-text;
+  }
+
+  &__btn {
+    width: 100%;
+  }
+}

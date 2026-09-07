@@ -20,8 +20,8 @@ public class Comment {
     private int rating;
     private String content;
     private String status;
-    private Instant createdAt;
-    private Instant updatedAt;
+    private Instant createTime;
+    private Instant lastModifyTime;
     private List<String> images = new ArrayList<>();
 
     public Long getId() {
@@ -96,20 +96,20 @@ public class Comment {
         this.status = status;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public Instant getCreateTime() {
+        return createTime;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public void setCreateTime(Instant createTime) {
+        this.createTime = createTime;
     }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
+    public Instant getLastModifyTime() {
+        return lastModifyTime;
     }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setLastModifyTime(Instant lastModifyTime) {
+        this.lastModifyTime = lastModifyTime;
     }
 
     public List<String> getImages() {

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Input, Button, Space, Tag, message } from 'antd';
+import { Input, Button, Space, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import SearchForm from '@/components/SearchForm';
 import PageTable from '@/components/PageTable';
 import { userApi } from '@/api';
 import type { User } from '@/types';
+import { EmptyState, PageHeader, StatusBadge } from '@/ui';
+import { USER_STATUS } from '@/constants/status';
 
 export default function UsersPage() {
   const navigate = useNavigate();
@@ -36,12 +38,12 @@ export default function UsersPage() {
 
   return (
     <div className="ck-page">
-      <h2 className="ck-page-title">用户管理</h2>
-      <SearchForm
+      <PageHeader title="用户管理" />
+<SearchForm
         fields={[
           {
             name: 'keyword',
-            label: '昵称 / 手机',
+            label: '用户名 / 手机 / 微信号',
             element: <Input placeholder="搜索用户" allowClear />,
           },
         ]}
@@ -55,15 +57,18 @@ export default function UsersPage() {
         title="用户列表"
         loading={loading}
         columns={[
+          { title: '用户名', dataIndex: 'username', render: (v?: string) => v || '—' },
           { title: '昵称', dataIndex: 'nickname' },
           { title: '手机', dataIndex: 'phone', render: (v?: string) => v || '—' },
+          { title: '微信号', dataIndex: 'wechatId', render: (v?: string) => v || '—' },
           {
             title: '状态',
             dataIndex: 'status',
-            render: (status?: string) =>
-              status === 'DISABLED' ? <Tag>已停用</Tag> : <Tag color="success">正常</Tag>,
+            render: (status?: string) => (
+              <StatusBadge code={status || 'ACTIVE'} map={USER_STATUS} />
+            ),
           },
-          { title: '注册时间', dataIndex: 'createdAt', render: (v?: string) => v || '—' },
+          { title: '注册时间', dataIndex: 'createTime', render: (v?: string) => v || '—' },
           {
             title: '操作',
             key: 'action',
@@ -86,7 +91,7 @@ export default function UsersPage() {
             setPageSize(ps);
           },
         }}
-        locale={{ emptyText: '还没有用户来访厨房哦' }}
+        locale={{ emptyText: <EmptyState description="还没有用户来访厨房哦" /> }}
       />
     </div>
   );

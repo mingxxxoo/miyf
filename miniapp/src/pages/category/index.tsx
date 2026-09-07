@@ -6,6 +6,7 @@ import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
 import { fetchCategories } from '@/api/category'
 import { fetchDishes } from '@/api/dish'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 import type { Category, Dish } from '@/types'
 import './index.scss'
 
@@ -13,12 +14,14 @@ const CATEGORY_KEY = 'miyf_kitchen_category_id'
 const ALL = 'all'
 
 export default function CategoryPage() {
+  const { isLoggedIn, bootstrapping } = useAuthGuard()
   const [activeId, setActiveId] = useState(ALL)
   const [categories, setCategories] = useState<Category[]>([])
   const [dishes, setDishes] = useState<Dish[]>([])
   const [loading, setLoading] = useState(true)
 
   useDidShow(() => {
+    if (bootstrapping || !isLoggedIn) return
     const preferred = Taro.getStorageSync(CATEGORY_KEY) as string
     if (preferred) {
       setActiveId(preferred)
@@ -51,6 +54,10 @@ export default function CategoryPage() {
   }
 
   const tabs: Category[] = [{ id: ALL, name: '全部' }, ...categories]
+
+  if (bootstrapping || !isLoggedIn) {
+    return <Loading fullscreen text='正在登录…' />
+  }
 
   if (loading && dishes.length === 0) {
     return <Loading fullscreen text='整理菜品柜…' />

@@ -9,6 +9,7 @@ import ImageUploader from '@/components/ImageUploader';
 import { categoryApi, dishApi } from '@/api';
 
 import type { Category, Dish } from '@/types';
+import { PageHeader } from '@/ui';
 
 
 
@@ -220,9 +221,8 @@ export default function DishEditPage() {
 
     <div className="ck-page">
 
-      <h2 className="ck-page-title">编辑菜品</h2>
-
-      <Spin spinning={loading}>
+      <PageHeader title="编辑菜品" />
+<Spin spinning={loading}>
 
         <Card bordered={false}>
 

@@ -1,50 +1,46 @@
 import { View, Text, Image, Button } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import { useUserStore } from '@/stores/userStore'
 import './index.scss'
 
 export default function UserPage() {
-  const { user, isLoggedIn, loading, login, logout } = useUserStore()
+  const { user, isLoggedIn, logout, requireLogin } = useUserStore()
 
-  const handleLogin = async () => {
-    await login()
-  }
+  useDidShow(() => {
+    if (!isLoggedIn) {
+      void requireLogin()
+    }
+  })
 
   const goOrders = () => {
     Taro.switchTab({ url: '/pages/order/index' })
   }
 
+  if (!isLoggedIn || !user) {
+    return (
+      <View className='user-page'>
+        <Text className='user-page__brand'>正在前往登录…</Text>
+      </View>
+    )
+  }
+
   return (
     <View className='user-page'>
       <View className='user-page__profile ck-card'>
-        {isLoggedIn && user ? (
-          <>
-            {user.avatarUrl ? (
-              <Image className='user-page__avatar' src={user.avatarUrl} mode='aspectFill' />
-            ) : (
-              <View className='user-page__avatar user-page__avatar--placeholder'>
-                <Text>🍳</Text>
-              </View>
-            )}
-            <View className='user-page__info'>
-              <Text className='user-page__name'>{user.nickname}</Text>
-              {user.bio && <Text className='user-page__bio'>{user.bio}</Text>}
-            </View>
-          </>
+        {user.avatarUrl ? (
+          <Image className='user-page__avatar' src={user.avatarUrl} mode='aspectFill' />
         ) : (
-          <View className='user-page__guest'>
-            <Text className='user-page__guest-emoji'>👋</Text>
-            <Text className='user-page__guest-title'>欢迎使用 miyf 厨房</Text>
-            <Text className='user-page__guest-desc'>登录后可以查看预约与评价</Text>
-            <Button
-              className='ck-btn-primary user-page__login-btn'
-              loading={loading}
-              onClick={handleLogin}
-            >
-              进入厨房
-            </Button>
+          <View className='user-page__avatar user-page__avatar--placeholder'>
+            <Text>🍳</Text>
           </View>
         )}
+        <View className='user-page__info'>
+          <Text className='user-page__name'>{user.nickname || user.username}</Text>
+          {user.username && <Text className='user-page__meta'>用户名 {user.username}</Text>}
+          {user.phone && <Text className='user-page__meta'>手机 {user.phone}</Text>}
+          {user.wechatId && <Text className='user-page__meta'>微信 {user.wechatId}</Text>}
+          {user.bio && <Text className='user-page__bio'>{user.bio}</Text>}
+        </View>
       </View>
 
       <View className='user-page__menu ck-card'>
@@ -61,11 +57,9 @@ export default function UserPage() {
         </View>
       </View>
 
-      {isLoggedIn && (
-        <Button className='user-page__logout' onClick={logout}>
-          退出登录
-        </Button>
-      )}
+      <Button className='user-page__logout' onClick={logout}>
+        退出登录
+      </Button>
 
       <Text className='user-page__brand'>miyf / kitchen</Text>
     </View>

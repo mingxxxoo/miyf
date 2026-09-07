@@ -27,9 +27,9 @@ class ConditionSqlRewriterTest {
     void injectDefaultOrderWhenSortAbsent() {
         String sql = "SELECT * FROM dish d /* @conditionSql */ LIMIT 10 OFFSET 0";
         TestQo qo = new TestQo();
-        QueryConditionHolder.Context ctx = QueryConditionHolder.Context.of(qo, "d.sort_order ASC, d.updated_at DESC", null);
+        QueryConditionHolder.Context ctx = QueryConditionHolder.Context.of(qo, "d.sort_order ASC, d.last_modify_time DESC", null);
         String rewritten = ConditionSqlRewriter.rewrite(sql, ctx);
-        assertTrue(rewritten.contains("ORDER BY d.sort_order ASC, d.updated_at DESC"));
+        assertTrue(rewritten.contains("ORDER BY d.sort_order ASC, d.last_modify_time DESC"));
         assertTrue(!rewritten.contains("@conditionSql"));
     }
 
@@ -37,10 +37,10 @@ class ConditionSqlRewriterTest {
     void injectQoSort() {
         String sql = "SELECT * FROM orders /* @conditionSql */ LIMIT #{limit} OFFSET #{offset}";
         TestQo qo = new TestQo();
-        qo.setSort("created_at desc, order_no asc");
+        qo.setSort("create_time desc, order_no asc");
         QueryConditionHolder.Context ctx = QueryConditionHolder.Context.of(qo, "id ASC", null);
         String rewritten = ConditionSqlRewriter.rewrite(sql, ctx);
-        assertTrue(rewritten.contains("ORDER BY created_at DESC, order_no ASC"));
+        assertTrue(rewritten.contains("ORDER BY create_time DESC, order_no ASC"));
     }
 
     @Test

@@ -55,9 +55,9 @@ public class OrderRepositoryImpl extends AbstractMybatisRepository<Order, OrderE
     }
 
     @Override
-    protected void setDomainTimestamps(Order domain, Instant createdAt, Instant updatedAt) {
-        domain.setCreatedAt(createdAt);
-        domain.setUpdatedAt(updatedAt);
+    protected void setDomainTimestamps(Order domain, Instant createTime, Instant lastModifyTime) {
+        domain.setCreateTime(createTime);
+        domain.setLastModifyTime(lastModifyTime);
     }
 
     /**
@@ -88,11 +88,11 @@ public class OrderRepositoryImpl extends AbstractMybatisRepository<Order, OrderE
             entity.setQuantity(item.getQuantity());
             entity.setUnit(item.getUnit() == null ? "份" : item.getUnit());
             entity.setRemark(item.getRemark());
-            entity.setCreatedAt(now);
+            entity.setCreateTime(now);
             orderItemMapper.insert(entity);
             item.setId(entity.getId());
             item.setOrderId(saved.getId());
-            item.setCreatedAt(now);
+            item.setCreateTime(now);
         }
         saved.setItems(new ArrayList<>(items));
         return saved;

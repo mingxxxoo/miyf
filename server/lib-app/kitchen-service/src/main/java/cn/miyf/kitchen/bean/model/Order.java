@@ -16,8 +16,8 @@ public class Order {
     private Long userId;
     private String status;
     private String remark;
-    private Instant createdAt;
-    private Instant updatedAt;
+    private Instant createTime;
+    private Instant lastModifyTime;
     private List<OrderItem> items = new ArrayList<>();
 
     public Long getId() {
@@ -60,20 +60,20 @@ public class Order {
         this.remark = remark;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public Instant getCreateTime() {
+        return createTime;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public void setCreateTime(Instant createTime) {
+        this.createTime = createTime;
     }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
+    public Instant getLastModifyTime() {
+        return lastModifyTime;
     }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setLastModifyTime(Instant lastModifyTime) {
+        this.lastModifyTime = lastModifyTime;
     }
 
     public List<OrderItem> getItems() {

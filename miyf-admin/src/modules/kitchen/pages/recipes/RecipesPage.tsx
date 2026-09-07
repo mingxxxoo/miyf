@@ -9,6 +9,7 @@ import { confirmDialog } from '@/components/ConfirmDialog';
 import { dishApi, recipeApi } from '@/api';
 
 import type { Dish, DishRecipe } from '@/types';
+import { EmptyState, PageHeader } from '@/ui';
 
 
 
@@ -289,9 +290,8 @@ export default function RecipesPage() {
 
     <div className="ck-page">
 
-      <h2 className="ck-page-title">食谱管理</h2>
-
-      <PageTable<DishRecipe>
+      <PageHeader title="食谱管理" />
+<PageTable<DishRecipe>
 
         title="食谱列表"
 
@@ -395,7 +395,7 @@ export default function RecipesPage() {
 
         }}
 
-        locale={{ emptyText: '还没有食谱，给菜品补上做法吧' }}
+        locale={{ emptyText: <EmptyState description="还没有食谱，给菜品补上做法吧" /> }}
 
       />
 

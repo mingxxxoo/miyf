@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { Button, Select, Space, Tag, message } from 'antd';
+import { Button, Select, Space, message } from 'antd';
 
 import SearchForm from '@/components/SearchForm';
 
@@ -13,6 +13,8 @@ import { confirmDialog } from '@/components/ConfirmDialog';
 import { commentApi } from '@/api';
 
 import type { Comment } from '@/types';
+import { EmptyState, PageHeader, StatusBadge } from '@/ui';
+import { COMMENT_STATUS } from '@/constants/status';
 
 
 
@@ -146,9 +148,8 @@ export default function CommentsPage() {
 
     <div className="ck-page">
 
-      <h2 className="ck-page-title">评论管理</h2>
-
-      <SearchForm
+      <PageHeader title="评论管理" />
+<SearchForm
 
         fields={[
 
@@ -236,9 +237,9 @@ export default function CommentsPage() {
 
             dataIndex: 'status',
 
-            render: (s?: string, r?: Comment) =>
-
-              s === 'HIDDEN' || r?.hidden ? <Tag>已隐藏</Tag> : <Tag color="success">显示</Tag>,
+            render: (s?: string, r?: Comment) => (
+              <StatusBadge code={s === 'HIDDEN' || r?.hidden ? 'HIDDEN' : 'NORMAL'} map={COMMENT_STATUS} />
+            ),
 
           },
 
@@ -246,7 +247,7 @@ export default function CommentsPage() {
 
             title: '时间',
 
-            dataIndex: 'createdAt',
+            dataIndex: 'createTime',
 
             render: (v: string) => String(v || '').replace('T', ' ').slice(0, 16),
 
@@ -308,7 +309,7 @@ export default function CommentsPage() {
 
         }}
 
-        locale={{ emptyText: '暂无评论，等第一位食客打分吧' }}
+        locale={{ emptyText: <EmptyState description="暂无评论，等第一位食客打分吧" /> }}
 
       />
 

@@ -55,9 +55,9 @@ public class HealthSampleEntity extends BaseEntity {
     @Schema(description = "单位")
     private String unit;
 
-    @TableField("measured_at")
+    @TableField("measured_time")
     @Schema(description = "测量时间")
-    private Instant measuredAt;
+    private Instant measuredTime;
 
     @TableField("provider_code")
     @Schema(description = "数据源编码")

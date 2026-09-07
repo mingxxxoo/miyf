@@ -6,12 +6,12 @@
 
     <sql id="PermColumns">
         id, code, name, description, group_code, perm_no, parent_id, product, tree_name, node_type, sort_order,
-        created_at, updated_at
+        create_time, last_modify_time
     </sql>
 
     <sql id="PermColumnsP">
         p.id, p.code, p.name, p.description, p.group_code, p.perm_no, p.parent_id, p.product, p.tree_name, p.node_type,
-        p.sort_order, p.created_at, p.updated_at
+        p.sort_order, p.create_time, p.last_modify_time
     </sql>
 
     <select id="selectByCode" resultType="cn.miyf.bean.entity.SysPermissionEntity">

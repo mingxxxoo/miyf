@@ -49,6 +49,9 @@ public class SysMenuSaveDto {
     @Schema(description = "权限码")
     private String permissionCode;
 
+    @Schema(description = "产品域")
+    private String product;
+
     @Schema(description = "排序")
     private Integer sortOrder;
 

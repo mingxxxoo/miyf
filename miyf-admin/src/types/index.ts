@@ -64,9 +64,9 @@ export interface Category {
 
   dishCount?: number;
 
-  createdAt?: string;
+  createTime?: string;
 
-  updatedAt?: string;
+  lastModifyTime?: string;
 
 }
 
@@ -148,7 +148,7 @@ export interface DishRecipe {
 
   tips?: string;
 
-  updatedAt?: string;
+  lastModifyTime?: string;
 
 }
 
@@ -194,9 +194,9 @@ export interface Dish {
 
   recipe?: DishRecipe;
 
-  createdAt?: string;
+  createTime?: string;
 
-  updatedAt?: string;
+  lastModifyTime?: string;
 
 }
 
@@ -256,7 +256,7 @@ export interface Order {
 
   items: OrderItem[];
 
-  scheduledAt?: string;
+  scheduledTime?: string;
 
   note?: string;
 
@@ -264,9 +264,9 @@ export interface Order {
 
   guestCount?: number;
 
-  createdAt: string;
+  createTime: string;
 
-  updatedAt?: string;
+  lastModifyTime?: string;
 
   displayTip?: string;
 
@@ -302,7 +302,7 @@ export interface Comment {
 
   hidden?: boolean;
 
-  createdAt: string;
+  createTime: string;
 
 }
 
@@ -312,19 +312,23 @@ export interface User {
 
   id: string;
 
+  username?: string;
+
   nickname: string;
 
   avatarUrl?: string;
 
   phone?: string;
 
+  wechatId?: string;
+
   openId?: string;
 
   status?: 'ACTIVE' | 'DISABLED' | string;
 
-  createdAt?: string;
+  createTime?: string;
 
-  lastLoginAt?: string;
+  lastLoginTime?: string;
 
 }
 
@@ -346,7 +350,7 @@ export interface AdminUser {
 
   enabled?: boolean;
 
-  createdAt?: string;
+  createTime?: string;
 
 }
 
@@ -364,7 +368,7 @@ export interface Role {
 
   permissionIds?: string[];
 
-  createdAt?: string;
+  createTime?: string;
 
 }
 
@@ -402,7 +406,16 @@ export interface OperationLog {
 
   ip?: string;
 
-  createdAt: string;
+  createTime: string;
+
+  /** 以下为可选映射字段（后端 VO 可能未返回） */
+  operationType?: string;
+  requestPath?: string;
+  requestUri?: string;
+  requestMethod?: string;
+  result?: string;
+  before?: string;
+  after?: string;
 
 }
 
@@ -439,6 +452,9 @@ export interface LoginVo {
   userId: string;
 
   displayName: string;
+
+  /** 登录名（通知 userKey 等稳定标识） */
+  username?: string;
 
   principalType?: string;
 

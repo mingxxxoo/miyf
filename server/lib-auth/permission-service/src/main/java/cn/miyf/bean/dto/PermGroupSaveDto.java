@@ -42,6 +42,9 @@ public class PermGroupSaveDto {
     @Schema(description = "排序")
     private Integer sortOrder;
 
+    @Schema(description = "产品域")
+    private String product;
+
     @Schema(description = "权限 ID 列表")
     private List<String> permissionIds;
 }

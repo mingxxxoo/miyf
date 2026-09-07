@@ -39,4 +39,12 @@ public class AdminAuthAuthorityLoaderImpl implements AdminAuthAuthorityLoader {
                 .map(SysPermissionEntity::getCode)
                 .toList();
     }
+
+    @Override
+    public String loadEffectiveDataScope(Long userId) {
+        List<DataScope> scopes = sysRoleMapper.findByUserId(userId).stream()
+                .map(r -> DataScope.parse(r.getDataScope()))
+                .toList();
+        return DataScope.widest(scopes).name();
+    }
 }

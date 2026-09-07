@@ -16,7 +16,7 @@ export default function DishDetailPage() {
   const dishId = router.params.id || ''
   const setDraftItem = useOrderStore((s) => s.setDraftItem)
   const isLoggedIn = useUserStore((s) => s.isLoggedIn)
-  const login = useUserStore((s) => s.login)
+  const requireLogin = useUserStore((s) => s.requireLogin)
 
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(true)
@@ -49,7 +49,7 @@ export default function DishDetailPage() {
   const handleReserve = async () => {
     if (!dish) return
     if (!isLoggedIn) {
-      const ok = await login()
+      const ok = await requireLogin()
       if (!ok) return
     }
     setDraftItem({
@@ -161,7 +161,7 @@ export default function DishDetailPage() {
                   <StarRating value={c.rating} size='sm' readonly />
                   <Text>{c.content || '（只打了分）'}</Text>
                   <Text className='dish-detail__rating-count'>
-                    {c.userNickname || '厨房朋友'} · {String(c.createdAt || '').slice(0, 10)}
+                    {c.userNickname || '厨房朋友'} · {String(c.createTime || '').slice(0, 10)}
                   </Text>
                 </View>
               ))}

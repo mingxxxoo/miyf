@@ -16,7 +16,7 @@ public class OrderItem {
     private int quantity;
     private String unit;
     private String remark;
-    private Instant createdAt;
+    private Instant createTime;
 
     public Long getId() {
         return id;
@@ -74,11 +74,11 @@ public class OrderItem {
         this.remark = remark;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public Instant getCreateTime() {
+        return createTime;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public void setCreateTime(Instant createTime) {
+        this.createTime = createTime;
     }
 }

@@ -170,7 +170,7 @@ public class HuaweiHealthOAuthService {
             return new HuaweiTokenBundle()
                     .setAccessToken(access)
                     .setRefreshToken(root.path("refresh_token").asText(null))
-                    .setExpiresAt(Instant.now().plusSeconds(Math.max(60, expiresIn)))
+                    .setExpiresTime(Instant.now().plusSeconds(Math.max(60, expiresIn)))
                     .setScope(root.path("scope").asText(null))
                     .setOpenId(root.path("open_id").asText(null))
                     .setSource("oauth");
@@ -186,8 +186,8 @@ public class HuaweiHealthOAuthService {
         try {
             String json = objectMapper.writeValueAsString(bundle);
             Duration ttl = Duration.ofDays(30);
-            if (bundle.getExpiresAt() != null) {
-                Duration untilExpire = Duration.between(Instant.now(), bundle.getExpiresAt().plus(Duration.ofDays(14)));
+            if (bundle.getExpiresTime() != null) {
+                Duration untilExpire = Duration.between(Instant.now(), bundle.getExpiresTime().plus(Duration.ofDays(14)));
                 if (!untilExpire.isNegative() && untilExpire.compareTo(ttl) > 0) {
                     ttl = untilExpire;
                 }

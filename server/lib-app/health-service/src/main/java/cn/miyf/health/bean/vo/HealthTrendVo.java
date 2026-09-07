@@ -37,7 +37,7 @@ public class HealthTrendVo {
     private BigDecimal max;
     private BigDecimal avg;
     private BigDecimal latest;
-    private Instant latestAt;
+    private Instant latestTime;
     private int pointCount;
     private List<Point> points = new ArrayList<>();
 
@@ -49,7 +49,7 @@ public class HealthTrendVo {
     @AllArgsConstructor
     @Accessors(chain = true)
     public static class Point {
-        private Instant measuredAt;
+        private Instant measuredTime;
         private BigDecimal value;
         private String providerCode;
         private String quality;

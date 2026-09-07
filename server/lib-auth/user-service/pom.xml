@@ -17,6 +17,10 @@
             <artifactId>permission-service</artifactId>
         </dependency>
         <dependency>
+            <groupId>cn.miyf</groupId>
+            <artifactId>organization-service</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>

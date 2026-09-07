@@ -17,10 +17,11 @@ public class JobDescriptor {
     private String methodName;
     private String cron;
     private boolean enabled = true;
-    private Instant lastStartedAt;
-    private Instant lastFinishedAt;
+    private Instant lastStartedTime;
+    private Instant lastFinishedTime;
     private String lastStatus;
     private String lastError;
+    private Instant nextRunTime;
 
     public String getCode() {
         return code;
@@ -85,21 +86,21 @@ public class JobDescriptor {
         return this;
     }
 
-    public Instant getLastStartedAt() {
-        return lastStartedAt;
+    public Instant getLastStartedTime() {
+        return lastStartedTime;
     }
 
-    public JobDescriptor setLastStartedAt(Instant lastStartedAt) {
-        this.lastStartedAt = lastStartedAt;
+    public JobDescriptor setLastStartedTime(Instant lastStartedTime) {
+        this.lastStartedTime = lastStartedTime;
         return this;
     }
 
-    public Instant getLastFinishedAt() {
-        return lastFinishedAt;
+    public Instant getLastFinishedTime() {
+        return lastFinishedTime;
     }
 
-    public JobDescriptor setLastFinishedAt(Instant lastFinishedAt) {
-        this.lastFinishedAt = lastFinishedAt;
+    public JobDescriptor setLastFinishedTime(Instant lastFinishedTime) {
+        this.lastFinishedTime = lastFinishedTime;
         return this;
     }
 
@@ -118,6 +119,15 @@ public class JobDescriptor {
 
     public JobDescriptor setLastError(String lastError) {
         this.lastError = lastError;
+        return this;
+    }
+
+    public Instant getNextRunTime() {
+        return nextRunTime;
+    }
+
+    public JobDescriptor setNextRunTime(Instant nextRunTime) {
+        this.nextRunTime = nextRunTime;
         return this;
     }
 }

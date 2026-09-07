@@ -5,8 +5,7 @@ import cn.miyf.kitchen.bean.dto.RecipeSaveDto;
 import cn.miyf.kitchen.bean.vo.RecipeVo;
 import cn.miyf.kitchen.service.RecipeApplicationService;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
-import cn.miyf.security.RequirePermission;
+import cn.miyf.kitchen.security.KitchenAdminPopedom;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,7 +28,7 @@ import java.util.List;
  * @since 2026-09-04 17:35
  */
 @Tag(name = "管理端菜谱")
-@PopedomGroup(value = "11030000", name = "管理员", product = "kitchen", sort = 10)
+@KitchenAdminPopedom
 @RestController
 @RequestMapping("/api/admin/recipes")
 public class AdminRecipeController {
@@ -54,8 +53,7 @@ public class AdminRecipeController {
      * @history 1.00 2026-09-04 17:35 XieMingJie Created.
      */
     @Operation(summary = "菜谱列表")
-    @MiyfPermission(code = "kitchen:recipe:list", name = "菜谱列表", groupCode = "kitchen_recipe", groupName = "菜谱管理")
-    @RequirePermission({"kitchen:recipe:list"})
+    @MiyfPermission(code = "kitchen:recipe:list")
     @GetMapping
     public ApiResult<List<RecipeVo>> list(@RequestParam(required = false) Long dishId) {
         if (dishId != null) {
@@ -72,8 +70,7 @@ public class AdminRecipeController {
      * @history 1.00 2026-09-04 17:35 XieMingJie Created.
      */
     @Operation(summary = "菜谱详情")
-    @MiyfPermission(code = "kitchen:recipe:list", name = "菜谱列表", groupCode = "kitchen_recipe", groupName = "菜谱管理")
-    @RequirePermission({"kitchen:recipe:list"})
+    @MiyfPermission(code = "kitchen:recipe:list")
     @GetMapping("/{id}")
     public ApiResult<RecipeVo> detail(@PathVariable Long id) {
         return ApiResult.ok(recipeApplicationService.getById(id));
@@ -87,8 +84,7 @@ public class AdminRecipeController {
      * @history 1.00 2026-09-04 17:35 XieMingJie Created.
      */
     @Operation(summary = "创建菜谱")
-    @MiyfPermission(code = "kitchen:recipe:create", name = "创建菜谱", groupCode = "kitchen_recipe", groupName = "菜谱管理")
-    @RequirePermission({"kitchen:recipe:create"})
+    @MiyfPermission(code = "kitchen:recipe:create")
     @PostMapping
     public ApiResult<RecipeVo> create(@Valid @RequestBody RecipeSaveDto dto) {
         return ApiResult.ok(recipeApplicationService.create(dto));
@@ -103,8 +99,7 @@ public class AdminRecipeController {
      * @history 1.00 2026-09-04 17:35 XieMingJie Created.
      */
     @Operation(summary = "更新菜谱")
-    @MiyfPermission(code = "kitchen:recipe:update", name = "更新菜谱", groupCode = "kitchen_recipe", groupName = "菜谱管理")
-    @RequirePermission({"kitchen:recipe:update"})
+    @MiyfPermission(code = "kitchen:recipe:update")
     @PutMapping("/{id}")
     public ApiResult<RecipeVo> update(@PathVariable Long id, @Valid @RequestBody RecipeSaveDto dto) {
         return ApiResult.ok(recipeApplicationService.update(id, dto));
@@ -118,8 +113,7 @@ public class AdminRecipeController {
      * @history 1.00 2026-09-04 17:35 XieMingJie Created.
      */
     @Operation(summary = "删除菜谱")
-    @MiyfPermission(code = "kitchen:recipe:delete", name = "删除菜谱", groupCode = "kitchen_recipe", groupName = "菜谱管理")
-    @RequirePermission({"kitchen:recipe:delete"})
+    @MiyfPermission(code = "kitchen:recipe:delete")
     @DeleteMapping("/{id}")
     public ApiResult<Void> delete(@PathVariable Long id) {
         recipeApplicationService.delete(id);

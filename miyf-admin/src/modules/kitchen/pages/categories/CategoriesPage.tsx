@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { Input, InputNumber, Switch, Button, Space, message, Modal, Form, Tag } from 'antd';
+import { Input, InputNumber, Switch, Button, Space, message, Modal, Form } from 'antd';
 
 import SearchForm from '@/components/SearchForm';
 
@@ -11,6 +11,8 @@ import { confirmDialog } from '@/components/ConfirmDialog';
 import { categoryApi } from '@/api';
 
 import type { Category } from '@/types';
+import { EmptyState, PageHeader, StatusBadge } from '@/ui';
+import { ENABLED_STATUS } from '@/constants/status';
 
 
 
@@ -190,9 +192,8 @@ export default function CategoriesPage() {
 
     <div className="ck-page">
 
-      <h2 className="ck-page-title">分类管理</h2>
-
-      <SearchForm
+      <PageHeader title="分类管理" />
+<SearchForm
 
         fields={[
 
@@ -242,9 +243,7 @@ export default function CategoriesPage() {
 
             dataIndex: 'status',
 
-            render: (status: string) =>
-
-              status === 'ENABLED' ? <Tag color="success">启用</Tag> : <Tag>停用</Tag>,
+            render: (status: string) => <StatusBadge code={status} map={ENABLED_STATUS} />,
 
           },
 
@@ -298,7 +297,7 @@ export default function CategoriesPage() {
 
         }}
 
-        locale={{ emptyText: '还没有分类，先建一个吧' }}
+        locale={{ emptyText: <EmptyState description="还没有分类，先建一个吧" /> }}
 
       />
 

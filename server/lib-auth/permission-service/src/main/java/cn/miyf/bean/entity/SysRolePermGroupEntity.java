@@ -53,7 +53,7 @@ public class SysRolePermGroupEntity implements Serializable {
     @Schema(description = "权限组 ID")
     private Long groupId;
 
-    @TableField(value = "created_at", fill = FieldFill.INSERT)
+    @TableField(value = "create_time", fill = FieldFill.INSERT)
     @Schema(description = "创建时间")
-    private Instant createdAt;
+    private Instant createTime;
 }

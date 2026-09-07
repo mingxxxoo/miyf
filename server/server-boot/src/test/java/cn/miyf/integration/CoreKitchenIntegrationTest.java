@@ -79,7 +79,11 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
         assertEquals(ErrorCode.LOGIN_FAILED.getCode(), bad.getCode());
 
         LoginVo user = kitchenAuthApplicationService.wxLogin(
-                new WxLoginDto().setCode("it-user-login").setNickname("集成用户"));
+                new WxLoginDto().setCode("it-user-login")
+                        .setUsername("集成用户")
+                        .setPhone("13800138001")
+                        .setWechatId("wx_it_user")
+                        .setNickname("集成用户"));
         assertNotNull(user.getToken());
         assertEquals("USER", user.getPrincipalType());
         assertNotNull(user.getUserId());
@@ -87,8 +91,10 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void coreFlow_orderCommentRating_andHideRecalc() {
-        LoginVo user1 = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("flow-u1").setNickname("U1"));
-        LoginVo user2 = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("flow-u2").setNickname("U2"));
+        LoginVo user1 = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("flow-u1")
+                .setUsername("U1").setPhone("13800138002").setWechatId("wx_u1").setNickname("U1"));
+        LoginVo user2 = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("flow-u2")
+                .setUsername("U2").setPhone("13800138003").setWechatId("wx_u2").setNickname("U2"));
         LoginVo adminLogin = authApplicationService.adminLogin(
                 new AdminLoginDto().setUsername("admin").setPassword("change-me"));
         Long adminId = adminLogin.getUserId();
@@ -136,7 +142,8 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void cancel_shouldRestoreLimitedStock() {
-        LoginVo user = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("cancel-u").setNickname("CU"));
+        LoginVo user = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("cancel-u")
+                .setUsername("CU").setPhone("13800138004").setWechatId("wx_cu").setNickname("CU"));
         LoginVo adminLogin = authApplicationService.adminLogin(
                 new AdminLoginDto().setUsername("admin").setPassword("change-me"));
         CategoryVo category = categoryApplicationService.listEnabled().getFirst();
@@ -163,7 +170,8 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void commentRules_requireCompleted_andRejectDuplicate() {
-        LoginVo user = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("cmt-u").setNickname("CM"));
+        LoginVo user = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("cmt-u")
+                .setUsername("CM").setPhone("13800138005").setWechatId("wx_cm").setNickname("CM"));
         LoginVo adminLogin = authApplicationService.adminLogin(
                 new AdminLoginDto().setUsername("admin").setPassword("change-me"));
         CategoryVo category = categoryApplicationService.listEnabled().getFirst();
@@ -203,7 +211,8 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void rbac_shouldForbidStatusChangeWithoutPermission() {
-        LoginVo user = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("rbac-u").setNickname("RU"));
+        LoginVo user = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("rbac-u")
+                .setUsername("RU").setPhone("13800138006").setWechatId("wx_ru").setNickname("RU"));
         LoginVo adminLogin = authApplicationService.adminLogin(
                 new AdminLoginDto().setUsername("admin").setPassword("change-me"));
         CategoryVo category = categoryApplicationService.listEnabled().getFirst();
@@ -259,6 +268,9 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
                 try {
                     LoginVo u = kitchenAuthApplicationService.wxLogin(
                             new WxLoginDto().setCode("conc-" + idx + "-" + System.nanoTime())
+                                    .setUsername("C" + idx)
+                                    .setPhone(String.format("139%08d", idx))
+                                    .setWechatId("wx_c" + idx)
                                     .setNickname("C" + idx));
                     asUser(u.getUserId(), "C" + idx);
                     ready.countDown();

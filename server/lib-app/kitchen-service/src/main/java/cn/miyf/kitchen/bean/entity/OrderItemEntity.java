@@ -65,7 +65,7 @@ public class OrderItemEntity implements Serializable {
     @Schema(description = "明细备注")
     private String remark;
 
-    @TableField("created_at")
+    @TableField("create_time")
     @Schema(description = "创建时间")
-    private Instant createdAt;
+    private Instant createTime;
 }

@@ -39,6 +39,12 @@ public class SysRoleSaveDto {
     @Schema(description = "描述")
     private String description;
 
+    @Schema(description = "产品域：kitchen / health / system")
+    private String product;
+
+    @Schema(description = "数据范围：ALL / ORG / ORG_CHILD / SELF")
+    private String dataScope;
+
     @Schema(description = "权限组 ID 列表")
     private List<String> groupIds;
 }

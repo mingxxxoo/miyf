@@ -3,8 +3,7 @@ package cn.miyf.health.controller;
 import cn.miyf.common.ApiResult;
 import cn.miyf.health.provider.huawei.HuaweiHealthAuthFacade;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
-import cn.miyf.security.RequirePermission;
+import cn.miyf.health.security.HealthPersonalPopedom;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,7 +23,7 @@ import java.util.Map;
  * @since 2026-09-06
  */
 @Tag(name = "健康-华为授权")
-@PopedomGroup(value = "12010000", name = "个人", product = "health", sort = 20)
+@HealthPersonalPopedom
 @RestController
 @RequestMapping("/api/admin/health/providers/huawei")
 public class AdminHuaweiHealthController {
@@ -36,16 +35,14 @@ public class AdminHuaweiHealthController {
     }
 
     @Operation(summary = "获取华为 OAuth 授权 URL（绑定到指定主体）")
-    @MiyfPermission(code = "health:huawei:oauth", name = "华为授权", groupCode = "12010000", groupName = "个人")
-    @RequirePermission({"health:huawei:oauth"})
+    @MiyfPermission(code = "health:huawei:oauth")
     @GetMapping("/authorize-url")
     public ApiResult<Map<String, Object>> authorizeUrl(@RequestParam Long subjectId) {
         return ApiResult.ok(huaweiHealthAuthFacade.authorizeUrl(subjectId));
     }
 
     @Operation(summary = "用授权码换取 Token 并绑定主体")
-    @MiyfPermission(code = "health:huawei:oauth", name = "华为授权", groupCode = "12010000", groupName = "个人")
-    @RequirePermission({"health:huawei:oauth"})
+    @MiyfPermission(code = "health:huawei:oauth")
     @PostMapping("/oauth/callback")
     public ApiResult<Map<String, Object>> oauthCallback(@RequestBody Map<String, String> body) {
         Long subjectId = null;
@@ -59,16 +56,14 @@ public class AdminHuaweiHealthController {
     }
 
     @Operation(summary = "查询主体华为授权状态")
-    @MiyfPermission(code = "health:huawei:oauth", name = "华为授权", groupCode = "12010000", groupName = "个人")
-    @RequirePermission({"health:huawei:oauth"})
+    @MiyfPermission(code = "health:huawei:oauth")
     @GetMapping("/oauth/status")
     public ApiResult<Map<String, Object>> oauthStatus(@RequestParam Long subjectId) {
         return ApiResult.ok(huaweiHealthAuthFacade.status(subjectId));
     }
 
     @Operation(summary = "撤销指定主体的华为授权")
-    @MiyfPermission(code = "health:huawei:oauth", name = "华为授权", groupCode = "12010000", groupName = "个人")
-    @RequirePermission({"health:huawei:oauth"})
+    @MiyfPermission(code = "health:huawei:oauth")
     @DeleteMapping("/oauth")
     public ApiResult<Void> revoke(@RequestParam Long subjectId) {
         huaweiHealthAuthFacade.revoke(subjectId);

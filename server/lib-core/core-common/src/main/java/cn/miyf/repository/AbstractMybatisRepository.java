@@ -126,11 +126,11 @@ public abstract class AbstractMybatisRepository<D, E extends BaseEntity> impleme
      * 回写时间戳到领域对象。
      *
      * @param domain    领域对象
-     * @param createdAt 创建时间
-     * @param updatedAt 更新时间
+     * @param createTime 创建时间
+     * @param lastModifyTime 更新时间
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
-    protected abstract void setDomainTimestamps(D domain, Instant createdAt, Instant updatedAt);
+    protected abstract void setDomainTimestamps(D domain, Instant createTime, Instant lastModifyTime);
 
     /**
      * {@inheritDoc}
@@ -164,12 +164,12 @@ public abstract class AbstractMybatisRepository<D, E extends BaseEntity> impleme
     public D insert(D domain) {
         Instant now = Instant.now();
         E entity = toEntity(domain);
-        entity.setCreatedAt(now);
-        entity.setUpdatedAt(now);
+        entity.setCreateTime(now);
+        entity.setLastModifyTime(now);
         beforeInsert(entity, domain);
         mapper.insert(entity);
         setDomainId(domain, entity.getId());
-        setDomainTimestamps(domain, entity.getCreatedAt(), entity.getUpdatedAt());
+        setDomainTimestamps(domain, entity.getCreateTime(), entity.getLastModifyTime());
         return domain;
     }
 
@@ -201,10 +201,10 @@ public abstract class AbstractMybatisRepository<D, E extends BaseEntity> impleme
     public D update(D domain) {
         Instant now = Instant.now();
         E entity = toEntity(domain);
-        entity.setUpdatedAt(now);
+        entity.setLastModifyTime(now);
         beforeUpdate(entity, domain);
         mapper.updateById(entity);
-        setDomainTimestamps(domain, entity.getCreatedAt(), entity.getUpdatedAt());
+        setDomainTimestamps(domain, entity.getCreateTime(), entity.getLastModifyTime());
         return domain;
     }
 
@@ -369,8 +369,8 @@ public abstract class AbstractMybatisRepository<D, E extends BaseEntity> impleme
                 continue;
             }
             E entity = toEntity(domain);
-            entity.setCreatedAt(now);
-            entity.setUpdatedAt(now);
+            entity.setCreateTime(now);
+            entity.setLastModifyTime(now);
             beforeInsert(entity, domain);
             domainList.add(domain);
             entities.add(entity);
@@ -397,7 +397,7 @@ public abstract class AbstractMybatisRepository<D, E extends BaseEntity> impleme
                 continue;
             }
             E entity = toEntity(domain);
-            entity.setUpdatedAt(now);
+            entity.setLastModifyTime(now);
             beforeUpdate(entity, domain);
             domainList.add(domain);
             entities.add(entity);
@@ -417,7 +417,7 @@ public abstract class AbstractMybatisRepository<D, E extends BaseEntity> impleme
             D domain = domainList.get(i);
             E entity = entities.get(i);
             setDomainId(domain, entity.getId());
-            setDomainTimestamps(domain, entity.getCreatedAt(), entity.getUpdatedAt());
+            setDomainTimestamps(domain, entity.getCreateTime(), entity.getLastModifyTime());
         }
     }
 }

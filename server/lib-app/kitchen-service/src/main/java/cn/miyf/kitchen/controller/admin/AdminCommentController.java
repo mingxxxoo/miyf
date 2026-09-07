@@ -7,7 +7,7 @@ import cn.miyf.kitchen.bean.vo.CommentVo;
 import cn.miyf.kitchen.bean.vo.DishRatingVo;
 import cn.miyf.kitchen.service.CommentApplicationService;
 import cn.miyf.security.MiyfPermission;
-import cn.miyf.security.PopedomGroup;
+import cn.miyf.kitchen.security.KitchenAdminPopedom;
 import cn.miyf.security.RequirePermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2026-09-04 17:55
  */
 @Tag(name = "管理端评价")
-@PopedomGroup(value = "11030000", name = "管理员", product = "kitchen", sort = 10)
+@KitchenAdminPopedom
 @RestController
 @RequestMapping("/api/admin/comments")
 public class AdminCommentController {
@@ -51,8 +51,7 @@ public class AdminCommentController {
      * @history 1.00 2026-09-04 17:55 XieMingJie Created.
      */
     @Operation(summary = "评价分页")
-    @MiyfPermission(code = "kitchen:comment:list", name = "评价列表", groupCode = "kitchen_comment", groupName = "评价管理")
-    @RequirePermission({"kitchen:comment:list"})
+    @MiyfPermission(code = "kitchen:comment:list")
     @GetMapping
     public ApiResult<PageResult<CommentVo>> page(CommentPageQo qo) {
         return ApiResult.ok(commentApplicationService.pageAdmin(qo));
@@ -66,8 +65,7 @@ public class AdminCommentController {
      * @history 1.00 2026-09-04 17:55 XieMingJie Created.
      */
     @Operation(summary = "隐藏评价")
-    @MiyfPermission(code = "kitchen:comment:hide", name = "隐藏评价", groupCode = "kitchen_comment", groupName = "评价管理")
-    @RequirePermission({"kitchen:comment:hide"})
+    @MiyfPermission(code = "kitchen:comment:hide")
     @PostMapping("/{id}/hide")
     public ApiResult<CommentVo> hide(@PathVariable Long id) {
         return ApiResult.ok(commentApplicationService.hide(id));
@@ -81,8 +79,7 @@ public class AdminCommentController {
      * @history 1.00 2026-09-04 17:55 XieMingJie Created.
      */
     @Operation(summary = "恢复评价")
-    @MiyfPermission(code = "kitchen:comment:restore", name = "恢复评价", groupCode = "kitchen_comment", groupName = "评价管理")
-    @RequirePermission({"kitchen:comment:restore"})
+    @MiyfPermission(code = "kitchen:comment:restore")
     @PostMapping("/{id}/restore")
     public ApiResult<CommentVo> restore(@PathVariable Long id) {
         return ApiResult.ok(commentApplicationService.restore(id));
@@ -96,8 +93,7 @@ public class AdminCommentController {
      * @history 1.00 2026-09-04 17:55 XieMingJie Created.
      */
     @Operation(summary = "删除评价")
-    @MiyfPermission(code = "kitchen:comment:delete", name = "删除评价", groupCode = "kitchen_comment", groupName = "评价管理")
-    @RequirePermission({"kitchen:comment:delete"})
+    @MiyfPermission(code = "kitchen:comment:delete")
     @DeleteMapping("/{id}")
     public ApiResult<Void> delete(@PathVariable Long id) {
         commentApplicationService.delete(id);
@@ -112,7 +108,7 @@ public class AdminCommentController {
      * @history 1.00 2026-09-04 17:55 XieMingJie Created.
      */
     @Operation(summary = "重算菜品评分")
-    @MiyfPermission(code = "kitchen:comment:list", name = "评价列表", groupCode = "kitchen_comment", groupName = "评价管理")
+    @MiyfPermission(code = "kitchen:comment:list")
     @RequirePermission({"kitchen:comment:list", "kitchen:dish:update"})
     @PostMapping("/rebuild-rating/{dishId}")
     public ApiResult<DishRatingVo> rebuildRating(@PathVariable Long dishId) {

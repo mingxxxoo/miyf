@@ -4,7 +4,7 @@ import type { Order, OrderItem } from '@/types'
 
 interface OrderDraft {
   items: OrderItem[]
-  scheduledAt: string
+  scheduledTime: string
   note: string
   guestCount: number
 }
@@ -25,7 +25,7 @@ interface OrderState {
 
 const emptyDraft = (): OrderDraft => ({
   items: [],
-  scheduledAt: '',
+  scheduledTime: '',
   note: '',
   guestCount: 2
 })
@@ -33,7 +33,7 @@ const emptyDraft = (): OrderDraft => ({
 function buildRemark(draft: OrderDraft): string {
   const parts: string[] = []
   if (draft.note?.trim()) parts.push(draft.note.trim())
-  if (draft.scheduledAt) parts.push(`期望日期 ${draft.scheduledAt}`)
+  if (draft.scheduledTime) parts.push(`期望日期 ${draft.scheduledTime}`)
   if (draft.guestCount) parts.push(`${draft.guestCount} 位用餐`)
   return parts.join('；') || ''
 }

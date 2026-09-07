@@ -112,7 +112,7 @@ public class OrderApplicationService extends BaseApplicationService {
      * @history 1.00 2026-09-04 17:40 XieMingJie Created.
      */
     public PageResult<OrderVo> pageMine(OrderPageQo qo) {
-        return QueryConditionHolder.run(qo, "created_at DESC", () -> {
+        return QueryConditionHolder.run(qo, "create_time DESC", () -> {
             Long userId = SecurityUtils.currentUserId();
             String status = normalizeStatusFilter(qo.getStatus());
             long page = pageOf(qo);
@@ -166,7 +166,7 @@ public class OrderApplicationService extends BaseApplicationService {
      * @history 1.00 2026-09-04 17:40 XieMingJie Created.
      */
     public PageResult<OrderVo> pageAdmin(OrderPageQo qo) {
-        return QueryConditionHolder.run(qo, "created_at DESC", () -> {
+        return QueryConditionHolder.run(qo, "create_time DESC", () -> {
             String status = normalizeStatusFilter(qo.getStatus());
             long page = pageOf(qo);
             long pageSize = pageSizeOf(qo);
@@ -311,8 +311,8 @@ public class OrderApplicationService extends BaseApplicationService {
                 .setUserId(order.getUserId())
                 .setStatus(order.getStatus())
                 .setRemark(order.getRemark())
-                .setCreatedAt(order.getCreatedAt())
-                .setUpdatedAt(order.getUpdatedAt())
+                .setCreateTime(order.getCreateTime())
+                .setLastModifyTime(order.getLastModifyTime())
                 .setItems(items);
     }
 

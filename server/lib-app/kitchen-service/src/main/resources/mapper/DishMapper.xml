@@ -13,7 +13,7 @@
         d.id, d.category_id, d.name, d.subtitle, d.description, d.cover_image,
         d.status, d.sort_order, d.is_recommend AS recommend, d.stock, d.stock_type, d.unit,
         d.rating, d.rating_count, d.created_by, d.updated_by,
-        d.created_at, d.updated_at
+        d.create_time, d.last_modify_time
     </sql>
 
     <!-- 用户端：仅展示可预约（ON_SALE） -->
@@ -56,6 +56,7 @@ WHERE d.status = 'ON_SALE'
         SELECT
         <include refid="DishColumns"/>
         FROM dish d
+        WHERE 1 = 1
           <if test="categoryId != null">
               AND d.category_id = #{categoryId}
           </if>
@@ -72,6 +73,7 @@ WHERE d.status = 'ON_SALE'
     <select id="countAdminPage" resultType="long">
         SELECT COUNT(1)
         FROM dish d
+        WHERE 1 = 1
           <if test="categoryId != null">
               AND d.category_id = #{categoryId}
           </if>
@@ -89,7 +91,7 @@ WHERE d.status = 'ON_SALE'
         <include refid="DishColumns"/>
         FROM dish d
 WHERE d.status = 'ON_SALE'
-        ORDER BY d.rating DESC, d.rating_count DESC, d.updated_at DESC
+        ORDER BY d.rating DESC, d.rating_count DESC, d.last_modify_time DESC
         LIMIT #{limit}
     </select>
 
@@ -99,7 +101,7 @@ WHERE d.status = 'ON_SALE'
         FROM dish d
 WHERE d.status = 'ON_SALE'
           AND d.is_recommend = TRUE
-        ORDER BY d.sort_order ASC, d.created_at DESC
+        ORDER BY d.sort_order ASC, d.create_time DESC
         LIMIT #{limit}
     </select>
 
@@ -107,7 +109,7 @@ WHERE d.status = 'ON_SALE'
     <update id="deductStock">
         UPDATE dish
         SET stock = stock - #{qty},
-            updated_at = NOW()
+            last_modify_time = NOW()
         WHERE id = #{id}
           AND stock_type = 'LIMITED'
           AND stock &gt;= #{qty}
@@ -116,7 +118,7 @@ WHERE d.status = 'ON_SALE'
     <update id="restoreStock">
         UPDATE dish
         SET stock = stock + #{qty},
-            updated_at = NOW()
+            last_modify_time = NOW()
         WHERE id = #{id}
           AND stock_type = 'LIMITED'
     </update>
@@ -125,7 +127,7 @@ WHERE d.status = 'ON_SALE'
         UPDATE dish
         SET rating = #{rating},
             rating_count = #{ratingCount},
-            updated_at = NOW()
+            last_modify_time = NOW()
         WHERE id = #{id}
     </update>
 

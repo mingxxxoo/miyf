@@ -18,11 +18,10 @@ import tools.jackson.databind.ser.std.ToStringSerializer;
 public class HttpJacksonConfig {
 
     /**
-     * 注册全局 Long → String 序列化（作用于 MVC 响应，非 com.fasterxml ObjectMapper）。
+     * 注册全局 Long → String 序列化（作用于 MVC 响应；入参 ID 由 DTO 字符串字段承接）。
      *
      * @return JsonMapperBuilderCustomizer
      * @history 1.00 2026-09-05 XieMingJie Created.
-     * @history 1.01 2026-09-06 XieMingJie 入参 ID 改由 DTO 字符串字段承接。
      */
     @Bean
     public JsonMapperBuilderCustomizer longAsStringCustomizer() {

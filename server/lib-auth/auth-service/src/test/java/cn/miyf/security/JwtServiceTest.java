@@ -33,13 +33,17 @@ class JwtServiceTest {
                 "admin",
                 PrincipalType.ADMIN,
                 List.of("kitchen:dish:list", "kitchen:order:list"),
-                true
+                true,
+                100L,
+                DataScope.ORG_CHILD
         );
         String token = jwtService.createToken(principal);
         AuthPrincipal parsed = jwtService.parseToken(token);
 
         assertEquals(principal.getId(), parsed.getId());
         assertEquals(PrincipalType.ADMIN, parsed.getType());
+        assertEquals(DataScope.ORG_CHILD, parsed.getDataScope());
+        assertEquals(100L, parsed.getOrgUnitId());
         assertTrue(parsed.hasPermission("kitchen:dish:list"));
     }
 
