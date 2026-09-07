@@ -30,6 +30,8 @@ public class FlywayConfig {
                 .dataSource(dataSource)
                 .locations("classpath:db/migration/postgresql")
                 .baselineOnMigrate(true)
+                // 关闭占位符替换，避免 SQL 注释/模板中的 ${var} 被误解析
+                .placeholderReplacement(false)
                 .load();
         flyway.repair();
         flyway.migrate();

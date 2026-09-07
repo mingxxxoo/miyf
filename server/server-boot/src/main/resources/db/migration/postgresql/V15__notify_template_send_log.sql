@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS sys_notify_template (
 );
 
 COMMENT ON TABLE sys_notify_template IS '通知模板';
-COMMENT ON COLUMN sys_notify_template.title_template IS '标题模板，支持 ${var} 占位';
-COMMENT ON COLUMN sys_notify_template.content_template IS '正文模板，支持 ${var} 占位';
+COMMENT ON COLUMN sys_notify_template.title_template IS '标题模板，支持变量占位符';
+COMMENT ON COLUMN sys_notify_template.content_template IS '正文模板，支持变量占位符';
 
 CREATE TABLE IF NOT EXISTS sys_notify_send_log (
     id           BIGINT PRIMARY KEY,
