@@ -4,7 +4,7 @@ import cn.miyf.health.bean.dto.HealthSyncRequestDto;
 import cn.miyf.health.bean.entity.HealthProviderBindingEntity;
 import cn.miyf.health.bean.entity.HealthSyncRunEntity;
 import cn.miyf.health.config.HealthProperties;
-import cn.miyf.health.service.HealthApplicationService;
+import cn.miyf.health.service.HealthSyncApplicationService;
 import cn.miyf.job.JobRegistry;
 import cn.miyf.job.MiyfJob;
 import org.slf4j.Logger;
@@ -32,17 +32,30 @@ public class HealthSyncJob {
     public static final String CODE = "health.provider.sync";
 
     private final JobRegistry jobRegistry;
-    private final HealthApplicationService healthApplicationService;
+    private final HealthSyncApplicationService healthSyncApplicationService;
     private final HealthProperties healthProperties;
 
+    /**
+     * 构造任务。
+     *
+     * @param jobRegistry                  任务注册表
+     * @param healthSyncApplicationService 同步服务
+     * @param healthProperties             配置
+     * @history 1.00 2026-09-08 XieMingJie Use HealthSyncApplicationService.
+     */
     public HealthSyncJob(JobRegistry jobRegistry,
-                         HealthApplicationService healthApplicationService,
+                         HealthSyncApplicationService healthSyncApplicationService,
                          HealthProperties healthProperties) {
         this.jobRegistry = jobRegistry;
-        this.healthApplicationService = healthApplicationService;
+        this.healthSyncApplicationService = healthSyncApplicationService;
         this.healthProperties = healthProperties;
     }
 
+    /**
+     * 定时同步全部可远程拉取的 ACTIVE 绑定；按 lastSyncTime 重叠 1h 增量拉取。
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @MiyfJob(code = CODE, name = "健康数据源同步", description = "按 ACTIVE 绑定增量同步远程健康数据")
     @Scheduled(cron = "${app.health.sync.cron:0 15 * * * *}")
     public void syncAll() {
@@ -56,7 +69,7 @@ public class HealthSyncJob {
             return;
         }
         try {
-            List<HealthProviderBindingEntity> bindings = healthApplicationService.listActiveRemoteBindings();
+            List<HealthProviderBindingEntity> bindings = healthSyncApplicationService.listActiveRemoteBindings();
             int ok = 0;
             int fail = 0;
             List<String> errors = new ArrayList<>();
@@ -69,7 +82,7 @@ public class HealthSyncJob {
                         dto.setFrom(binding.getLastSyncTime().minus(Duration.ofHours(1)));
                     }
                     dto.setTo(Instant.now());
-                    HealthSyncRunEntity run = healthApplicationService.sync(binding.getProviderCode(), dto);
+                    HealthSyncRunEntity run = healthSyncApplicationService.sync(binding.getProviderCode(), dto);
                     if ("FAILED".equals(run.getStatus())) {
                         fail++;
                         errors.add(binding.getProviderCode() + "/" + binding.getSubjectId()

@@ -53,12 +53,31 @@ public class HuaweiHealthApiClient {
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
 
+    /**
+     * 构造 Health Kit 客户端。
+     *
+     * @param healthProperties 配置（API base 等）
+     * @param objectMapper     JSON
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public HuaweiHealthApiClient(HealthProperties healthProperties, ObjectMapper objectMapper) {
         this.healthProperties = healthProperties;
         this.objectMapper = objectMapper;
         this.restClient = RestClient.create();
     }
 
+    /**
+     * 聚合查询华为采样并映射为草稿。
+     *
+     * @param subjectId     主体
+     * @param accessToken   access_token
+     * @param clientId      x-client-id，可空则用配置
+     * @param from          起始
+     * @param to            结束
+     * @param metricFilter  指标过滤，可空
+     * @return 草稿列表
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public List<HealthSampleDraft> fetchSamples(Long subjectId,
                                                 String accessToken,
                                                 String clientId,

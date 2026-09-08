@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 数据源注册表：保存已创建的 Druid 实例，供路由与运维查询。
+ * 数据源注册表：保存已创建的连接池实例，供路由与运维查询。
  *
  * @author XieMingJie
  * @since 2026-09-04 16:41

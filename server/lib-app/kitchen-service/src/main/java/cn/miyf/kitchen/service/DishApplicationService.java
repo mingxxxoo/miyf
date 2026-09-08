@@ -1,11 +1,15 @@
 package cn.miyf.kitchen.service;
 
+import cn.miyf.auth.security.SecurityUtils;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.common.PageResult;
 import cn.miyf.common.query.QueryConditionHolder;
 import cn.miyf.config.RedisAppProperties;
-import cn.miyf.infrastructure.redis.RedisJsonCache;
+import cn.miyf.infrastructure.cache.CacheClient;
+import cn.miyf.infrastructure.cache.ListCache;
+import cn.miyf.infrastructure.search.SearchIdPage;
+import cn.miyf.kitchen.bean.document.DishSearchDocument;
 import cn.miyf.kitchen.bean.dto.DishSaveDto;
 import cn.miyf.kitchen.bean.model.Dish;
 import cn.miyf.kitchen.bean.qo.DishPageQo;
@@ -13,18 +17,22 @@ import cn.miyf.kitchen.bean.vo.DishVo;
 import cn.miyf.kitchen.constant.CacheKeys;
 import cn.miyf.kitchen.repository.CategoryRepository;
 import cn.miyf.kitchen.repository.DishRepository;
-import cn.miyf.security.SecurityUtils;
+import cn.miyf.kitchen.search.DishSearchIndexService;
 import cn.miyf.service.BaseApplicationService;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * 菜品应用服务：用户端只读上架；管理端 CRUD、上下架、推荐与份数。
+ * 微信端列表查询优先走 Elasticsearch（仅索引 ON_SALE）；关闭 ES 时回退数据库。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:30
@@ -36,50 +44,55 @@ public class DishApplicationService extends BaseApplicationService {
     private static final Set<String> ADMIN_STATUS = Set.of("DRAFT", "ON_SALE", "OFF_SALE");
     private static final int DEFAULT_LIST_LIMIT = 10;
     private static final int MAX_LIST_LIMIT = 50;
-    private static final TypeReference<List<DishVo>> DISH_LIST_TYPE = new TypeReference<>() {
-    };
 
     private final DishRepository dishRepository;
     private final CategoryRepository categoryRepository;
-    private final RedisJsonCache redisJsonCache;
+    private final ListCache<DishVo> dishListCache;
     private final RedisAppProperties redisAppProperties;
     private final KitchenCacheEvictService kitchenCacheEvictService;
+    private final DishSearchIndexService dishSearchIndexService;
 
     /**
      * 构造菜品服务。
      *
      * @param dishRepository           菜品仓储
      * @param categoryRepository       分类仓储
-     * @param redisJsonCache           缓存
+     * @param cacheClient              缓存门面
      * @param redisAppProperties       Redis 配置
      * @param kitchenCacheEvictService 失效服务
+     * @param dishSearchIndexService   菜品 ES 索引
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     public DishApplicationService(DishRepository dishRepository,
                                   CategoryRepository categoryRepository,
-                                  RedisJsonCache redisJsonCache,
+                                  CacheClient cacheClient,
                                   RedisAppProperties redisAppProperties,
-                                  KitchenCacheEvictService kitchenCacheEvictService) {
+                                  KitchenCacheEvictService kitchenCacheEvictService,
+                                  DishSearchIndexService dishSearchIndexService) {
         this.dishRepository = dishRepository;
         this.categoryRepository = categoryRepository;
-        this.redisJsonCache = redisJsonCache;
+        this.dishListCache = cacheClient.lists(DishVo.class);
         this.redisAppProperties = redisAppProperties;
         this.kitchenCacheEvictService = kitchenCacheEvictService;
+        this.dishSearchIndexService = dishSearchIndexService;
     }
 
     /**
-     * 用户端分页：仅 ON_SALE。
+     * 用户端分页：仅 ON_SALE；ES 召回开启时与 SQL 共用 AbstractCondition 分页/排序/关键字语义。
      *
      * @param qo 查询条件
      * @return 分页 VO
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     public PageResult<DishVo> pageUser(DishPageQo qo) {
-        return QueryConditionHolder.run(qo, "d.is_recommend DESC, d.sort_order ASC, d.create_time DESC", () -> {
-            long page = pageOf(qo);
-            long pageSize = pageSizeOf(qo);
+        return QueryConditionHolder.run(qo, DishSearchDocument.DEFAULT_ORDER, () -> {
+            if (dishSearchIndexService.isRecallEnabled()) {
+                SearchIdPage idPage = dishSearchIndexService.searchUser(qo);
+                return PageResult.of(hydrateByIds(idPage.ids()), idPage.total(), idPage.page(), idPage.pageSize());
+            }
             PageResult<Dish> result = dishRepository.pageUser(
-                    qo.getCategoryId(), qo.getKeyword(), qo.getRecommend(), page, pageSize);
+                    qo.getCategoryId(), qo.getKeyword(), qo.getRecommend(),
+                    qo.normalizedPage(), qo.normalizedRows());
             return PageResult.of(result.records().stream().map(this::toVo).toList(),
                     result.total(), result.page(), result.pageSize());
         });
@@ -99,7 +112,7 @@ public class DishApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 热门菜品：rating DESC, rating_count DESC（Redis 缓存）。
+     * 热门菜品：rating DESC, rating_count DESC（列表缓存；启用 ES 时从索引召回）。
      *
      * @param limit 条数
      * @return 列表
@@ -107,16 +120,21 @@ public class DishApplicationService extends BaseApplicationService {
      */
     public List<DishVo> listHot(Integer limit) {
         int normalized = normalizeListLimit(limit);
-        return redisJsonCache.getOrLoad(
+        Duration ttl = Duration.ofSeconds(redisAppProperties.getCache().getHotDishTtlSeconds());
+        return dishListCache.getOrLoadList(
                 CacheKeys.dishesHot(normalized),
-                DISH_LIST_TYPE,
-                redisAppProperties.getCache().getHotDishTtlSeconds(),
-                () -> dishRepository.findHot(normalized).stream().map(this::toVo).toList()
+                ttl,
+                () -> {
+                    if (dishSearchIndexService.isRecallEnabled()) {
+                        return hydrateByIds(dishSearchIndexService.searchHotIds(normalized));
+                    }
+                    return dishRepository.findHot(normalized).stream().map(this::toVo).toList();
+                }
         );
     }
 
     /**
-     * 推荐菜品列表（Redis 缓存）。
+     * 推荐菜品列表（列表缓存；启用 ES 时从索引召回）。
      *
      * @param limit 条数
      * @return 列表
@@ -124,11 +142,16 @@ public class DishApplicationService extends BaseApplicationService {
      */
     public List<DishVo> listRecommend(Integer limit) {
         int normalized = normalizeListLimit(limit);
-        return redisJsonCache.getOrLoad(
+        Duration ttl = Duration.ofSeconds(redisAppProperties.getCache().getHotDishTtlSeconds());
+        return dishListCache.getOrLoadList(
                 CacheKeys.dishesRecommend(normalized),
-                DISH_LIST_TYPE,
-                redisAppProperties.getCache().getHotDishTtlSeconds(),
-                () -> dishRepository.findRecommend(normalized).stream().map(this::toVo).toList()
+                ttl,
+                () -> {
+                    if (dishSearchIndexService.isRecallEnabled()) {
+                        return hydrateByIds(dishSearchIndexService.searchRecommendIds(normalized));
+                    }
+                    return dishRepository.findRecommend(normalized).stream().map(this::toVo).toList();
+                }
         );
     }
 
@@ -185,13 +208,14 @@ public class DishApplicationService extends BaseApplicationService {
         dish.setRatingCount(0);
         dish.setCreatedBy(adminId);
         dish.setUpdatedBy(adminId);
-        DishVo vo = toVo(save(dishRepository, dish));
+        Dish saved = save(dishRepository, dish);
+        // 草稿不入 ES
         kitchenCacheEvictService.evictDishBrowse();
-        return vo;
+        return toVo(saved);
     }
 
     /**
-     * 更新菜品基础信息（不改状态与评分）。
+     * 更新菜品基础信息（不改状态与评分）；已上架则刷新 ES。
      *
      * @param id  菜品 ID
      * @param dto 请求
@@ -205,13 +229,14 @@ public class DishApplicationService extends BaseApplicationService {
         validateStock(dto.getStockType(), dto.getStock());
         applyDto(dish, dto, false);
         dish.setUpdatedBy(SecurityUtils.currentAdminId());
-        DishVo vo = toVo(save(dishRepository, dish));
+        Dish saved = save(dishRepository, dish);
+        dishSearchIndexService.sync(saved);
         kitchenCacheEvictService.evictDishBrowse();
-        return vo;
+        return toVo(saved);
     }
 
     /**
-     * 上架：DRAFT / OFF_SALE → ON_SALE。
+     * 上架：DRAFT / OFF_SALE → ON_SALE，并写入 ES。
      *
      * @param id 菜品 ID
      * @return 更新后菜品
@@ -230,13 +255,14 @@ public class DishApplicationService extends BaseApplicationService {
         dish.setUpdatedBy(SecurityUtils.currentAdminId());
         // 上架不改图集：置 null 避免 save 触发 replaceImages
         dish.setImages(null);
-        DishVo vo = toVo(save(dishRepository, dish));
+        Dish saved = save(dishRepository, dish);
+        dishSearchIndexService.indexOnSale(saved);
         kitchenCacheEvictService.evictDishBrowse();
-        return vo;
+        return toVo(saved);
     }
 
     /**
-     * 下架：ON_SALE → OFF_SALE。
+     * 下架：ON_SALE → OFF_SALE，并从 ES 移除。
      *
      * @param id 菜品 ID
      * @return 更新后菜品
@@ -249,13 +275,14 @@ public class DishApplicationService extends BaseApplicationService {
         dish.setStatus("OFF_SALE");
         dish.setUpdatedBy(SecurityUtils.currentAdminId());
         dish.setImages(null);
-        DishVo vo = toVo(save(dishRepository, dish));
+        Dish saved = save(dishRepository, dish);
+        dishSearchIndexService.remove(id);
         kitchenCacheEvictService.evictDishBrowse();
-        return vo;
+        return toVo(saved);
     }
 
     /**
-     * 物理删除菜品；有预约历史时禁止删除。
+     * 物理删除菜品；有预约历史时禁止删除；同步移除 ES。
      *
      * @param id 菜品 ID
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
@@ -267,7 +294,46 @@ public class DishApplicationService extends BaseApplicationService {
             throw new BusinessException(ErrorCode.CONFLICT, "有预约历史的菜品无法删除");
         }
         deleteById(dishRepository, id);
+        dishSearchIndexService.remove(id);
         kitchenCacheEvictService.evictDishBrowse();
+    }
+
+    /**
+     * 按 ES 命中 ID 顺序回表（过滤非上架或已删）。
+     *
+     * @param idStrings 文档 ID
+     * @return VO 列表
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
+    private List<DishVo> hydrateByIds(List<String> idStrings) {
+        if (idStrings == null || idStrings.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = new ArrayList<>(idStrings.size());
+        for (String raw : idStrings) {
+            try {
+                ids.add(Long.valueOf(raw));
+            } catch (NumberFormatException ignored) {
+                // 非法文档 ID 跳过
+            }
+        }
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, Dish> byId = new LinkedHashMap<>();
+        for (Dish dish : dishRepository.findByIds(ids)) {
+            if (dish != null && dish.getId() != null && "ON_SALE".equals(dish.getStatus())) {
+                byId.put(dish.getId(), dish);
+            }
+        }
+        List<DishVo> result = new ArrayList<>(ids.size());
+        for (Long id : ids) {
+            Dish dish = byId.get(id);
+            if (dish != null) {
+                result.add(toVo(dish));
+            }
+        }
+        return result;
     }
 
     /**

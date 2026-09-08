@@ -18,6 +18,7 @@ public interface HealthDataProvider {
      * 稳定编码，如 {@code manual}、{@code example}。
      *
      * @return 编码
+     * @history 1.00 2026-09-08 XieMingJie Created.
      */
     String code();
 
@@ -25,6 +26,7 @@ public interface HealthDataProvider {
      * 展示名。
      *
      * @return 名称
+     * @history 1.00 2026-09-08 XieMingJie Created.
      */
     String displayName();
 
@@ -32,6 +34,7 @@ public interface HealthDataProvider {
      * 是否启用。
      *
      * @return true 可用
+     * @history 1.00 2026-09-08 XieMingJie Created.
      */
     boolean enabled();
 
@@ -39,6 +42,7 @@ public interface HealthDataProvider {
      * 是否支持远程拉取（手动录入类返回 false）。
      *
      * @return true 可 sync
+     * @history 1.00 2026-09-08 XieMingJie Created.
      */
     default boolean supportsRemoteFetch() {
         return true;
@@ -48,6 +52,7 @@ public interface HealthDataProvider {
      * 支持的规范指标编码集合。
      *
      * @return 指标
+     * @history 1.00 2026-09-08 XieMingJie Created.
      */
     Set<String> supportedMetrics();
 
@@ -56,6 +61,7 @@ public interface HealthDataProvider {
      *
      * @param request 请求
      * @return 草稿列表，不可为 null
+     * @history 1.00 2026-09-08 XieMingJie Created.
      */
     List<HealthSampleDraft> fetch(HealthFetchRequest request);
 }

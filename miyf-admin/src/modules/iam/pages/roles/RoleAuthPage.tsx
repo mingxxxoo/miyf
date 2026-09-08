@@ -12,6 +12,7 @@ import {
 } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import {
+  flattenTree,
   iamPermGroupApi,
   iamPermissionApi,
   iamRoleApi,
@@ -58,16 +59,16 @@ export default function RoleAuthPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [userList, roleList, groupList, permList] = await Promise.all([
+      const [userList, roleList, groupList, permTree] = await Promise.all([
         iamUserApi.list(),
         iamRoleApi.list(),
         iamPermGroupApi.list(),
-        iamPermissionApi.list(),
+        iamPermissionApi.listTree(),
       ]);
       setUsers(userList);
       setRoles(roleList);
       setGroups(groupList);
-      setPermissions(permList);
+      setPermissions(flattenTree(permTree));
       const map: Record<string, string[]> = {};
       for (const u of userList) {
         map[u.id] = [...(u.roleIds ?? [])];

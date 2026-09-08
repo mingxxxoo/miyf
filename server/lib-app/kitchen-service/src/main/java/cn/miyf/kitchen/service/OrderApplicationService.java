@@ -1,5 +1,6 @@
 package cn.miyf.kitchen.service;
 
+import cn.miyf.auth.security.SecurityUtils;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.common.PageResult;
@@ -17,7 +18,6 @@ import cn.miyf.kitchen.bean.vo.OrderItemVo;
 import cn.miyf.kitchen.bean.vo.OrderVo;
 import cn.miyf.kitchen.repository.DishRepository;
 import cn.miyf.kitchen.repository.OrderRepository;
-import cn.miyf.security.SecurityUtils;
 import cn.miyf.service.BaseApplicationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

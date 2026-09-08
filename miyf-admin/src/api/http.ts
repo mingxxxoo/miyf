@@ -5,17 +5,38 @@ import axios, {
 } from 'axios';
 import type { ApiResult } from '@/types';
 
-const TOKEN_KEY = 'ck_admin_token';
+const TOKEN_KEY = 'miyf_admin_token';
+const AUTH_STORAGE_KEY = 'miyf-auth-storage';
+const LEGACY_TOKEN_KEY = 'ck_admin_token';
+const LEGACY_AUTH_STORAGE_KEY = 'ck-auth-storage';
 
-export const getToken = (): string | null => localStorage.getItem(TOKEN_KEY);
+function migrateLegacyToken() {
+  const current = localStorage.getItem(TOKEN_KEY);
+  if (current) return;
+  const legacy = localStorage.getItem(LEGACY_TOKEN_KEY);
+  if (legacy) {
+    localStorage.setItem(TOKEN_KEY, legacy);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+  }
+}
+
+migrateLegacyToken();
+
+export const getToken = (): string | null => {
+  migrateLegacyToken();
+  return localStorage.getItem(TOKEN_KEY);
+};
 
 export const setToken = (token: string): void => {
   localStorage.setItem(TOKEN_KEY, token);
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
 };
 
 export const clearToken = (): void => {
   localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem('ck-auth-storage');
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
+  localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
 };
 
 /** 带业务码与附加数据的 API 错误（登录风控等） */

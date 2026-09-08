@@ -78,15 +78,6 @@ public abstract class AbstractCondition implements Serializable {
     @Schema(description = "查询统计 JSON，格式如：[{\"type\":\"sum\",\"field\":\"rating\"}]")
     private String aggregateJson;
 
-    @Schema(description = "游标分页上一页最后一条主键", hidden = true)
-    private Object lastKey;
-
-    @Schema(description = "是否启用游标分页", hidden = true)
-    private boolean cursorPaging = false;
-
-    @Schema(description = "自定义查询 JSON")
-    private String customQueryJson;
-
     /**
      * 构造 MyBatis-Plus 分页参数（不含排序）。
      *
@@ -317,5 +308,38 @@ public abstract class AbstractCondition implements Serializable {
         }
         // 与 BaseApplicationService 上限对齐，防止超大分页
         return Math.min(this.rows, 100);
+    }
+
+    /**
+     * 规范化后的页码（从 1 开始），供 SQL / ES 共用。
+     *
+     * @return 页码
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
+    @Schema(hidden = true)
+    public int normalizedPage() {
+        return normalizePage();
+    }
+
+    /**
+     * 规范化后的每页条数（上限 100），供 SQL / ES 共用。
+     *
+     * @return 页大小
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
+    @Schema(hidden = true)
+    public int normalizedRows() {
+        return normalizeRows();
+    }
+
+    /**
+     * 0-based 偏移：{@code (page - 1) * rows}，与 ES from / SQL OFFSET 一致。
+     *
+     * @return 偏移
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
+    @Schema(hidden = true)
+    public int offset() {
+        return (normalizePage() - 1) * normalizeRows();
     }
 }

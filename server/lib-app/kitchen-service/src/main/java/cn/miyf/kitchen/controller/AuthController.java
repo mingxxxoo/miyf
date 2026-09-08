@@ -1,7 +1,7 @@
 package cn.miyf.kitchen.controller;
 
-import cn.miyf.bean.dto.WxLoginDto;
-import cn.miyf.bean.vo.LoginVo;
+import cn.miyf.auth.bean.dto.WxLoginDto;
+import cn.miyf.auth.bean.vo.LoginVo;
 import cn.miyf.common.ApiResult;
 import cn.miyf.kitchen.service.KitchenAuthApplicationService;
 import io.swagger.v3.oas.annotations.Operation;

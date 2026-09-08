@@ -1,8 +1,8 @@
 package cn.miyf.support;
 
-import cn.miyf.security.AuthPrincipal;
-import cn.miyf.security.LoginUserContext;
-import cn.miyf.security.PrincipalType;
+import cn.miyf.auth.security.AuthPrincipal;
+import cn.miyf.auth.security.LoginUserContext;
+import cn.miyf.auth.security.PrincipalType;
 import com.redis.testcontainers.RedisContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.test.context.DynamicPropertyRegistry;

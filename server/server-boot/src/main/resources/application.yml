@@ -11,6 +11,14 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
+      # 客户端固定 Lettuce（Boot 默认，不使用 Jedis）
+      lettuce:
+        pool:
+          enabled: true
+          max-active: ${REDIS_LETTUCE_MAX_ACTIVE:16}
+          max-idle: ${REDIS_LETTUCE_MAX_IDLE:8}
+          min-idle: ${REDIS_LETTUCE_MIN_IDLE:2}
+          max-wait: ${REDIS_LETTUCE_MAX_WAIT:3s}
   flyway:
     enabled: true
     locations: classpath:db/migration/postgresql
@@ -56,9 +64,9 @@ app:
       username: ${PRIMARY_DB_USERNAME:postgres}
       password: ${PRIMARY_DB_PASSWORD:change-me}
       driver-class-name: org.postgresql.Driver
-      initial-size: 2
-      min-idle: 2
-      max-active: 20
+      pool-name: miyf-primary
+      minimum-idle: 2
+      maximum-pool-size: 20
     secondary:
       enabled: ${SECONDARY_DB_ENABLED:false}
       type: ${SECONDARY_DB_TYPE:mysql}
@@ -66,9 +74,9 @@ app:
       username: ${SECONDARY_DB_USERNAME:}
       password: ${SECONDARY_DB_PASSWORD:}
       driver-class-name: com.mysql.cj.jdbc.Driver
-      initial-size: 1
-      min-idle: 1
-      max-active: 10
+      pool-name: miyf-secondary
+      minimum-idle: 1
+      maximum-pool-size: 10
   jwt:
     secret: ${JWT_SECRET:change-me-to-a-long-random-secret-at-least-32-chars}
     expire-seconds: ${JWT_EXPIRE_SECONDS:604800}
@@ -78,6 +86,8 @@ app:
       category-ttl-seconds: ${REDIS_CACHE_CATEGORY_TTL:600}
       hot-dish-ttl-seconds: ${REDIS_CACHE_HOT_DISH_TTL:300}
       empty-ttl-seconds: ${REDIS_CACHE_EMPTY_TTL:60}
+      tree-ttl-seconds: ${REDIS_CACHE_TREE_TTL:600}
+      object-ttl-seconds: ${REDIS_CACHE_OBJECT_TTL:300}
     rate-limit:
       enabled: ${REDIS_RATE_LIMIT_ENABLED:true}
       login-max-attempts: ${REDIS_LOGIN_MAX_ATTEMPTS:10}
@@ -102,9 +112,9 @@ app:
     region: ${FILE_STORAGE_REGION:}
     auto-create-bucket: ${FILE_STORAGE_AUTO_CREATE_BUCKET:true}
     public-read: ${FILE_STORAGE_PUBLIC_READ:true}
-  druid:
-    stat-username: ${DRUID_STAT_USERNAME:change-me}
-    stat-password: ${DRUID_STAT_PASSWORD:change-me}
+  security:
+    # 是否放行 Swagger；生产 profile 关闭
+    expose-docs: ${APP_SECURITY_EXPOSE_DOCS:true}
   health:
     enabled: ${APP_HEALTH_ENABLED:true}
     sync:
@@ -130,6 +140,16 @@ app:
     sms:
       enabled: ${APP_NOTIFICATION_SMS_ENABLED:false}
       provider: ${APP_NOTIFICATION_SMS_PROVIDER:logging}
+  search:
+    # 默认关闭；开启需本地/compose 启动 Elasticsearch
+    enabled: ${APP_SEARCH_ENABLED:false}
+    index-prefix: ${APP_SEARCH_INDEX_PREFIX:miyf}
+    uris:
+      - ${ELASTICSEARCH_URIS:http://localhost:9200}
+    username: ${ELASTICSEARCH_USERNAME:}
+    password: ${ELASTICSEARCH_PASSWORD:}
+    connect-timeout-ms: ${APP_SEARCH_CONNECT_TIMEOUT_MS:3000}
+    socket-timeout-ms: ${APP_SEARCH_SOCKET_TIMEOUT_MS:10000}
 
 wx:
   auth:

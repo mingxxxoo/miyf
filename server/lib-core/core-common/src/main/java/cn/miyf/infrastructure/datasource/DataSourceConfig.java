@@ -28,10 +28,11 @@ public class DataSourceConfig {
      * 创建路由数据源并注册到 {@link DataSourceRegistry}。
      *
      * @param properties 配置
-     * @param factory    Druid 工厂
+     * @param factory    HikariCP 工厂
      * @param registry   注册表
      * @return 路由 DataSource（Primary Bean）
      * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.01 2026-09-08 XieMingJie 连接池改为 HikariCP。
      */
     @Bean
     @Primary

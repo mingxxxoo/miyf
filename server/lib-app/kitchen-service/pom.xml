@@ -29,6 +29,14 @@
             <artifactId>oss-service</artifactId>
         </dependency>
         <dependency>
+            <groupId>cn.miyf</groupId>
+            <artifactId>search-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.miyf</groupId>
+            <artifactId>config-service</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>

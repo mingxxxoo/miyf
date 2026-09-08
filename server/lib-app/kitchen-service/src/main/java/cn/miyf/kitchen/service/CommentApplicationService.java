@@ -1,5 +1,6 @@
 package cn.miyf.kitchen.service;
 
+import cn.miyf.auth.security.SecurityUtils;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.common.PageResult;
@@ -17,7 +18,7 @@ import cn.miyf.kitchen.constant.CacheKeys;
 import cn.miyf.kitchen.repository.CommentRepository;
 import cn.miyf.kitchen.repository.DishRepository;
 import cn.miyf.kitchen.repository.OrderRepository;
-import cn.miyf.security.SecurityUtils;
+import cn.miyf.kitchen.search.DishSearchIndexService;
 import cn.miyf.service.BaseApplicationService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,7 @@ public class CommentApplicationService extends BaseApplicationService {
     private final DishRepository dishRepository;
     private final RedisDistributedLock redisDistributedLock;
     private final KitchenCacheEvictService kitchenCacheEvictService;
+    private final DishSearchIndexService dishSearchIndexService;
 
     /**
      * 构造评价服务。
@@ -48,18 +50,21 @@ public class CommentApplicationService extends BaseApplicationService {
      * @param dishRepository           菜品仓储
      * @param redisDistributedLock     分布式锁
      * @param kitchenCacheEvictService 缓存失效
+     * @param dishSearchIndexService   菜品 ES 索引
      * @history 1.00 2026-09-04 17:55 XieMingJie Created.
      */
     public CommentApplicationService(CommentRepository commentRepository,
                                      OrderRepository orderRepository,
                                      DishRepository dishRepository,
                                      RedisDistributedLock redisDistributedLock,
-                                     KitchenCacheEvictService kitchenCacheEvictService) {
+                                     KitchenCacheEvictService kitchenCacheEvictService,
+                                     DishSearchIndexService dishSearchIndexService) {
         this.commentRepository = commentRepository;
         this.orderRepository = orderRepository;
         this.dishRepository = dishRepository;
         this.redisDistributedLock = redisDistributedLock;
         this.kitchenCacheEvictService = kitchenCacheEvictService;
+        this.dishSearchIndexService = dishSearchIndexService;
     }
 
     /**
@@ -213,6 +218,8 @@ public class CommentApplicationService extends BaseApplicationService {
             CommentRepository.RatingAgg agg = commentRepository.aggregateNormalByDish(dishId);
             dishRepository.updateRating(dishId, agg.avg(), agg.count());
             kitchenCacheEvictService.evictDishBrowse();
+            // 评分变化刷新上架菜品 ES 文档（热门排序依赖）
+            dishRepository.findById(dishId).ifPresent(dishSearchIndexService::sync);
             return new DishRatingVo()
                     .setDishId(dishId)
                     .setRating(agg.avg())

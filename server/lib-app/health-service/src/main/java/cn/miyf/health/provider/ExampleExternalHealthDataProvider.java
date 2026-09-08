@@ -29,30 +29,61 @@ public class ExampleExternalHealthDataProvider implements HealthDataProvider {
 
     private final HealthProperties healthProperties;
 
+    /**
+     * 构造示例数据源。
+     *
+     * @param healthProperties 配置（providers.example.enabled）
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public ExampleExternalHealthDataProvider(HealthProperties healthProperties) {
         this.healthProperties = healthProperties;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public String code() {
         return CODE;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public String displayName() {
         return "示例数据源";
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public boolean enabled() {
         return healthProperties.getProviders().getOrDefault(CODE, new HealthProperties.ProviderConfig()).isEnabled();
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public Set<String> supportedMetrics() {
         return Set.of(HealthMetricCodes.WEIGHT, HealthMetricCodes.HEART_RATE, HealthMetricCodes.STEPS);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public List<HealthSampleDraft> fetch(HealthFetchRequest request) {
         if (request.getSubjectId() == null) {

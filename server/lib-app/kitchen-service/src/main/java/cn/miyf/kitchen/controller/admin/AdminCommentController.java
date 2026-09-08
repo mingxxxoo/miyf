@@ -1,14 +1,14 @@
 package cn.miyf.kitchen.controller.admin;
 
+import cn.miyf.auth.security.MiyfPermission;
+import cn.miyf.auth.security.RequirePermission;
 import cn.miyf.common.ApiResult;
 import cn.miyf.common.PageResult;
 import cn.miyf.kitchen.bean.qo.CommentPageQo;
 import cn.miyf.kitchen.bean.vo.CommentVo;
 import cn.miyf.kitchen.bean.vo.DishRatingVo;
-import cn.miyf.kitchen.service.CommentApplicationService;
-import cn.miyf.security.MiyfPermission;
 import cn.miyf.kitchen.security.KitchenAdminPopedom;
-import cn.miyf.security.RequirePermission;
+import cn.miyf.kitchen.service.CommentApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.DeleteMapping;

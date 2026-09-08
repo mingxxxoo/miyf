@@ -17,6 +17,10 @@
             <artifactId>core-common</artifactId>
         </dependency>
         <dependency>
+            <groupId>cn.miyf</groupId>
+            <artifactId>auth-service</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
         </dependency>

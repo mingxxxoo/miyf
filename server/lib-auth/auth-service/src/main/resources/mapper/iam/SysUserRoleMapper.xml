@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!-- IAM 用户角色绑定 SQL @author XieMingJie @since 2026-09-05 -->
-<mapper namespace="cn.miyf.repository.mapper.SysUserRoleMapper">
+<mapper namespace="cn.miyf.auth.repository.mapper.SysUserRoleMapper">
 
     <delete id="deleteByUserId">
         DELETE FROM sys_user_role

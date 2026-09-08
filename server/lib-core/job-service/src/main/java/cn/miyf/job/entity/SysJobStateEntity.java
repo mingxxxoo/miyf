@@ -1,5 +1,6 @@
 package cn.miyf.job.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -18,6 +19,7 @@ import java.time.Instant;
 
 /**
  * 定时任务启停状态（sys_job_state）。
+ * 主键为任务编码，不继承 {@link cn.miyf.bean.entity.BaseEntity}，但具备同等审计字段。
  *
  * @author XieMingJie
  * @since 2026-09-06
@@ -43,7 +45,11 @@ public class SysJobStateEntity implements Serializable {
     @Schema(description = "是否启用")
     private Boolean enabled;
 
-    @TableField("last_modify_time")
+    @TableField(value = "create_time", fill = FieldFill.INSERT)
+    @Schema(description = "创建时间")
+    private Instant createTime;
+
+    @TableField(value = "last_modify_time", fill = FieldFill.INSERT_UPDATE)
     @Schema(description = "最后修改时间")
     private Instant lastModifyTime;
 }

@@ -1,17 +1,17 @@
 package cn.miyf.kitchen.service;
 
-import cn.miyf.bean.dto.WxLoginDto;
-import cn.miyf.bean.vo.LoginVo;
+import cn.miyf.auth.bean.dto.WxLoginDto;
+import cn.miyf.auth.bean.vo.LoginVo;
+import cn.miyf.auth.infrastructure.wx.WxAuthClient;
+import cn.miyf.auth.infrastructure.wx.WxSession;
+import cn.miyf.auth.security.AuthPrincipal;
+import cn.miyf.auth.security.JwtService;
+import cn.miyf.auth.security.PrincipalType;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.infrastructure.redis.RedisRateLimiter;
-import cn.miyf.infrastructure.wx.WxAuthClient;
-import cn.miyf.infrastructure.wx.WxSession;
 import cn.miyf.kitchen.bean.model.User;
 import cn.miyf.kitchen.repository.UserRepository;
-import cn.miyf.security.AuthPrincipal;
-import cn.miyf.security.JwtService;
-import cn.miyf.security.PrincipalType;
 import cn.miyf.service.BaseApplicationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

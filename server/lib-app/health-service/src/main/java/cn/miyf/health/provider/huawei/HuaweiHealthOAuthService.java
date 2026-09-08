@@ -41,6 +41,14 @@ public class HuaweiHealthOAuthService {
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
 
+    /**
+     * 构造华为 OAuth 服务。
+     *
+     * @param healthProperties 健康配置
+     * @param redisProvider    Redis（存 token / state）
+     * @param objectMapper     JSON
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public HuaweiHealthOAuthService(HealthProperties healthProperties,
                                     ObjectProvider<StringRedisTemplate> redisProvider,
                                     ObjectMapper objectMapper) {
@@ -50,6 +58,13 @@ public class HuaweiHealthOAuthService {
         this.restClient = RestClient.create();
     }
 
+    /**
+     * 生成授权跳转 URL，并将 state→subjectId 写入 Redis（15 分钟）。
+     *
+     * @param subjectId 健康主体
+     * @return 授权 URL
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public String buildAuthorizeUrl(Long subjectId) {
         HealthProperties.Huawei cfg = healthProperties.getHuawei();
         requireClientConfigured(cfg);
@@ -67,6 +82,15 @@ public class HuaweiHealthOAuthService {
                 + "&state=" + enc(state);
     }
 
+    /**
+     * 用授权 code 换 token 并缓存；校验 state 与主体一致性。
+     *
+     * @param subjectId 主体（可空，则从 state 解析）
+     * @param code      授权码
+     * @param state     OAuth state
+     * @return 主体与 token
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public OAuthResult exchangeCode(Long subjectId, String code, String state) {
         if (!StringUtils.hasText(code)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "授权 code 不能为空");
@@ -96,18 +120,37 @@ public class HuaweiHealthOAuthService {
         return new OAuthResult(sid, bundle);
     }
 
+    /**
+     * OAuth 换票结果。
+     *
+     * @param subjectId 主体
+     * @param token     Token 包
+     */
     public record OAuthResult(Long subjectId, HuaweiTokenBundle token) {
     }
 
+    /**
+     * 读取缓存 token（不刷新）。
+     *
+     * @param subjectId 主体
+     * @return token，无则 null
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public HuaweiTokenBundle peekToken(Long subjectId) {
         return loadToken(subjectId);
     }
 
+    /**
+     * 获取可用 access_token；过期则 refresh 后写回 Redis。
+     *
+     * @param subjectId 主体
+     * @return 有效 token 包
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public HuaweiTokenBundle requireAccessToken(Long subjectId) {
         HuaweiTokenBundle bundle = loadToken(subjectId);
         if (bundle == null) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED,
-                    "该主体尚未完成华为 OAuth 授权");
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "该主体尚未完成华为 OAuth 授权");
         }
         Instant now = Instant.now();
         if (bundle.accessTokenValid(now)) {
@@ -135,15 +178,35 @@ public class HuaweiHealthOAuthService {
         return refreshed;
     }
 
+    /**
+     * 是否已缓存 access_token。
+     *
+     * @param subjectId 主体
+     * @return true 已授权
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public boolean hasToken(Long subjectId) {
         HuaweiTokenBundle bundle = loadToken(subjectId);
         return bundle != null && StringUtils.hasText(bundle.getAccessToken());
     }
 
+    /**
+     * 清除主体的华为 token 缓存。
+     *
+     * @param subjectId 主体
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public void clearToken(Long subjectId) {
         redis().delete(tokenKey(subjectId));
     }
 
+    /**
+     * 绑定表 credential_ref：Redis key 前缀 + subjectId。
+     *
+     * @param subjectId 主体
+     * @return 凭证引用
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public String credentialRef(Long subjectId) {
         return TOKEN_KEY_PREFIX + subjectId;
     }
@@ -211,6 +274,13 @@ public class HuaweiHealthOAuthService {
         }
     }
 
+    /**
+     * 解析 OAuth state 对应的主体；无效或过期抛业务异常。
+     *
+     * @param state state
+     * @return 主体 ID，state 空则 null
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public Long resolveStateSubject(String state) {
         if (!StringUtils.hasText(state)) {
             return null;

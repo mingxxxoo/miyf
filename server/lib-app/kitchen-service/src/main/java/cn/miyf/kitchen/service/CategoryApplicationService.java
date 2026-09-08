@@ -3,7 +3,8 @@ package cn.miyf.kitchen.service;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.config.RedisAppProperties;
-import cn.miyf.infrastructure.redis.RedisJsonCache;
+import cn.miyf.infrastructure.cache.CacheClient;
+import cn.miyf.infrastructure.cache.ListCache;
 import cn.miyf.kitchen.bean.dto.CategorySaveDto;
 import cn.miyf.kitchen.bean.model.Category;
 import cn.miyf.kitchen.bean.vo.CategoryVo;
@@ -11,10 +12,10 @@ import cn.miyf.kitchen.constant.CacheKeys;
 import cn.miyf.kitchen.repository.CategoryRepository;
 import cn.miyf.kitchen.repository.DishRepository;
 import cn.miyf.service.BaseApplicationService;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 
@@ -28,12 +29,10 @@ import java.util.Set;
 public class CategoryApplicationService extends BaseApplicationService {
 
     private static final Set<String> ALLOWED_STATUS = Set.of("ENABLED", "DISABLED");
-    private static final TypeReference<List<CategoryVo>> CATEGORY_LIST_TYPE = new TypeReference<>() {
-    };
 
     private final CategoryRepository categoryRepository;
     private final DishRepository dishRepository;
-    private final RedisJsonCache redisJsonCache;
+    private final ListCache<CategoryVo> categoryListCache;
     private final RedisAppProperties redisAppProperties;
     private final KitchenCacheEvictService kitchenCacheEvictService;
 
@@ -42,34 +41,34 @@ public class CategoryApplicationService extends BaseApplicationService {
      *
      * @param categoryRepository       分类仓储
      * @param dishRepository           菜品仓储（删除前校验引用）
-     * @param redisJsonCache           缓存
+     * @param cacheClient              缓存门面
      * @param redisAppProperties       Redis 配置
      * @param kitchenCacheEvictService 失效服务
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     public CategoryApplicationService(CategoryRepository categoryRepository,
                                       DishRepository dishRepository,
-                                      RedisJsonCache redisJsonCache,
+                                      CacheClient cacheClient,
                                       RedisAppProperties redisAppProperties,
                                       KitchenCacheEvictService kitchenCacheEvictService) {
         this.categoryRepository = categoryRepository;
         this.dishRepository = dishRepository;
-        this.redisJsonCache = redisJsonCache;
+        this.categoryListCache = cacheClient.lists(CategoryVo.class);
         this.redisAppProperties = redisAppProperties;
         this.kitchenCacheEvictService = kitchenCacheEvictService;
     }
 
     /**
-     * 用户端：启用中的分类列表（Redis 缓存）。
+     * 用户端：启用中的分类列表（列表缓存）。
      *
      * @return 分类 VO 列表
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     public List<CategoryVo> listEnabled() {
-        return redisJsonCache.getOrLoad(
+        Duration ttl = Duration.ofSeconds(redisAppProperties.getCache().getCategoryTtlSeconds());
+        return categoryListCache.getOrLoadList(
                 CacheKeys.categoriesEnabled(),
-                CATEGORY_LIST_TYPE,
-                redisAppProperties.getCache().getCategoryTtlSeconds(),
+                ttl,
                 () -> categoryRepository.findAllEnabled().stream().map(this::toVo).toList()
         );
     }

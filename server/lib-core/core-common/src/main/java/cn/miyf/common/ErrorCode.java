@@ -1,5 +1,7 @@
 package cn.miyf.common;
 
+import lombok.Getter;
+
 /**
  * 业务错误码定义。
  * <p>
@@ -8,6 +10,7 @@ package cn.miyf.common;
  * @author XieMingJie
  * @since 2026-09-04 16:35
  */
+@Getter
 public enum ErrorCode {
     SUCCESS(0, "success"),
     BAD_REQUEST(40000, "请求参数错误"),
@@ -31,7 +34,21 @@ public enum ErrorCode {
     LOCK_BUSY(42901, "系统繁忙，请稍后重试"),
     INTERNAL_ERROR(50000, "系统繁忙，请稍后再试");
 
+    /**
+     * -- GETTER --
+     *  获取数字错误码。
+     *
+     * @return 错误码
+     *
+     */
     private final int code;
+    /**
+     * -- GETTER --
+     *  获取默认错误文案。
+     *
+     * @return 文案
+     *
+     */
     private final String message;
 
     ErrorCode(int code, String message) {
@@ -39,23 +56,4 @@ public enum ErrorCode {
         this.message = message;
     }
 
-    /**
-     * 获取数字错误码。
-     *
-     * @return 错误码
-     * @history 1.00 2026-09-04 16:35 XieMingJie Created.
-     */
-    public int getCode() {
-        return code;
-    }
-
-    /**
-     * 获取默认错误文案。
-     *
-     * @return 文案
-     * @history 1.00 2026-09-04 16:35 XieMingJie Created.
-     */
-    public String getMessage() {
-        return message;
-    }
 }

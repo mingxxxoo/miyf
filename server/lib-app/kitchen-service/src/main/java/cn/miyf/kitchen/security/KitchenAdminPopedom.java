@@ -1,6 +1,6 @@
 package cn.miyf.kitchen.security;
 
-import cn.miyf.security.PopedomGroup;
+import cn.miyf.auth.security.PopedomGroup;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

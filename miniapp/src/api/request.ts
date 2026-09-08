@@ -89,12 +89,14 @@ function showToastAfterLoading(title: string) {
   }, 100)
 }
 
-const USER_KEY = 'ck_user'
+const USER_KEY = 'miyf_user'
+const LEGACY_USER_KEY = 'ck_user'
 
 function clearAuthState() {
   clearToken()
   try {
     Taro.removeStorageSync(USER_KEY)
+    Taro.removeStorageSync(LEGACY_USER_KEY)
   } catch {
     // ignore
   }

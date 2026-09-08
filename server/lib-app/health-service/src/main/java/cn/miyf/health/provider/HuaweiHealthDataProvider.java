@@ -38,6 +38,14 @@ public class HuaweiHealthDataProvider implements HealthDataProvider {
     private final HuaweiHealthOAuthService oauthService;
     private final HuaweiHealthApiClient apiClient;
 
+    /**
+     * 构造华为数据源。
+     *
+     * @param healthProperties 配置
+     * @param oauthService     OAuth
+     * @param apiClient        Health Kit 客户端
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public HuaweiHealthDataProvider(HealthProperties healthProperties,
                                     HuaweiHealthOAuthService oauthService,
                                     HuaweiHealthApiClient apiClient) {
@@ -46,16 +54,31 @@ public class HuaweiHealthDataProvider implements HealthDataProvider {
         this.apiClient = apiClient;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public String code() {
         return CODE;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public String displayName() {
         return "华为运动健康";
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public boolean enabled() {
         return healthProperties.getProviders()
@@ -63,6 +86,11 @@ public class HuaweiHealthDataProvider implements HealthDataProvider {
                 .isEnabled();
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public Set<String> supportedMetrics() {
         return Set.of(
@@ -77,6 +105,11 @@ public class HuaweiHealthDataProvider implements HealthDataProvider {
         );
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public List<HealthSampleDraft> fetch(HealthFetchRequest request) {
         if (request.getSubjectId() == null) {

@@ -2,16 +2,16 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!-- IAM 角色 SQL @author XieMingJie @since 2026-09-05 -->
-<mapper namespace="cn.miyf.repository.mapper.SysRoleMapper">
+<mapper namespace="cn.miyf.permission.repository.mapper.SysRoleMapper">
 
-    <select id="selectByCode" resultType="cn.miyf.bean.entity.SysRoleEntity">
+    <select id="selectByCode" resultType="cn.miyf.permission.bean.entity.SysRoleEntity">
         SELECT id, code, name, description, is_default, product, data_scope, create_time, last_modify_time
         FROM sys_role
         WHERE code = #{code}
         LIMIT 1
     </select>
 
-    <select id="findByUserId" resultType="cn.miyf.bean.entity.SysRoleEntity">
+    <select id="findByUserId" resultType="cn.miyf.permission.bean.entity.SysRoleEntity">
         SELECT r.id, r.code, r.name, r.description, r.is_default, r.product, r.data_scope, r.create_time, r.last_modify_time
         FROM sys_role r
                  INNER JOIN sys_user_role ur ON ur.role_id = r.id

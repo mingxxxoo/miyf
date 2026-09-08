@@ -1,14 +1,14 @@
 package cn.miyf.kitchen.controller.admin;
 
+import cn.miyf.auth.security.MiyfPermission;
+import cn.miyf.auth.security.RequirePermission;
 import cn.miyf.common.ApiResult;
 import cn.miyf.common.PageResult;
 import cn.miyf.kitchen.bean.dto.OrderStatusUpdateDto;
 import cn.miyf.kitchen.bean.qo.OrderPageQo;
 import cn.miyf.kitchen.bean.vo.OrderVo;
-import cn.miyf.kitchen.service.OrderApplicationService;
-import cn.miyf.security.MiyfPermission;
 import cn.miyf.kitchen.security.KitchenAdminPopedom;
-import cn.miyf.security.RequirePermission;
+import cn.miyf.kitchen.service.OrderApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

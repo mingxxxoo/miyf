@@ -3,6 +3,18 @@ import { persist } from 'zustand/middleware';
 import { clearToken, setToken, getToken } from '@/api/http';
 import type { AdminUser } from '@/types';
 
+try {
+  if (typeof localStorage !== 'undefined' && !localStorage.getItem('miyf-auth-storage')) {
+    const legacy = localStorage.getItem('ck-auth-storage');
+    if (legacy) {
+      localStorage.setItem('miyf-auth-storage', legacy);
+      localStorage.removeItem('ck-auth-storage');
+    }
+  }
+} catch {
+  // ignore
+}
+
 interface AuthState {
   token: string | null;
   user: AdminUser | null;
@@ -41,7 +53,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'ck-auth-storage',
+      name: 'miyf-auth-storage',
       partialize: (state) => ({
         token: state.token,
         user: state.user,

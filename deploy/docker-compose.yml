@@ -65,6 +65,27 @@ services:
     # ports:
     #   - "9001:9001"
 
+  elasticsearch:
+    image: ${MIYF_IMAGE_ES:-docker.elastic.co/elasticsearch/elasticsearch:8.17.0}
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: ${ES_JAVA_OPTS:--Xms512m -Xmx512m}
+      cluster.name: miyf-es
+    volumes:
+      - ${MIYF_DATA_ES:-/miyf/data/elasticsearch}:/usr/share/elasticsearch/data
+    networks:
+      - miyf-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9200 >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    # ports:
+    #   - "9200:9200"
+
   server:
     image: ${MIYF_IMAGE_SERVER:-registry.cn-shanghai.aliyuncs.com/miyf/miyf_app:0.1.0}
     restart: unless-stopped
@@ -97,6 +118,11 @@ services:
       HUAWEI_HEALTH_CLIENT_SECRET: ${HUAWEI_HEALTH_CLIENT_SECRET:-}
       HUAWEI_HEALTH_REDIRECT_URI: ${HUAWEI_HEALTH_REDIRECT_URI:-http://localhost:5173/health/providers}
       APP_HEALTH_SYNC_CRON: ${APP_HEALTH_SYNC_CRON:-0 15 * * * *}
+      APP_SEARCH_ENABLED: ${APP_SEARCH_ENABLED:-false}
+      APP_SEARCH_INDEX_PREFIX: ${APP_SEARCH_INDEX_PREFIX:-miyf}
+      ELASTICSEARCH_URIS: ${ELASTICSEARCH_URIS:-http://elasticsearch:9200}
+      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-}
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}
       LOG_PATH: ${LOG_PATH:-/miyf/log/server}
     volumes:
       - ${MIYF_LOG_SERVER:-/miyf/log/server}:/miyf/log/server

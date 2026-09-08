@@ -8,6 +8,7 @@ import { fetchMyMenus, type MenuTreeNode } from '@/modules/iam/api';
 import { sysNotificationApi } from '@/modules/system/api';
 import { useAuthStore } from '@/stores/authStore';
 import { usePermissionStore } from '@/stores/permissionStore';
+import { useMenuStore } from '@/stores/menuStore';
 import AppHeader from '@/layouts/AppHeader';
 import AppSidebar from '@/layouts/AppSidebar';
 import {
@@ -74,6 +75,8 @@ export default function AppShell({ mode }: AppShellProps) {
   const hasPermission = usePermissionStore((s) => s.hasPermission);
   const hasAnyPermission = usePermissionStore((s) => s.hasAnyPermission);
   const clearPermissions = usePermissionStore((s) => s.clearPermissions);
+  const setMenus = useMenuStore((s) => s.setMenus);
+  const clearMenus = useMenuStore((s) => s.clear);
   const sysAdmin = isSystemAdmin(user?.roles, permissions.length ? permissions : authPermissions);
 
   useEffect(() => {
@@ -81,15 +84,21 @@ export default function AppShell({ mode }: AppShellProps) {
     let cancelled = false;
     fetchMyMenus()
       .then((tree) => {
-        if (!cancelled) setMenuTree(tree);
+        if (!cancelled) {
+          setMenuTree(tree);
+          setMenus(tree);
+        }
       })
       .catch(() => {
-        if (!cancelled) setMenuTree([]);
+        if (!cancelled) {
+          setMenuTree([]);
+          setMenus([]);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [mode]);
+  }, [mode, setMenus]);
 
   useEffect(() => {
     if (mode !== 'system') return;
@@ -146,6 +155,7 @@ export default function AppShell({ mode }: AppShellProps) {
   const handleLogout = () => {
     logout();
     clearPermissions();
+    clearMenus();
     navigate('/login');
   };
 

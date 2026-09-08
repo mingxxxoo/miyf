@@ -48,7 +48,7 @@
    ▼    ▼
  Spring Boot ──► MinIO
    │
-   ├── PostgreSQL (PRIMARY · Druid · Flyway)
+   ├── PostgreSQL (PRIMARY · HikariCP · Flyway)
    └── Redis
 ```
 
@@ -59,12 +59,12 @@
 
 | 层 | 技术 |
 |----|------|
-| 后端 | JDK 21 · Spring Boot **4.0.8** · Spring Security · MyBatis-Plus · Druid · Flyway · Redis · MinIO · springdoc OpenAPI |
+| 后端 | JDK 21 · Spring Boot **4.0.8** · Spring Security · MyBatis-Plus · HikariCP · Flyway · Redis · MinIO · springdoc OpenAPI |
 | 小程序 | Taro 4 · React · TypeScript · Zustand · Sass |
 | 管理端 | React 18 · Vite 6 · Ant Design 5 · ECharts · Zustand |
 | 部署 | Docker Compose · Nginx · PostgreSQL 16 · Redis 7 · MinIO |
 
-> 选用 Spring Boot 4.0.8：与 `mybatis-plus-spring-boot4-starter`、`druid-spring-boot-4-starter` 对齐，避免 SNAPSHOT/RC。
+> 选用 Spring Boot 4.0.8：与 `mybatis-plus-spring-boot4-starter` 对齐，避免 SNAPSHOT/RC。连接池使用 Boot 自带的 HikariCP。
 
 ## 项目目录
 
@@ -108,7 +108,7 @@ miyf/
 | 项 | 说明 |
 |----|------|
 | 默认数据库 | **PostgreSQL** |
-| 连接池 | **Druid**（PRIMARY / SECONDARY 各自独立） |
+| 连接池 | **HikariCP**（PRIMARY / SECONDARY 各自独立） |
 | ORM / DAO | **MyBatis-Plus**（复杂 SQL 放 Mapper XML） |
 | 缓存 | **Redis** |
 | 迁移 | **Flyway**（`classpath:db/migration/postgresql`） |
@@ -119,10 +119,10 @@ miyf/
 
 ```text
 当前默认：
-PRIMARY  → PostgreSQL → Druid
+PRIMARY  → PostgreSQL → HikariCP
 
 架构预留：
-SECONDARY → 可配置（MySQL / MariaDB / Oracle / SQL Server 等）→ Druid
+SECONDARY → 可配置（MySQL / MariaDB / Oracle / SQL Server 等）→ HikariCP
             默认 SECONDARY_DB_ENABLED=false
 ```
 
@@ -155,6 +155,8 @@ FILE_STORAGE_ENDPOINT=http://minio:9000
 ```
 
 ### 2. 后端启动
+
+要求 **JDK 21**（`JAVA_HOME` 指向 JDK 21；若 `mvn -v` 仍显示 Java 8，Maven 会因文本块/模式匹配编译失败）。
 
 ```bash
 # 先启动 PostgreSQL、Redis、MinIO（本地或 Docker）
@@ -264,9 +266,9 @@ docker compose logs -f server
 
 ## 生产部署要点
 
-1. 修改所有 `change-me` 密钥（JWT、DB、Druid 控制台、MinIO、管理员密码）。
+1. 修改所有 `change-me` 密钥（JWT、DB、MinIO、管理员密码）。
 2. `WX_AUTH_MOCK_ENABLED=false`，配置真实 `WX_APP_ID` / `WX_APP_SECRET`。
-3. 配置 HTTPS 与域名；生产可关闭或限制 Swagger、Druid StatView。
+3. 配置 HTTPS 与域名；生产关闭 Swagger（`APP_SECURITY_EXPOSE_DOCS=false` / `spring.profiles.active=prod`）。
 4. 日志：应用默认输出到容器 stdout，配合 `docker compose logs` 或集中采集。
 5. 监控：至少保留 `/actuator/health`；按需收紧 Actuator 暴露面。
 

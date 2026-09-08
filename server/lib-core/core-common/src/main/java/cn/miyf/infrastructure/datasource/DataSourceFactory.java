@@ -1,12 +1,13 @@
 package cn.miyf.infrastructure.datasource;
 
-import com.alibaba.druid.pool.DruidDataSource;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 
 /**
- * Druid 数据源工厂：每个数据源独立连接池，禁止多库共用同一池。
+ * HikariCP 数据源工厂：每个数据源独立连接池，禁止多库共用同一池。
  *
  * @author XieMingJie
  * @since 2026-09-04 16:41
@@ -15,24 +16,24 @@ import javax.sql.DataSource;
 public class DataSourceFactory {
 
     /**
-     * 按配置项创建独立 {@link DruidDataSource}。
+     * 按配置项创建独立 {@link HikariDataSource}。
      *
      * @param item 数据源配置
-     * @return Druid 数据源
+     * @return Hikari 数据源
      * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.01 2026-09-08 XieMingJie 连接池改为 HikariCP。
      */
     public DataSource create(DataSourceProperties.DataSourceItem item) {
-        DruidDataSource dataSource = new DruidDataSource();
-        dataSource.setUrl(item.getUrl());
-        dataSource.setUsername(item.getUsername());
-        dataSource.setPassword(item.getPassword());
-        dataSource.setDriverClassName(item.getDriverClassName());
-        dataSource.setInitialSize(item.getInitialSize());
-        dataSource.setMinIdle(item.getMinIdle());
-        dataSource.setMaxActive(item.getMaxActive());
-        // 空闲检测，避免失效连接进入业务
-        dataSource.setTestWhileIdle(true);
-        dataSource.setValidationQuery("SELECT 1");
-        return dataSource;
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(item.getUrl());
+        config.setUsername(item.getUsername());
+        config.setPassword(item.getPassword());
+        config.setDriverClassName(item.getDriverClassName());
+        config.setMinimumIdle(item.getMinimumIdle());
+        config.setMaximumPoolSize(item.getMaximumPoolSize());
+        config.setPoolName(item.getPoolName());
+        config.setConnectionTestQuery("SELECT 1");
+        config.setAutoCommit(true);
+        return new HikariDataSource(config);
     }
 }

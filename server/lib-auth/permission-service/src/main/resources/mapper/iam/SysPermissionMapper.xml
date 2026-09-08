@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!-- IAM 权限解析 SQL @author XieMingJie @since 2026-09-05 -->
-<mapper namespace="cn.miyf.repository.mapper.SysPermissionMapper">
+<mapper namespace="cn.miyf.permission.repository.mapper.SysPermissionMapper">
 
     <sql id="PermColumns">
         id, code, name, description, group_code, perm_no, parent_id, product, tree_name, node_type, sort_order,
@@ -14,7 +14,7 @@
         p.sort_order, p.create_time, p.last_modify_time
     </sql>
 
-    <select id="selectByCode" resultType="cn.miyf.bean.entity.SysPermissionEntity">
+    <select id="selectByCode" resultType="cn.miyf.permission.bean.entity.SysPermissionEntity">
         SELECT
         <include refid="PermColumns"/>
         FROM sys_permission
@@ -22,7 +22,7 @@
         LIMIT 1
     </select>
 
-    <select id="selectByPermNo" resultType="cn.miyf.bean.entity.SysPermissionEntity">
+    <select id="selectByPermNo" resultType="cn.miyf.permission.bean.entity.SysPermissionEntity">
         SELECT
         <include refid="PermColumns"/>
         FROM sys_permission
@@ -30,7 +30,7 @@
         LIMIT 1
     </select>
 
-    <select id="findByUserId" resultType="cn.miyf.bean.entity.SysPermissionEntity">
+    <select id="findByUserId" resultType="cn.miyf.permission.bean.entity.SysPermissionEntity">
         SELECT DISTINCT
         <include refid="PermColumnsP"/>
         FROM sys_permission p
@@ -44,7 +44,7 @@
         ORDER BY p.code ASC
     </select>
 
-    <select id="findByRoleId" resultType="cn.miyf.bean.entity.SysPermissionEntity">
+    <select id="findByRoleId" resultType="cn.miyf.permission.bean.entity.SysPermissionEntity">
         SELECT DISTINCT
         <include refid="PermColumnsP"/>
         FROM sys_permission p

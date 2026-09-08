@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="miyf">
+  <title>miyf</title>
+  <defs>
+    <radialGradient id="kiwiFlesh" cx="32" cy="31" r="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#EAF6A8"/>
+      <stop offset="38%" stop-color="#C6E85A"/>
+      <stop offset="78%" stop-color="#8FCF3A"/>
+      <stop offset="100%" stop-color="#6BB02A"/>
+    </radialGradient>
+    <radialGradient id="kiwiCore" cx="32" cy="31.5" r="7" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF8DC"/>
+      <stop offset="70%" stop-color="#F4E6A0"/>
+      <stop offset="100%" stop-color="#E5CF78"/>
+    </radialGradient>
+  </defs>
+
+  <!-- soft outer fuzz -->
+  <g stroke="#A67D55" stroke-width="0.85" stroke-linecap="round" opacity="0.55">
+    <path d="M18.2 14.8c1.6-1.8 3.4-3.1 5.4-4"/>
+    <path d="M27.5 9.6c2-.5 4.1-.7 6.2-.4"/>
+    <path d="M38.2 10.8c1.9.8 3.6 2 5.1 3.5"/>
+    <path d="M47.2 18.5c1.2 1.7 2 3.6 2.4 5.6"/>
+    <path d="M51 29.2c.2 2.1 0 4.2-.6 6.2"/>
+    <path d="M48.6 40.2c-1 1.8-2.4 3.4-4.1 4.7"/>
+    <path d="M39.5 48.8c-1.8 1.1-3.8 1.8-5.9 2.1"/>
+    <path d="M27.8 51.2c-2.1.1-4.2-.3-6.1-1.2"/>
+    <path d="M17.8 46.8c-1.7-1.2-3.1-2.8-4.1-4.6"/>
+    <path d="M11.4 36.8c-.7-1.9-1-3.9-.8-5.9"/>
+    <path d="M12.2 24.8c.7-1.9 1.8-3.6 3.2-5.1"/>
+    <path d="M45.8 47.6c1.1-1.4 1.4-2.4 1.2-3.2"/>
+  </g>
+
+  <!-- brown skin -->
+  <path
+    d="M12.4 31.2c.4-10.6 8.8-20.2 19.8-21.2 11.4-1 22.1 7.1 23.2 18.4 1.2 11.4-7.1 22.4-18.4 23.8C25.4 53.6 12 44.2 12.4 31.2Z"
+    fill="#B8926A"
+    stroke="#6F4E35"
+    stroke-width="1.6"
+    stroke-linejoin="round"
+  />
+  <!-- inner dark green rind -->
+  <path
+    d="M16.2 31.1c.3-8.7 7.3-16.5 16.1-17.3 9.2-.8 17.9 5.7 18.8 14.9.9 9.3-5.8 18.2-15 19.4-9.1 1.1-20.2-6.4-19.9-17Z"
+    fill="#5F8F2E"
+  />
+  <!-- flesh -->
+  <path
+    d="M17.6 31c.3-8 6.7-15.1 14.8-15.8 8.4-.7 16.4 5.2 17.2 13.6.8 8.5-5.3 16.6-13.7 17.7C27.5 47.6 17.3 40.7 17.6 31Z"
+    fill="url(#kiwiFlesh)"
+  />
+
+  <!-- radial veins -->
+  <g stroke="#D7EF7A" stroke-width="0.7" stroke-linecap="round" opacity="0.55">
+    <path d="M32 24.2v-8.2"/>
+    <path d="M35.6 24.8l4.4-7"/>
+    <path d="M38.4 27.4l7.2-4.2"/>
+    <path d="M39.6 31.2h8.2"/>
+    <path d="M38.2 34.8l7.1 4.4"/>
+    <path d="M35.2 37.6l4.2 7"/>
+    <path d="M32 38.6v8.1"/>
+    <path d="M28.4 37.4l-4.3 7"/>
+    <path d="M25.4 34.6l-7.1 4.3"/>
+    <path d="M24.2 31h-8"/>
+    <path d="M25.6 27.2l-7.1-4.1"/>
+    <path d="M28.6 24.6l-4.2-6.9"/>
+  </g>
+  <g stroke="#9ECF45" stroke-width="0.55" stroke-linecap="round" opacity="0.35">
+    <path d="M33.8 24.4l2.1-7.5"/>
+    <path d="M37.2 25.8l5.8-5.7"/>
+    <path d="M39.2 29l7.8-2.1"/>
+    <path d="M39.2 33.4l7.8 2.2"/>
+    <path d="M37 36.6l5.7 5.8"/>
+    <path d="M33.6 38.4l2 7.5"/>
+    <path d="M30.2 38.4l-2.1 7.5"/>
+    <path d="M26.8 36.4l-5.8 5.7"/>
+    <path d="M24.8 33.2l-7.7 2.1"/>
+    <path d="M24.8 28.8l-7.7-2"/>
+    <path d="M27 25.6l-5.7-5.7"/>
+    <path d="M30.4 24.4l-2.1-7.4"/>
+  </g>
+
+  <!-- creamy core -->
+  <ellipse cx="32" cy="31.2" rx="4.4" ry="6.2" fill="url(#kiwiCore)" stroke="#E2C97A" stroke-width="0.6"/>
+
+  <!-- seeds pointing toward core -->
+  <g fill="#1F2A16">
+    <ellipse cx="32.00" cy="22.60" rx="1.15" ry="2.35" transform="rotate(0.0 32.00 22.60)"/>
+    <ellipse cx="34.66" cy="23.02" rx="1.15" ry="2.35" transform="rotate(18.0 34.66 23.02)"/>
+    <ellipse cx="37.05" cy="24.24" rx="1.15" ry="2.35" transform="rotate(36.0 37.05 24.24)"/>
+    <ellipse cx="38.96" cy="26.15" rx="1.15" ry="2.35" transform="rotate(54.0 38.96 26.15)"/>
+    <ellipse cx="40.18" cy="28.54" rx="1.15" ry="2.35" transform="rotate(72.0 40.18 28.54)"/>
+    <ellipse cx="40.60" cy="31.20" rx="1.15" ry="2.35" transform="rotate(90.0 40.60 31.20)"/>
+    <ellipse cx="40.18" cy="33.86" rx="1.15" ry="2.35" transform="rotate(108.0 40.18 33.86)"/>
+    <ellipse cx="38.96" cy="36.25" rx="1.15" ry="2.35" transform="rotate(126.0 38.96 36.25)"/>
+    <ellipse cx="37.05" cy="38.16" rx="1.15" ry="2.35" transform="rotate(144.0 37.05 38.16)"/>
+    <ellipse cx="34.66" cy="39.38" rx="1.15" ry="2.35" transform="rotate(162.0 34.66 39.38)"/>
+    <ellipse cx="32.00" cy="39.80" rx="1.15" ry="2.35" transform="rotate(180.0 32.00 39.80)"/>
+    <ellipse cx="29.34" cy="39.38" rx="1.15" ry="2.35" transform="rotate(198.0 29.34 39.38)"/>
+    <ellipse cx="26.95" cy="38.16" rx="1.15" ry="2.35" transform="rotate(216.0 26.95 38.16)"/>
+    <ellipse cx="25.04" cy="36.25" rx="1.15" ry="2.35" transform="rotate(234.0 25.04 36.25)"/>
+    <ellipse cx="23.82" cy="33.86" rx="1.15" ry="2.35" transform="rotate(252.0 23.82 33.86)"/>
+    <ellipse cx="23.40" cy="31.20" rx="1.15" ry="2.35" transform="rotate(270.0 23.40 31.20)"/>
+    <ellipse cx="23.82" cy="28.54" rx="1.15" ry="2.35" transform="rotate(288.0 23.82 28.54)"/>
+    <ellipse cx="25.04" cy="26.15" rx="1.15" ry="2.35" transform="rotate(306.0 25.04 26.15)"/>
+    <ellipse cx="26.95" cy="24.24" rx="1.15" ry="2.35" transform="rotate(324.0 26.95 24.24)"/>
+    <ellipse cx="29.34" cy="23.02" rx="1.15" ry="2.35" transform="rotate(342.0 29.34 23.02)"/>
+  </g>
+
+  <!-- tiny highlight -->
+  <path d="M21.5 18.8c2.4-2.1 5.2-3.4 8.4-3.8" stroke="#F2F9C4" stroke-width="1.2" stroke-linecap="round" opacity="0.55"/>
+</svg>

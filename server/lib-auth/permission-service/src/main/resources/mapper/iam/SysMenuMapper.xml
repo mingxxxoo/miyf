@@ -2,9 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!-- IAM 菜单 SQL @author XieMingJie @since 2026-09-05 -->
-<mapper namespace="cn.miyf.repository.mapper.SysMenuMapper">
+<mapper namespace="cn.miyf.permission.repository.mapper.SysMenuMapper">
 
-    <select id="selectVisibleMenus" resultType="cn.miyf.bean.entity.SysMenuEntity">
+    <select id="selectVisibleMenus" resultType="cn.miyf.permission.bean.entity.SysMenuEntity">
         SELECT id, parent_id, name, path, component, icon, menu_type, permission_code, product,
                sort_order, visible, status, create_time, last_modify_time
         FROM sys_menu

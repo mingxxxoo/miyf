@@ -1,6 +1,7 @@
 import { Layout, Menu } from 'antd';
 import type { MenuProps } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
+import kiwiIcon from '@/assets/icons/kiwi-admin.svg';
 
 const { Sider } = Layout;
 
@@ -48,7 +49,9 @@ export default function AppSidebar({
           </>
         ) : (
           <>
-            <div className="admin-logo-icon">M</div>
+            <div className="admin-logo-icon admin-logo-icon--kiwi">
+              <img src={kiwiIcon} alt="" width={28} height={28} />
+            </div>
             {!collapsed && <span>miyf</span>}
           </>
         )}

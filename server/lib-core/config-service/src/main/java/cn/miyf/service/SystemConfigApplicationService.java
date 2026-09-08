@@ -30,11 +30,14 @@ public class SystemConfigApplicationService {
 
     private final SysConfigMapper configMapper;
     private final SnowflakeIdGenerator snowflakeIdGenerator;
+    private final SystemConfigReader systemConfigReader;
 
     public SystemConfigApplicationService(SysConfigMapper configMapper,
-                                          SnowflakeIdGenerator snowflakeIdGenerator) {
+                                          SnowflakeIdGenerator snowflakeIdGenerator,
+                                          SystemConfigReader systemConfigReader) {
         this.configMapper = configMapper;
         this.snowflakeIdGenerator = snowflakeIdGenerator;
+        this.systemConfigReader = systemConfigReader;
     }
 
     /**
@@ -90,6 +93,7 @@ public class SystemConfigApplicationService {
         entity.setCreateTime(now);
         entity.setLastModifyTime(now);
         configMapper.insert(entity);
+        systemConfigReader.invalidate(entity.getConfigKey());
         return entity;
     }
 
@@ -108,6 +112,7 @@ public class SystemConfigApplicationService {
         mapDto(entity, dto);
         entity.setLastModifyTime(Instant.now());
         configMapper.updateById(entity);
+        systemConfigReader.invalidateAll();
         return entity;
     }
 
@@ -119,8 +124,9 @@ public class SystemConfigApplicationService {
      */
     @Transactional
     public void delete(Long id) {
-        require(id);
+        SysConfigEntity entity = require(id);
         configMapper.deleteById(id);
+        systemConfigReader.invalidate(entity.getConfigKey());
     }
 
     private SysConfigEntity require(Long id) {

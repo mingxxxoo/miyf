@@ -135,8 +135,7 @@ public class JobRegistry {
         job.setEnabled(enabled);
         SysJobStateEntity state = new SysJobStateEntity()
                 .setCode(code)
-                .setEnabled(enabled)
-                .setLastModifyTime(Instant.now());
+                .setEnabled(enabled);
         if (sysJobStateMapper.selectById(code) == null) {
             sysJobStateMapper.insert(state);
         } else {
@@ -210,8 +209,7 @@ public class JobRegistry {
         }
         sysJobStateMapper.insert(new SysJobStateEntity()
                 .setCode(code)
-                .setEnabled(enabled)
-                .setLastModifyTime(Instant.now()));
+                .setEnabled(enabled));
     }
 
     private static String resolveCron(Method method) {

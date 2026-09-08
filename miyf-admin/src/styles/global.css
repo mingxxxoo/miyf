@@ -84,6 +84,13 @@ a {
   margin-bottom: 32px;
 }
 
+.login-brand-icon {
+  display: block;
+  margin: 0 auto 12px;
+  width: 56px;
+  height: 56px;
+}
+
 .login-brand h1 {
   margin: 0;
   font-size: 28px;
@@ -191,6 +198,19 @@ a {
   justify-content: center;
   color: #fff;
   font-size: 18px;
+}
+
+.admin-logo-icon--kiwi {
+  padding: 0;
+  overflow: hidden;
+  background: #fff8ef;
+  border: 1px solid var(--ck-border);
+}
+
+.admin-logo-icon--kiwi img {
+  display: block;
+  width: 28px;
+  height: 28px;
 }
 
 .admin-sider {

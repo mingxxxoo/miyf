@@ -6,6 +6,7 @@ import { authApi, type LoginRisk } from '@/api';
 import { ApiError } from '@/api/http';
 import { useAuthStore } from '@/stores/authStore';
 import { usePermissionStore } from '@/stores/permissionStore';
+import kiwiIcon from '@/assets/icons/kiwi-admin.svg';
 
 function applyRisk(risk?: LoginRisk | null) {
   if (!risk) {
@@ -145,6 +146,7 @@ export default function LoginPage() {
     <div className="login-page">
       <Card className="login-card" bordered={false}>
         <div className="login-brand">
+          <img className="login-brand-icon" src={kiwiIcon} alt="" width={56} height={56} />
           <h1>miyf</h1>
           <p>平台管理后台</p>
         </div>

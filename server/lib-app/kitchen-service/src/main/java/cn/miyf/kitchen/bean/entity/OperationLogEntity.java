@@ -1,8 +1,7 @@
 package cn.miyf.kitchen.bean.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
+import cn.miyf.bean.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -14,8 +13,6 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import java.io.Serial;
-import java.io.Serializable;
-import java.time.Instant;
 
 /**
  * 操作日志表实体。
@@ -25,21 +22,17 @@ import java.time.Instant;
  */
 @Getter
 @Setter
-@ToString
-@EqualsAndHashCode
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
 @TableName("operation_logs")
 @Schema(name = "OperationLogEntity", description = "操作日志")
-public class OperationLogEntity implements Serializable {
+public class OperationLogEntity extends BaseEntity {
 
     @Serial
     private static final long serialVersionUID = 1L;
-
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
-    @Schema(description = "主键")
-    private Long id;
 
     @TableField("operator_id")
     @Schema(description = "操作人 ID")
@@ -76,8 +69,4 @@ public class OperationLogEntity implements Serializable {
     @TableField("operation_detail")
     @Schema(description = "操作详情（已脱敏）")
     private String operationDetail;
-
-    @TableField("create_time")
-    @Schema(description = "创建时间")
-    private Instant createTime;
 }

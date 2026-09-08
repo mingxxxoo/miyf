@@ -7,6 +7,16 @@ wx:
   auth:
     mock-enabled: false
 
+app:
+  security:
+    expose-docs: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 logging:
   level:
     cn.miyf: INFO

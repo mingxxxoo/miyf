@@ -55,7 +55,7 @@ public class DataSourceProperties {
     }
 
     /**
-     * 单个数据源连接与连接池参数。
+     * 单个数据源连接与 HikariCP 连接池参数。
      *
      * @author XieMingJie
      * @since 2026-09-04 16:41
@@ -67,9 +67,9 @@ public class DataSourceProperties {
         private String username;
         private String password;
         private String driverClassName = "org.postgresql.Driver";
-        private int initialSize = 2;
-        private int minIdle = 2;
-        private int maxActive = 20;
+        private String poolName = "miyf-hikari";
+        private int minimumIdle = 2;
+        private int maximumPoolSize = 20;
 
         public boolean isEnabled() {
             return enabled;
@@ -119,28 +119,28 @@ public class DataSourceProperties {
             this.driverClassName = driverClassName;
         }
 
-        public int getInitialSize() {
-            return initialSize;
+        public String getPoolName() {
+            return poolName;
         }
 
-        public void setInitialSize(int initialSize) {
-            this.initialSize = initialSize;
+        public void setPoolName(String poolName) {
+            this.poolName = poolName;
         }
 
-        public int getMinIdle() {
-            return minIdle;
+        public int getMinimumIdle() {
+            return minimumIdle;
         }
 
-        public void setMinIdle(int minIdle) {
-            this.minIdle = minIdle;
+        public void setMinimumIdle(int minimumIdle) {
+            this.minimumIdle = minimumIdle;
         }
 
-        public int getMaxActive() {
-            return maxActive;
+        public int getMaximumPoolSize() {
+            return maximumPoolSize;
         }
 
-        public void setMaxActive(int maxActive) {
-            this.maxActive = maxActive;
+        public void setMaximumPoolSize(int maximumPoolSize) {
+            this.maximumPoolSize = maximumPoolSize;
         }
     }
 }

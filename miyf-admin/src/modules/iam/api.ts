@@ -60,6 +60,7 @@ export interface IamPermission {
   treeName?: string;
   nodeType?: string;
   sortOrder?: number;
+  children?: IamPermission[];
 }
 
 export interface IamOrgUnit {
@@ -70,6 +71,7 @@ export interface IamOrgUnit {
   sortOrder?: number;
   status: string;
   createTime?: string;
+  children?: IamOrgUnit[];
 }
 
 export interface IamMenu {
@@ -142,6 +144,7 @@ function mapRoleUser(raw: Record<string, unknown>): IamRoleUser {
 }
 
 function mapPermission(raw: Record<string, unknown>): IamPermission {
+  const childrenRaw = Array.isArray(raw.children) ? raw.children : [];
   return {
     id: sid(raw.id),
     code: String(raw.code ?? ''),
@@ -154,6 +157,7 @@ function mapPermission(raw: Record<string, unknown>): IamPermission {
     treeName: raw.treeName ? String(raw.treeName) : undefined,
     nodeType: raw.nodeType ? String(raw.nodeType) : undefined,
     sortOrder: raw.sortOrder != null ? Number(raw.sortOrder) : undefined,
+    children: childrenRaw.map((c) => mapPermission(c as Record<string, unknown>)),
   };
 }
 
@@ -292,7 +296,8 @@ export const iamRoleApi = {
   addUsers: (id: string, userIds: string[]) => post<void>(`/iam/roles/${id}/users`, { userIds }),
   removeUser: (id: string, userId: string) => del<void>(`/iam/roles/${id}/users/${userId}`),
   exportUsers: async (id: string) => {
-    const token = localStorage.getItem('ck_admin_token');
+    const token =
+      localStorage.getItem('miyf_admin_token') || localStorage.getItem('ck_admin_token');
     const res = await fetch(`/api/iam/roles/${id}/users/export`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
@@ -307,15 +312,19 @@ export const iamRoleApi = {
   },
 };
 
-/** IAM 权限（只读，启动扫描写入） */
+/** IAM 权限（只读，服务端 TreeUtils 组无限极树） */
 export const iamPermissionApi = {
-  list: async (): Promise<IamPermission[]> => {
+  /** 权限树根列表 */
+  listTree: async (): Promise<IamPermission[]> => {
     const list = await get<Record<string, unknown>[]>('/iam/permissions');
     return (list || []).map(mapPermission);
   },
+  /** 平铺列表（由树展平，供筛选/勾选） */
+  list: async (): Promise<IamPermission[]> => flattenTree(await iamPermissionApi.listTree()),
 };
 
 function mapOrgUnit(raw: Record<string, unknown>): IamOrgUnit {
+  const childrenRaw = Array.isArray(raw.children) ? raw.children : [];
   return {
     id: sid(raw.id),
     parentId: raw.parentId != null ? sid(raw.parentId) : undefined,
@@ -324,10 +333,12 @@ function mapOrgUnit(raw: Record<string, unknown>): IamOrgUnit {
     sortOrder: raw.sortOrder != null ? Number(raw.sortOrder) : undefined,
     status: String(raw.status ?? 'ENABLED').toUpperCase(),
     createTime: raw.createTime ? String(raw.createTime) : undefined,
+    children: childrenRaw.map((c) => mapOrgUnit(c as Record<string, unknown>)),
   };
 }
 
 function mapMenu(raw: Record<string, unknown>): IamMenu {
+  const childrenRaw = Array.isArray(raw.children) ? raw.children : [];
   return {
     id: sid(raw.id),
     parentId: raw.parentId != null ? sid(raw.parentId) : undefined,
@@ -341,6 +352,7 @@ function mapMenu(raw: Record<string, unknown>): IamMenu {
     sortOrder: raw.sortOrder != null ? Number(raw.sortOrder) : undefined,
     visible: raw.visible == null ? true : Boolean(raw.visible),
     status: String(raw.status ?? 'ENABLED').toUpperCase(),
+    children: childrenRaw.map((c) => mapMenu(c as Record<string, unknown>)),
   };
 }
 
@@ -358,7 +370,23 @@ function mapPermGroup(raw: Record<string, unknown>): IamPermGroup {
   };
 }
 
-/** 将扁平菜单列表转为树 */
+/** 树前序展平（对齐服务端 TreeUtils.flatten） */
+export function flattenTree<T extends { children?: T[] }>(roots: T[]): T[] {
+  const out: T[] = [];
+  const walk = (nodes: T[]) => {
+    for (const n of nodes) {
+      out.push(n);
+      if (n.children?.length) walk(n.children);
+    }
+  };
+  walk(roots || []);
+  return out;
+}
+
+/**
+ * 将扁平菜单列表转为树（仅用于客户端筛选后再组树；列表数据请优先用服务端树）。
+ * @deprecated 优先使用 iamMenuApi.listTree()
+ */
 export function buildMenuTree(list: IamMenu[]): IamMenu[] {
   const nodes = list.map((m) => ({ ...m, children: [] as IamMenu[] }));
   const map = new Map(nodes.map((n) => [n.id, n]));
@@ -378,12 +406,13 @@ export function buildMenuTree(list: IamMenu[]): IamMenu[] {
   return roots;
 }
 
-/** IAM 组织单位 */
+/** IAM 组织单位（列表为无限极树） */
 export const iamOrgUnitApi = {
-  list: async (): Promise<IamOrgUnit[]> => {
+  listTree: async (): Promise<IamOrgUnit[]> => {
     const list = await get<Record<string, unknown>[]>('/iam/org-units');
     return (list || []).map(mapOrgUnit);
   },
+  list: async (): Promise<IamOrgUnit[]> => flattenTree(await iamOrgUnitApi.listTree()),
   create: async (data: {
     code: string;
     name: string;
@@ -422,12 +451,13 @@ export const iamOrgUnitApi = {
   remove: (id: string) => del<void>(`/iam/org-units/${id}`),
 };
 
-/** IAM 菜单 */
+/** IAM 菜单（列表为无限极树） */
 export const iamMenuApi = {
-  list: async (): Promise<IamMenu[]> => {
+  listTree: async (): Promise<IamMenu[]> => {
     const list = await get<Record<string, unknown>[]>('/iam/menus');
     return (list || []).map(mapMenu);
   },
+  list: async (): Promise<IamMenu[]> => flattenTree(await iamMenuApi.listTree()),
   create: async (data: {
     name: string;
     menuType: string;

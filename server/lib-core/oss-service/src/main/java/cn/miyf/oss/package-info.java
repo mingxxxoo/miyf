@@ -1,6 +1,4 @@
 /**
- * OSS 文件服务。
- * <p>
- * 模块已建；业务实现渐进迁入。当前相关能力可能仍位于 {@code core-common}。
+ * OSS 文件服务：存储抽象、上传校验与平台级 {@code /api/upload}（权限码 {@code file:upload}）。
  */
 package cn.miyf.oss;

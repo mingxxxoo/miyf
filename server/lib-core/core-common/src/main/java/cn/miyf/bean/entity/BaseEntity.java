@@ -20,9 +20,10 @@ import java.io.Serializable;
 import java.time.Instant;
 
 /**
- * 持久化实体公共字段：雪花主键、时间戳。
+ * 持久化实体公共字段：雪花主键、审计时间。
  * <p>
- * 删除均为物理删除，不使用逻辑删除字段。
+ * {@code createTime}/{@code lastModifyTime} 由 {@link cn.miyf.config.AuditMetaObjectHandler} 在
+ * MyBatis-Plus insert/update 时自动填充；删除均为物理删除，不使用逻辑删除字段。
  *
  * @author XieMingJie
  * @since 2026-09-04 16:54

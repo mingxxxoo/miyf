@@ -3,16 +3,16 @@ const path = require('path');
 
 function insertPopedom(file, annotation, importLine) {
   let t = fs.readFileSync(file, 'utf8');
-  if (!t.includes('import cn.miyf.security.PopedomGroup')) {
-    if (t.includes('import cn.miyf.security.MiyfPermission;')) {
+  if (!t.includes('import cn.miyf.auth.security.PopedomGroup')) {
+    if (t.includes('import cn.miyf.auth.security.MiyfPermission;')) {
       t = t.replace(
-        'import cn.miyf.security.MiyfPermission;',
-        'import cn.miyf.security.MiyfPermission;\n' + importLine,
+        'import cn.miyf.auth.security.MiyfPermission;',
+        'import cn.miyf.auth.security.MiyfPermission;\n' + importLine,
       );
-    } else if (t.includes('import cn.miyf.security.RequirePermission;')) {
+    } else if (t.includes('import cn.miyf.auth.security.RequirePermission;')) {
       t = t.replace(
-        'import cn.miyf.security.RequirePermission;',
-        importLine + '\nimport cn.miyf.security.RequirePermission;',
+        'import cn.miyf.auth.security.RequirePermission;',
+        importLine + '\nimport cn.miyf.auth.security.RequirePermission;',
       );
     } else {
       t = t.replace(/^(package .+;\r?\n)/m, '$1\n' + importLine + '\n');
@@ -31,7 +31,7 @@ const kitchenAnn =
   '@PopedomGroup(value = "11030000", name = "\u7ba1\u7406\u5458", product = "kitchen", sort = 10)';
 const iamAnn =
   '@PopedomGroup(value = "10030000", name = "\u7ba1\u7406\u5458", product = "iam", sort = 5)';
-const imp = 'import cn.miyf.security.PopedomGroup;';
+const imp = 'import cn.miyf.auth.security.PopedomGroup;';
 
 const kitchenFiles = [
   'lib-app/kitchen-service/src/main/java/cn/miyf/kitchen/controller/admin/AdminDishController.java',
@@ -41,7 +41,7 @@ const kitchenFiles = [
   'lib-app/kitchen-service/src/main/java/cn/miyf/kitchen/controller/admin/AdminUserController.java',
   'lib-app/kitchen-service/src/main/java/cn/miyf/kitchen/controller/admin/AdminDashboardController.java',
   'lib-app/kitchen-service/src/main/java/cn/miyf/kitchen/controller/admin/AdminOperationLogController.java',
-  'lib-app/kitchen-service/src/main/java/cn/miyf/kitchen/controller/FileUploadController.java',
+  'lib-core/oss-service/src/main/java/cn/miyf/oss/controller/FileUploadController.java',
 ];
 const iamFiles = [
   'lib-auth/user-service/src/main/java/cn/miyf/controller/IamUserController.java',
@@ -55,3 +55,4 @@ const iamFiles = [
 
 for (const f of kitchenFiles) insertPopedom(path.join(root, f), kitchenAnn, imp);
 for (const f of iamFiles) insertPopedom(path.join(root, f), iamAnn, imp);
+

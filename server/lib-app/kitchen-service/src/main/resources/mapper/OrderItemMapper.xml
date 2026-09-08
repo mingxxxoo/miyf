@@ -6,7 +6,7 @@
 
     <select id="selectByOrderId"
             resultType="cn.miyf.kitchen.bean.entity.OrderItemEntity">
-        SELECT id, order_id, dish_id, dish_name, quantity, unit, remark, create_time
+        SELECT id, order_id, dish_id, dish_name, quantity, unit, remark, create_time, last_modify_time
         FROM kitchen_order_item
         WHERE order_id = #{orderId}
         ORDER BY create_time ASC

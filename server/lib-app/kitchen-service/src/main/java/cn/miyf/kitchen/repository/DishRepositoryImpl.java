@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -101,6 +102,18 @@ public class DishRepositoryImpl extends AbstractMybatisRepository<Dish, DishEnti
     @Override
     public Optional<Dish> findById(Long id) {
         return super.findById(id).map(this::enrich);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * 批量查询后补充分类名与图集，供 ES 回表使用。
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
+    @Override
+    public List<Dish> findByIds(Collection<Long> ids) {
+        return super.findByIds(ids).stream().map(this::enrich).toList();
     }
 
     /**

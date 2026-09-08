@@ -7,13 +7,14 @@
 ```
 server/
 ├── lib-core/                 # 平台横向能力（pom）
-│   ├── core-common           # ApiResult / 数据源 / Redis / MyBatis
+│   ├── core-common           # ApiResult / 数据源 / CacheClient(Lettuce) / MyBatis
 │   ├── oss-service           # MinIO / 本地存储 ✅
 │   ├── notification-service  # 邮件 / 短信 / 站内信落库 ✅
 │   ├── dictionary-service    # 数据字典 ✅
 │   ├── config-service        # 系统配置 ✅
 │   ├── monitor-service       # JVM / Redis / DB 概览 ✅
-│   └── job-service           # 定时任务启停 / 手动触发 ✅
+│   ├── job-service           # 定时任务启停 / 手动触发 ✅
+│   └── search-service        # Elasticsearch 搜索封装 ✅
 ├── lib-auth/                 # 认证鉴权（pom）
 │   ├── gateway-service       # Security 过滤链 / 限流 / 方法鉴权 ✅
 │   ├── auth-service          # 登录 / JWT / 注解 / 账号表 ✅
@@ -35,9 +36,10 @@ config/dictionary → auth-service → core-common
 permission → auth-service → core-common
 gateway → permission + auth
 organization/user → permission
-kitchen → auth + oss + core-common
+kitchen → auth + oss + core-common（可按需依赖 search-service）
 health → auth + job + core-common
 notification/job/monitor → auth + core-common
+search → core-common
 ```
 
 ## 迁移动作状态
@@ -50,6 +52,8 @@ notification/job/monitor → auth + core-common
 | notification-service        | ✅ 站内信落库 + SMTP 适配器（开关）+ 日志短信                                        |
 | monitor-service             | ✅ JVM/磁盘/线程/CPU + Redis/DB 概览 + 管理端页                                |
 | job-service                 | ✅ 启停持久化 + 手动触发 + 列表 API                                             |
+| search-service              | ✅ Elasticsearch 门面（默认 Noop；`app.search.enabled=true` 启用）              |
+| core-common 缓存            | ✅ `CacheClient`（Lettuce）：对象 / 列表 / 树；关闭时 Noop；`RedisJsonCache` 兼容委托 |
 
 管理端：`/system/monitor`、`/system/jobs`；健康业务：`/health/overview|subjects|samples|providers|trends`（Flyway V7～V9 菜单）。
 
@@ -83,7 +87,51 @@ app:
       client-id: ${HUAWEI_HEALTH_CLIENT_ID:}
       client-secret: ${HUAWEI_HEALTH_CLIENT_SECRET:}
       redirect-uri: http://localhost:5173/health/providers
+  search:
+    enabled: false            # 连接装配：true 注入真实 ES 客户端，否则 NoopSearchClient
+    index-prefix: miyf
+    uris:
+      - http://localhost:9200
+  redis:
+    enabled: true             # false 时注入 Noop CacheClient
+    cache:
+      category-ttl-seconds: 600
+      hot-dish-ttl-seconds: 300
+      empty-ttl-seconds: 60
+      tree-ttl-seconds: 600     # 菜单/组织树等
+      object-ttl-seconds: 300
+# spring.data.redis.lettuce.pool.* 控制 Lettuce 连接池（见 application.yml）
 ```
 
-生产环境变量见 `deploy/.env.example`（`APP_HEALTH_PROVIDER_HUAWEI_ENABLED`、`HUAWEI_HEALTH_*`）。Redis 仅存 access/refresh
+业务注入 `CacheClient`：`objects(T)` / `lists(E)` / `trees(N)` / `values(TypeReference)`；厨房分类与热门菜已走 `lists`。
+
+搜索召回：`SearchQueries` 将 `AbstractCondition`（page/rows/keyword/sort）转为 `SearchQuery`；业务只拿 `SearchIdPage` 回表。运行时开关为系统配置 `search.enabled`（设置中心可改），需同时 `app.search.enabled=true`；关闭任一则回退数据库。
+
+生产环境变量见 `deploy/.env.example`（`APP_HEALTH_PROVIDER_HUAWEI_ENABLED`、`HUAWEI_HEALTH_*`、`APP_SEARCH_ENABLED`、`REDIS_LETTUCE_*`）。华为 OAuth 的 Redis 仅存 access/refresh
 token，不落 clientSecret。
+
+## 数据范围（DataScope）
+
+`DataScopeService`（`organization-service`）当前**仅约束 IAM**：系统用户、组织树、角色下用户可见性。
+
+| 域 | 是否按组织裁剪 | 说明 |
+|----|----------------|------|
+| IAM（sys_user / org / role users） | ✅ | 角色 `data_scope`：ALL / SELF / ORG / ORG_CHILD |
+| 厨房订单 / 菜品 / kitchen_user | ❌ | `kitchen_user` 无 `org_unit_id`，与 `sys_org_unit` 未绑定 |
+| 健康主体 / 采样 | ❌ | `health_subject` 仅有可选 `external_user_id`，无组织字段 |
+
+若要将 DataScope 落到订单或采样查询，需先补齐业务主体与组织的绑定模型（迁移 + 仓储过滤），再接入 `resolveAllowedOrgIds`。在此之前对外承诺以 IAM 为界。
+
+## 包命名约定
+
+| 模块 | 包前缀 |
+|------|--------|
+| auth / security 注解与 JWT | `cn.miyf.auth.*` |
+| permission | `cn.miyf.permission.*` |
+| organization | `cn.miyf.organization.*` |
+| user | `cn.miyf.user.*` |
+| gateway（过滤链，非独立网关） | `cn.miyf.gateway.*` |
+| oss 上传 | `cn.miyf.oss.*`（权限码 `file:upload`） |
+| kitchen / health | `cn.miyf.kitchen.*` / `cn.miyf.health.*` |
+
+历史提示词与过时 `clumsy_kitchen` 计划见 [`archive/`](archive/)。

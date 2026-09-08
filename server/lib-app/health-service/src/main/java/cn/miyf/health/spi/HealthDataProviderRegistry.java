@@ -21,6 +21,12 @@ public class HealthDataProviderRegistry {
 
     private final Map<String, HealthDataProvider> providers = new LinkedHashMap<>();
 
+    /**
+     * 聚合全部 Provider Bean；编码重复则启动失败。
+     *
+     * @param providerList Spring 注入列表
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public HealthDataProviderRegistry(List<HealthDataProvider> providerList) {
         if (providerList != null) {
             for (HealthDataProvider provider : providerList) {

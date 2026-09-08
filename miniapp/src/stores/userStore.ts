@@ -4,8 +4,10 @@ import { wxLogin, type WxLoginProfile } from '@/api/auth'
 import { getToken, setToken, clearToken } from '@/api/request'
 import type { User } from '@/types'
 
-const USER_KEY = 'ck_user'
-const PROFILE_KEY = 'ck_login_profile'
+const USER_KEY = 'miyf_user'
+const PROFILE_KEY = 'miyf_login_profile'
+const LEGACY_USER_KEY = 'ck_user'
+const LEGACY_PROFILE_KEY = 'ck_login_profile'
 
 interface UserState {
   user: User | null
@@ -25,8 +27,18 @@ interface UserState {
 function persistUser(user: User | null) {
   if (user) {
     Taro.setStorageSync(USER_KEY, user)
+    try {
+      Taro.removeStorageSync(LEGACY_USER_KEY)
+    } catch {
+      // ignore
+    }
   } else {
     Taro.removeStorageSync(USER_KEY)
+    try {
+      Taro.removeStorageSync(LEGACY_USER_KEY)
+    } catch {
+      // ignore
+    }
   }
 }
 
@@ -38,13 +50,29 @@ function persistProfile(profile: WxLoginProfile | null) {
       wechatId: profile.wechatId,
       nickname: profile.nickname || profile.username
     })
+    try {
+      Taro.removeStorageSync(LEGACY_PROFILE_KEY)
+    } catch {
+      // ignore
+    }
   } else {
     Taro.removeStorageSync(PROFILE_KEY)
+    try {
+      Taro.removeStorageSync(LEGACY_PROFILE_KEY)
+    } catch {
+      // ignore
+    }
   }
 }
 
 function readCachedProfile(): WxLoginProfile | null {
-  const cached = Taro.getStorageSync(PROFILE_KEY) as WxLoginProfile | ''
+  let cached = Taro.getStorageSync(PROFILE_KEY) as WxLoginProfile | ''
+  if ((!cached || typeof cached !== 'object') && LEGACY_PROFILE_KEY) {
+    cached = Taro.getStorageSync(LEGACY_PROFILE_KEY) as WxLoginProfile | ''
+    if (cached && typeof cached === 'object') {
+      persistProfile(cached)
+    }
+  }
   if (!cached || typeof cached !== 'object') return null
   if (!cached.username || !cached.phone || !cached.wechatId) return null
   return cached
@@ -64,7 +92,13 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   hydrate: () => {
     const token = getToken()
-    const cached = Taro.getStorageSync(USER_KEY) as User | ''
+    let cached = Taro.getStorageSync(USER_KEY) as User | ''
+    if ((!cached || typeof cached !== 'object')) {
+      cached = Taro.getStorageSync(LEGACY_USER_KEY) as User | ''
+      if (cached && typeof cached === 'object') {
+        persistUser(cached)
+      }
+    }
     if (token && cached && typeof cached === 'object') {
       set({ user: cached, isLoggedIn: true })
     } else {

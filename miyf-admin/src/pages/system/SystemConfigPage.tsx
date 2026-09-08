@@ -37,9 +37,12 @@ const GROUP_LABELS: Record<string, string> = {
   platform: '平台信息',
   business: '业务设置',
   security: '安全设置',
+  search: '搜索',
+  site: '站点',
+  upload: '上传',
 };
 
-const GROUP_ORDER = ['platform', 'business', 'security'];
+const GROUP_ORDER = ['platform', 'business', 'search', 'security', 'site', 'upload'];
 
 function groupTitle(code: string) {
   return GROUP_LABELS[code] || code;

@@ -16,6 +16,7 @@ import {
 import type { DataNode } from 'antd/es/tree';
 import {
   buildMenuTree,
+  flattenTree,
   iamMenuApi,
   type IamMenu,
 } from '@/modules/iam/api';
@@ -59,7 +60,7 @@ type FormValues = {
  */
 export default function MenusPage() {
   const [loading, setLoading] = useState(false);
-  const [flat, setFlat] = useState<IamMenu[]>([]);
+  const [menuTree, setMenuTree] = useState<IamMenu[]>([]);
   const [keyword, setKeyword] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mode, setMode] = useState<'view' | 'create'>('view');
@@ -69,21 +70,24 @@ export default function MenusPage() {
   const { submitting, run } = useSubmitting();
   const [apps, setApps] = useState<SysApp[]>([]);
 
+  const flat = useMemo(() => flattenTree(menuTree), [menuTree]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [list, appList] = await Promise.all([
-        iamMenuApi.list(),
+      const [treeList, appList] = await Promise.all([
+        iamMenuApi.listTree(),
         sysAppApi.list({ status: 'ENABLED' }).catch(() => [] as SysApp[]),
       ]);
-      setFlat(list);
+      setMenuTree(treeList);
       setApps(appList);
+      const flatList = flattenTree(treeList);
       setSelectedId((prev) => {
-        if (prev && list.some((m) => m.id === prev)) return prev;
-        return list[0]?.id ?? null;
+        if (prev && flatList.some((m) => m.id === prev)) return prev;
+        return flatList[0]?.id ?? null;
       });
     } catch (err) {
-      setFlat([]);
+      setMenuTree([]);
       notifyError(err, '加载菜单失败');
     } finally {
       setLoading(false);
@@ -130,7 +134,11 @@ export default function MenusPage() {
     return flat.filter((m) => keep.has(m.id));
   }, [flat, keyword]);
 
-  const tree = useMemo(() => buildMenuTree(filteredFlat), [filteredFlat]);
+  const tree = useMemo(() => {
+    // 无筛选时直接用服务端 TreeUtils 树；筛选后按祖先链回组树
+    if (!keyword.trim()) return menuTree;
+    return buildMenuTree(filteredFlat);
+  }, [menuTree, keyword, filteredFlat]);
 
   const selected = useMemo(
     () => (mode === 'view' && selectedId ? flat.find((m) => m.id === selectedId) ?? null : null),

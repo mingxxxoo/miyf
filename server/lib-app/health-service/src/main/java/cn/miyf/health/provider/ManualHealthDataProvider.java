@@ -21,26 +21,51 @@ public class ManualHealthDataProvider implements HealthDataProvider {
 
     public static final String CODE = "manual";
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public String code() {
         return CODE;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public String displayName() {
         return "手动录入";
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public boolean enabled() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public boolean supportsRemoteFetch() {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public Set<String> supportedMetrics() {
         return Set.of(
@@ -57,6 +82,11 @@ public class ManualHealthDataProvider implements HealthDataProvider {
         );
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Override
     public List<HealthSampleDraft> fetch(HealthFetchRequest request) {
         return Collections.emptyList();

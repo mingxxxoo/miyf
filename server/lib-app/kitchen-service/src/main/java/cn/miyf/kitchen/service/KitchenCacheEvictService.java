@@ -1,7 +1,6 @@
 package cn.miyf.kitchen.service;
 
-import cn.miyf.config.RedisAppProperties;
-import cn.miyf.infrastructure.redis.RedisJsonCache;
+import cn.miyf.infrastructure.cache.CacheClient;
 import cn.miyf.kitchen.constant.CacheKeys;
 import org.springframework.stereotype.Service;
 
@@ -14,19 +13,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class KitchenCacheEvictService {
 
-    private final RedisJsonCache redisJsonCache;
-    private final RedisAppProperties properties;
+    private final CacheClient cacheClient;
 
     /**
      * 构造失效服务。
      *
-     * @param redisJsonCache 缓存
-     * @param properties     配置
+     * @param cacheClient 缓存门面
      * @history 1.00 2026-09-05 09:13 XieMingJie Created.
      */
-    public KitchenCacheEvictService(RedisJsonCache redisJsonCache, RedisAppProperties properties) {
-        this.redisJsonCache = redisJsonCache;
-        this.properties = properties;
+    public KitchenCacheEvictService(CacheClient cacheClient) {
+        this.cacheClient = cacheClient;
     }
 
     /**
@@ -35,10 +31,10 @@ public class KitchenCacheEvictService {
      * @history 1.00 2026-09-05 09:13 XieMingJie Created.
      */
     public void evictCategories() {
-        if (!properties.isEnabled()) {
+        if (!cacheClient.isEnabled()) {
             return;
         }
-        redisJsonCache.delete(CacheKeys.categoriesEnabled());
+        cacheClient.evict(CacheKeys.categoriesEnabled());
     }
 
     /**
@@ -47,10 +43,10 @@ public class KitchenCacheEvictService {
      * @history 1.00 2026-09-05 09:13 XieMingJie Created.
      */
     public void evictDishBrowse() {
-        if (!properties.isEnabled()) {
+        if (!cacheClient.isEnabled()) {
             return;
         }
-        redisJsonCache.deleteByPrefix(CacheKeys.dishesBrowsePrefix());
+        cacheClient.evictByPrefix(CacheKeys.dishesBrowsePrefix());
     }
 
     /**
@@ -63,4 +59,3 @@ public class KitchenCacheEvictService {
         evictDishBrowse();
     }
 }
-

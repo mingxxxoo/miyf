@@ -2,7 +2,7 @@ package cn.miyf.monitor;
 
 import cn.miyf.infrastructure.datasource.DataSourceKey;
 import cn.miyf.infrastructure.datasource.DataSourceRegistry;
-import com.alibaba.druid.pool.DruidDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -39,12 +39,25 @@ public class MonitorApplicationService {
     private final ObjectProvider<StringRedisTemplate> stringRedisTemplate;
     private final Deque<Map<String, Object>> recentErrors = new ArrayDeque<>();
 
+    /**
+     * 构造监控采集服务。
+     *
+     * @param dataSourceRegistry  数据源注册表
+     * @param stringRedisTemplate Redis（可选）
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public MonitorApplicationService(DataSourceRegistry dataSourceRegistry,
                                      ObjectProvider<StringRedisTemplate> stringRedisTemplate) {
         this.dataSourceRegistry = dataSourceRegistry;
         this.stringRedisTemplate = stringRedisTemplate;
     }
 
+    /**
+     * 监控总览：JVM、磁盘、Redis/DB 组件与近期错误。
+     *
+     * @return 总览 Map
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public Map<String, Object> overview() {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("collectedTime", System.currentTimeMillis());
@@ -145,33 +158,42 @@ public class MonitorApplicationService {
     }
 
     private void putPoolDetails(ComponentHealthSnapshot snap, DataSource dataSource) {
-        DruidDataSource druid = unwrapDruid(dataSource);
-        if (druid == null) {
+        HikariDataSource hikari = unwrapHikari(dataSource);
+        if (hikari == null) {
             return;
         }
         Map<String, Object> pool = new LinkedHashMap<>();
-        int active = druid.getActiveCount();
-        int pooling = druid.getPoolingCount();
-        int maxActive = druid.getMaxActive();
+        int active = 0;
+        int idle = 0;
+        int total = 0;
+        int awaiting = 0;
+        var mx = hikari.getHikariPoolMXBean();
+        if (mx != null) {
+            active = mx.getActiveConnections();
+            idle = mx.getIdleConnections();
+            total = mx.getTotalConnections();
+            awaiting = mx.getThreadsAwaitingConnection();
+        }
+        int maxPool = hikari.getMaximumPoolSize();
+        pool.put("poolName", hikari.getPoolName());
         pool.put("active", active);
-        pool.put("pooling", pooling);
-        pool.put("maxActive", maxActive);
-        pool.put("createCount", druid.getCreateCount());
-        pool.put("destroyCount", druid.getDestroyCount());
-        pool.put("connectCount", druid.getConnectCount());
-        pool.put("closeCount", druid.getCloseCount());
+        pool.put("idle", idle);
+        pool.put("total", total);
+        pool.put("awaiting", awaiting);
+        pool.put("maximumPoolSize", maxPool);
+        pool.put("minimumIdle", hikari.getMinimumIdle());
         snap.put("pool", pool)
                 .put("activeConnections", active)
-                .put("idleConnections", pooling)
-                .put("maxConnections", maxActive);
+                .put("idleConnections", idle)
+                .put("maxConnections", maxPool);
     }
 
-    private static DruidDataSource unwrapDruid(DataSource dataSource) {
-        if (dataSource instanceof DruidDataSource druid) {
-            return druid;
+    private static HikariDataSource unwrapHikari(DataSource dataSource) {
+        if (dataSource instanceof HikariDataSource hikari) {
+            return hikari;
         }
         try {
-            return dataSource.unwrap(DruidDataSource.class);
+            return dataSource.unwrap(HikariDataSource.class);
         } catch (Exception ignored) {
             return null;
         }

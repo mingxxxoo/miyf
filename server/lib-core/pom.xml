@@ -13,7 +13,7 @@
     <artifactId>lib-core</artifactId>
     <packaging>pom</packaging>
     <name>lib-core</name>
-    <description>平台核心聚合：公共能力与横向服务（OSS/字典/配置/通知/监控/任务）</description>
+    <description>平台核心聚合：公共能力与横向服务（OSS/字典/配置/通知/监控/任务/搜索）</description>
 
     <modules>
         <module>core-common</module>
@@ -23,5 +23,6 @@
         <module>config-service</module>
         <module>monitor-service</module>
         <module>job-service</module>
+        <module>search-service</module>
     </modules>
 </project>

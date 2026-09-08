@@ -45,6 +45,16 @@ public class NotificationApplicationService {
     private final SysNotifySendLogMapper sendLogMapper;
     private final SnowflakeIdGenerator snowflakeIdGenerator;
 
+    /**
+     * 构造通知门面：按渠道注册 Sender，INBOX 固定用站内信实现。
+     *
+     * @param senderList               渠道发送器列表
+     * @param inboxNotificationSender  站内信
+     * @param templateMapper           模板 Mapper
+     * @param sendLogMapper            发送流水 Mapper
+     * @param snowflakeIdGenerator     雪花 ID
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public NotificationApplicationService(List<NotificationSender> senderList,
                                           InboxNotificationSender inboxNotificationSender,
                                           SysNotifyTemplateMapper templateMapper,
@@ -66,10 +76,22 @@ public class NotificationApplicationService {
         senders.put(NotificationChannel.INBOX, inboxNotificationSender);
     }
 
+    /**
+     * 直接发送通知消息（无模板关联）。
+     *
+     * @param message 消息
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public void send(NotificationMessage message) {
         sendInternal(message, null);
     }
 
+    /**
+     * 按 DTO 发送：可走模板渲染或直填渠道/标题/正文。
+     *
+     * @param dto 发送请求
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public void send(NotifySendDto dto) {
         if (dto == null) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "请求体不能为空");
@@ -140,14 +162,38 @@ public class NotificationApplicationService {
         }
     }
 
+    /**
+     * 站内信收件箱列表。
+     *
+     * @param userKey 用户键
+     * @param limit   条数上限，可空
+     * @return 收件箱条目
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public List<InboxItem> listInbox(String userKey, Integer limit) {
         return inboxNotificationSender.listByUser(userKey, limit);
     }
 
+    /**
+     * 标记站内信已读。
+     *
+     * @param id      消息 ID
+     * @param userKey 用户键
+     * @return 更新后条目
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public InboxItem markRead(Long id, String userKey) {
         return inboxNotificationSender.markRead(id, userKey);
     }
 
+    /**
+     * 通知模板列表。
+     *
+     * @param channel 渠道，可空
+     * @param status  状态，可空
+     * @return 模板 VO
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public List<NotifyTemplateVo> listTemplates(String channel, String status) {
         return templateMapper.selectList(Wrappers.<SysNotifyTemplateEntity>lambdaQuery()
                         .eq(StringUtils.hasText(channel), SysNotifyTemplateEntity::getChannel,
@@ -160,6 +206,13 @@ public class NotificationApplicationService {
                 .toList();
     }
 
+    /**
+     * 创建通知模板。
+     *
+     * @param dto 请求
+     * @return 模板 VO
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Transactional
     public NotifyTemplateVo createTemplate(NotifyTemplateSaveDto dto) {
         String code = normalizeCode(dto.getCode());
@@ -175,6 +228,14 @@ public class NotificationApplicationService {
         return toTemplateVo(entity);
     }
 
+    /**
+     * 更新通知模板。
+     *
+     * @param id  模板 ID
+     * @param dto 请求
+     * @return 模板 VO
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Transactional
     public NotifyTemplateVo updateTemplate(Long id, NotifyTemplateSaveDto dto) {
         SysNotifyTemplateEntity entity = requireTemplate(id);
@@ -194,12 +255,27 @@ public class NotificationApplicationService {
         return toTemplateVo(entity);
     }
 
+    /**
+     * 删除通知模板。
+     *
+     * @param id 模板 ID
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     @Transactional
     public void deleteTemplate(Long id) {
         requireTemplate(id);
         templateMapper.deleteById(id);
     }
 
+    /**
+     * 发送流水列表。
+     *
+     * @param channel 渠道，可空
+     * @param status  状态，可空
+     * @param limit   条数上限
+     * @return 流水 VO
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     public List<NotifySendLogVo> listSendLogs(String channel, String status, Integer limit) {
         int size = limit == null || limit <= 0 ? 50 : Math.min(limit, SEND_LOG_LIMIT_MAX);
         return sendLogMapper.selectList(Wrappers.<SysNotifySendLogEntity>lambdaQuery()
@@ -258,6 +334,14 @@ public class NotificationApplicationService {
                 .setCreateTime(entity.getCreateTime());
     }
 
+    /**
+     * 模板变量渲染（{@code ${key}}）。
+     *
+     * @param template 模板串
+     * @param vars     变量
+     * @return 渲染结果
+     * @history 1.00 2026-09-08 XieMingJie Created.
+     */
     static String render(String template, Map<String, String> vars) {
         if (template == null) {
             return "";

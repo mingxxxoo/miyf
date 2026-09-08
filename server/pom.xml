@@ -27,8 +27,10 @@
 
     <properties>
         <java.version>21</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.release>21</maven.compiler.release>
         <mybatis-plus.version>3.5.17</mybatis-plus.version>
-        <druid.version>1.2.28</druid.version>
         <jjwt.version>0.12.6</jjwt.version>
         <springdoc.version>3.0.2</springdoc.version>
         <testcontainers.version>1.21.3</testcontainers.version>
@@ -70,6 +72,11 @@
             <dependency>
                 <groupId>cn.miyf</groupId>
                 <artifactId>job-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.miyf</groupId>
+                <artifactId>search-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -121,11 +128,6 @@
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-jsqlparser</artifactId>
                 <version>${mybatis-plus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.alibaba</groupId>
-                <artifactId>druid-spring-boot-4-starter</artifactId>
-                <version>${druid.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>

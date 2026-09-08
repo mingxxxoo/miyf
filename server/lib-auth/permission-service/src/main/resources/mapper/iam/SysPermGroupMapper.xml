@@ -2,16 +2,16 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!-- IAM 权限组 SQL @author XieMingJie @since 2026-09-05 -->
-<mapper namespace="cn.miyf.repository.mapper.SysPermGroupMapper">
+<mapper namespace="cn.miyf.permission.repository.mapper.SysPermGroupMapper">
 
-    <select id="selectByCode" resultType="cn.miyf.bean.entity.SysPermGroupEntity">
+    <select id="selectByCode" resultType="cn.miyf.permission.bean.entity.SysPermGroupEntity">
         SELECT id, code, name, description, sort_order, create_time, last_modify_time
         FROM sys_perm_group
 WHERE code = #{code}
         LIMIT 1
     </select>
 
-    <select id="findByRoleId" resultType="cn.miyf.bean.entity.SysPermGroupEntity">
+    <select id="findByRoleId" resultType="cn.miyf.permission.bean.entity.SysPermGroupEntity">
         SELECT g.id, g.code, g.name, g.description, g.sort_order,
                g.create_time, g.last_modify_time
         FROM sys_perm_group g

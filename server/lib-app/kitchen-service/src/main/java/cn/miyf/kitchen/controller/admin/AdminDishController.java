@@ -1,13 +1,13 @@
 package cn.miyf.kitchen.controller.admin;
 
+import cn.miyf.auth.security.MiyfPermission;
 import cn.miyf.common.ApiResult;
 import cn.miyf.common.PageResult;
 import cn.miyf.kitchen.bean.dto.DishSaveDto;
 import cn.miyf.kitchen.bean.qo.DishPageQo;
 import cn.miyf.kitchen.bean.vo.DishVo;
-import cn.miyf.kitchen.service.DishApplicationService;
-import cn.miyf.security.MiyfPermission;
 import cn.miyf.kitchen.security.KitchenAdminPopedom;
+import cn.miyf.kitchen.service.DishApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

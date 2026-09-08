@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!-- IAM 权限组条目 SQL @author XieMingJie @since 2026-09-05 -->
-<mapper namespace="cn.miyf.repository.mapper.SysPermGroupItemMapper">
+<mapper namespace="cn.miyf.permission.repository.mapper.SysPermGroupItemMapper">
 
-    <select id="selectByGroupAndPermission" resultType="cn.miyf.bean.entity.SysPermGroupItemEntity">
-        SELECT id, group_id, permission_id, create_time
+    <select id="selectByGroupAndPermission" resultType="cn.miyf.permission.bean.entity.SysPermGroupItemEntity">
+        SELECT id, group_id, permission_id, create_time, last_modify_time
         FROM sys_perm_group_item
         WHERE group_id = #{groupId}
           AND permission_id = #{permissionId}
@@ -29,8 +29,8 @@
         ORDER BY permission_id
     </select>
 
-    <select id="selectByGroupIds" resultType="cn.miyf.bean.entity.SysPermGroupItemEntity">
-        SELECT id, group_id, permission_id, create_time
+    <select id="selectByGroupIds" resultType="cn.miyf.permission.bean.entity.SysPermGroupItemEntity">
+        SELECT id, group_id, permission_id, create_time, last_modify_time
         FROM sys_perm_group_item
         WHERE group_id IN
         <foreach collection="groupIds" item="id" open="(" separator="," close=")">

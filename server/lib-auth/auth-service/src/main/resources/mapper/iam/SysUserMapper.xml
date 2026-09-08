@@ -2,9 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!-- IAM 用户 SQL @author XieMingJie @since 2026-09-05 -->
-<mapper namespace="cn.miyf.repository.mapper.SysUserMapper">
+<mapper namespace="cn.miyf.auth.repository.mapper.SysUserMapper">
 
-    <select id="selectByUsername" resultType="cn.miyf.bean.entity.SysUserEntity">
+    <select id="selectByUsername" resultType="cn.miyf.auth.bean.entity.SysUserEntity">
         SELECT id, org_unit_id, username, password_hash, nickname, status,
                create_time, last_modify_time
         FROM sys_user

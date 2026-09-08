@@ -6,7 +6,7 @@
 
     <select id="selectPage" resultType="cn.miyf.kitchen.bean.entity.OperationLogEntity">
         SELECT id, operator_id, operator_name, operation_type, target_type, target_id,
-               request_ip, request_method, request_uri, operation_detail, create_time
+               request_ip, request_method, request_uri, operation_detail, create_time, last_modify_time
         FROM operation_logs
         WHERE 1 = 1
           <if test="operationType != null and operationType != ''">
