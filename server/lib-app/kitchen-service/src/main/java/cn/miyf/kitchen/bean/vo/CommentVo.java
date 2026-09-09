@@ -1,7 +1,7 @@
 package cn.miyf.kitchen.bean.vo;
 
 import cn.miyf.bean.vo.BaseVo;
-
+import cn.miyf.oss.security.FileAccess;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -47,6 +47,7 @@ public class CommentVo extends BaseVo {
     @Schema(description = "用户昵称")
     private String userNickname;
 
+    @FileAccess
     @Schema(description = "用户头像")
     private String userAvatar;
 
@@ -67,6 +68,7 @@ public class CommentVo extends BaseVo {
     @Schema(description = "状态 NORMAL/HIDDEN")
     private String status;
 
+    @FileAccess
     @Schema(description = "图片")
     private List<String> images;
 

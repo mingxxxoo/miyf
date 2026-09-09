@@ -2,19 +2,45 @@ import { getToken, ApiError, clearToken } from '@/api/http';
 
 export type UploadResult = {
   url: string;
+  id?: string;
+  path?: string;
+  appCode?: string;
   [key: string]: unknown;
+};
+
+export type UploadOptions = {
+  /** 产品应用编码，如 kitchen / health */
+  appCode: string;
+  source?: string;
+  temp?: boolean;
+  compress?: boolean;
+  accessPermission?: 'PUBLIC' | 'AUTHENTICATED' | 'OWNER' | 'ADMIN' | 'DENY';
+  path?: string;
 };
 
 /**
  * 统一上传封装（FormData → /upload）。
- * 不改变后端路径与字段。
  */
 export async function uploadFile(
   file: File,
-  path = '/upload',
+  options: UploadOptions,
 ): Promise<UploadResult> {
+  const path = options.path ?? '/upload';
   const form = new FormData();
   form.append('file', file);
+  form.append('appCode', options.appCode);
+  if (options.source) {
+    form.append('source', options.source);
+  }
+  if (options.temp != null) {
+    form.append('temp', String(options.temp));
+  }
+  if (options.compress != null) {
+    form.append('compress', String(options.compress));
+  }
+  if (options.accessPermission) {
+    form.append('accessPermission', options.accessPermission);
+  }
   const token = getToken();
   const res = await fetch(`/api${path}`, {
     method: 'POST',

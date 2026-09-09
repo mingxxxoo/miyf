@@ -55,4 +55,7 @@ public class LoginVo extends BaseVo {
 
     @Schema(description = "角色码列表（管理员有值）")
     private List<String> roles;
+
+    @Schema(description = "登录风控状态是否已清理；false 表示 Redis 清理失败，可能短暂仍需验证码")
+    private Boolean protectStateCleared;
 }

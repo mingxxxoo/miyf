@@ -13,6 +13,7 @@ import cn.miyf.permission.service.PermissionApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,21 +40,13 @@ import java.util.List;
 @Tag(name = "IAM-角色")
 @IamAdminPopedom
 @RestController
-@RequestMapping("/api/iam/roles")
+@RequestMapping("/iam/roles")
+@RequiredArgsConstructor
 public class IamRoleController {
 
     private final PermissionApplicationService permissionApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param permissionApplicationService 权限应用服务
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public IamRoleController(PermissionApplicationService permissionApplicationService) {
-        this.permissionApplicationService = permissionApplicationService;
-    }
-
+    
     /**
      * 查询角色列表，可按产品域过滤。
      *

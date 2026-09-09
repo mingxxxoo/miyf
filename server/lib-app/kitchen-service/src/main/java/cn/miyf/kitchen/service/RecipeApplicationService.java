@@ -5,12 +5,16 @@ import cn.miyf.common.ErrorCode;
 import cn.miyf.kitchen.bean.dto.RecipeMaterialDto;
 import cn.miyf.kitchen.bean.dto.RecipeSaveDto;
 import cn.miyf.kitchen.bean.dto.RecipeStepDto;
+import cn.miyf.kitchen.bean.entity.DishEntity;
+import cn.miyf.kitchen.bean.entity.RecipeEntity;
 import cn.miyf.kitchen.bean.model.Dish;
 import cn.miyf.kitchen.bean.model.Recipe;
 import cn.miyf.kitchen.bean.vo.RecipeVo;
+import cn.miyf.kitchen.helper.EntityConverters;
 import cn.miyf.kitchen.repository.DishRepository;
 import cn.miyf.kitchen.repository.RecipeRepository;
 import cn.miyf.service.BaseApplicationService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +22,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 菜谱应用服务：一菜一谱、结构校验、管理端 CRUD、用户端只读。
@@ -26,31 +31,23 @@ import java.util.Map;
  * @since 2026-09-04 17:35
  */
 @Service
+@RequiredArgsConstructor
 public class RecipeApplicationService extends BaseApplicationService {
 
     private final RecipeRepository recipeRepository;
     private final DishRepository dishRepository;
 
     /**
-     * 构造菜谱服务。
-     *
-     * @param recipeRepository 菜谱仓储
-     * @param dishRepository   菜品仓储
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
-     */
-    public RecipeApplicationService(RecipeRepository recipeRepository, DishRepository dishRepository) {
-        this.recipeRepository = recipeRepository;
-        this.dishRepository = dishRepository;
-    }
-
-    /**
      * 管理端菜谱列表。
      *
      * @return 菜谱列表
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public List<RecipeVo> listAll() {
-        return recipeRepository.findAll().stream().map(this::toVo).toList();
+        return recipeRepository.selectAll().stream()
+                .map(EntityConverters::toRecipe)
+                .map(this::toVo)
+                .toList();
     }
 
     /**
@@ -58,10 +55,10 @@ public class RecipeApplicationService extends BaseApplicationService {
      *
      * @param id 菜谱 ID
      * @return 菜谱
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public RecipeVo getById(Long id) {
-        return toVo(requireById(recipeRepository, id, "菜谱不存在"));
+        return toVo(EntityConverters.toRecipe(requireById(recipeRepository, id, "菜谱不存在")));
     }
 
     /**
@@ -69,11 +66,11 @@ public class RecipeApplicationService extends BaseApplicationService {
      *
      * @param dishId 菜品 ID
      * @return 菜谱列表
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public List<RecipeVo> listByDishId(Long dishId) {
         requireById(dishRepository, dishId, "菜品不存在");
-        return recipeRepository.findByDishId(dishId).map(r -> List.of(toVo(r))).orElse(List.of());
+        return findRecipeByDishId(dishId).map(r -> List.of(toVo(r))).orElse(List.of());
     }
 
     /**
@@ -81,11 +78,11 @@ public class RecipeApplicationService extends BaseApplicationService {
      *
      * @param dishId 菜品 ID
      * @return 菜谱
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public RecipeVo getByDishIdAdmin(Long dishId) {
         requireById(dishRepository, dishId, "菜品不存在");
-        Recipe recipe = requireFound(recipeRepository.findByDishId(dishId), "该菜品尚未配置菜谱");
+        Recipe recipe = requireFound(findRecipeByDishId(dishId), "该菜品尚未配置菜谱");
         return toVo(recipe);
     }
 
@@ -94,12 +91,12 @@ public class RecipeApplicationService extends BaseApplicationService {
      *
      * @param dishId 菜品 ID
      * @return 菜谱
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public RecipeVo getByDishIdUser(Long dishId) {
-        Dish dish = requireById(dishRepository, dishId, "菜品不存在");
+        Dish dish = EntityConverters.toDish(requireById(dishRepository, dishId, "菜品不存在"));
         requireTrue("ON_SALE".equals(dish.getStatus()), ErrorCode.NOT_FOUND, "菜品不存在或未上架");
-        Recipe recipe = requireFound(recipeRepository.findByDishId(dishId), "该菜品暂无菜谱");
+        Recipe recipe = requireFound(findRecipeByDishId(dishId), "该菜品暂无菜谱");
         return toVo(recipe);
     }
 
@@ -108,18 +105,20 @@ public class RecipeApplicationService extends BaseApplicationService {
      *
      * @param dto 请求
      * @return 新建菜谱
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Transactional
     public RecipeVo create(RecipeSaveDto dto) {
         RecipeStructureValidator.validateAndNormalize(dto);
         requireById(dishRepository, dto.getDishId(), "菜品不存在");
-        if (recipeRepository.findByDishId(dto.getDishId()).isPresent()) {
+        if (findRecipeByDishId(dto.getDishId()).isPresent()) {
             throw new BusinessException(ErrorCode.CONFLICT, "该菜品已有菜谱，请直接更新");
         }
         Recipe recipe = new Recipe();
         applyDto(recipe, dto);
-        return toVo(insert(recipeRepository, recipe));
+        RecipeEntity entity = EntityConverters.toRecipeEntity(recipe);
+        insert(recipeRepository, entity);
+        return toVo(EntityConverters.toRecipe(entity));
     }
 
     /**
@@ -128,24 +127,26 @@ public class RecipeApplicationService extends BaseApplicationService {
      * @param id  菜谱 ID
      * @param dto 请求
      * @return 更新后菜谱
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Transactional
     public RecipeVo update(Long id, RecipeSaveDto dto) {
         RecipeStructureValidator.validateAndNormalize(dto);
-        Recipe recipe = requireById(recipeRepository, id, "菜谱不存在");
+        Recipe recipe = EntityConverters.toRecipe(requireById(recipeRepository, id, "菜谱不存在"));
         requireTrue(recipe.getDishId().equals(dto.getDishId()),
                 ErrorCode.BAD_REQUEST, "不允许更换菜谱所属菜品");
         requireById(dishRepository, dto.getDishId(), "菜品不存在");
         applyDto(recipe, dto);
-        return toVo(update(recipeRepository, recipe));
+        RecipeEntity entity = EntityConverters.toRecipeEntity(recipe);
+        update(recipeRepository, entity);
+        return toVo(EntityConverters.toRecipe(entity));
     }
 
     /**
      * 物理删除菜谱。
      *
      * @param id 菜谱 ID
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Transactional
     public void delete(Long id) {
@@ -153,12 +154,16 @@ public class RecipeApplicationService extends BaseApplicationService {
         deleteById(recipeRepository, id);
     }
 
+    private Optional<Recipe> findRecipeByDishId(Long dishId) {
+        return Optional.ofNullable(EntityConverters.toRecipe(recipeRepository.selectByDishId(dishId)));
+    }
+
     /**
      * 将 DTO 应用到领域对象。
      *
      * @param recipe 菜谱
      * @param dto    请求
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private void applyDto(Recipe recipe, RecipeSaveDto dto) {
         recipe.setDishId(dto.getDishId());
@@ -213,7 +218,7 @@ public class RecipeApplicationService extends BaseApplicationService {
      *
      * @param recipe 菜谱
      * @return VO
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private RecipeVo toVo(Recipe recipe) {
         RecipeVo vo = new RecipeVo()
@@ -231,8 +236,10 @@ public class RecipeApplicationService extends BaseApplicationService {
                 .setNutrition(recipe.getNutrition())
                 .setLastModifyTime(recipe.getLastModifyTime());
         if (recipe.getDishId() != null) {
-            dishRepository.findById(recipe.getDishId())
-                    .ifPresent(dish -> vo.setDishName(dish.getName()));
+            DishEntity dish = dishRepository.selectById(recipe.getDishId());
+            if (dish != null) {
+                vo.setDishName(dish.getName());
+            }
         }
         return vo;
     }

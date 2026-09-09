@@ -1,6 +1,10 @@
 package cn.miyf.oss.bean.vo;
 
 import cn.miyf.bean.vo.BaseVo;
+import cn.miyf.oss.enums.FileAccessPermission;
+import cn.miyf.oss.security.FileAccess;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -31,10 +35,15 @@ public class UploadedFileVo extends BaseVo {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "对象键")
-    private String objectKey;
+    @JsonSerialize(using = ToStringSerializer.class)
+    @Schema(description = "文件 ID", type = "string")
+    private Long id;
 
-    @Schema(description = "可访问 URL")
+    @Schema(description = "存储路径")
+    private String path;
+
+    @FileAccess
+    @Schema(description = "可访问 URL（/r/{id}）")
     private String url;
 
     @Schema(description = "Content-Type")
@@ -42,4 +51,13 @@ public class UploadedFileVo extends BaseVo {
 
     @Schema(description = "字节大小")
     private Long size;
+
+    @Schema(description = "内容 MD5")
+    private String md5;
+
+    @Schema(description = "产品应用编码")
+    private String appCode;
+
+    @Schema(description = "访问权限")
+    private FileAccessPermission accessPermission;
 }

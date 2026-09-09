@@ -9,6 +9,7 @@ import cn.miyf.common.tree.TreeRelationIndex;
 import cn.miyf.organization.bean.entity.SysOrgUnitEntity;
 import cn.miyf.organization.repository.mapper.SysOrgUnitMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,19 +23,10 @@ import java.util.Set;
  * @since 2026-09-07
  */
 @Service
+@RequiredArgsConstructor
 public class DataScopeService {
 
     private final SysOrgUnitMapper orgUnitMapper;
-
-    /**
-     * 构造数据范围服务。
-     *
-     * @param orgUnitMapper 组织 Mapper
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public DataScopeService(SysOrgUnitMapper orgUnitMapper) {
-        this.orgUnitMapper = orgUnitMapper;
-    }
 
     /**
      * 要求当前主体为管理员。

@@ -10,6 +10,7 @@ import cn.miyf.permission.service.PermissionApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,21 +32,13 @@ import java.util.List;
 @Tag(name = "IAM-菜单")
 @IamAdminPopedom
 @RestController
-@RequestMapping("/api/iam/menus")
+@RequestMapping("/iam/menus")
+@RequiredArgsConstructor
 public class IamMenuController {
 
     private final PermissionApplicationService permissionApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param permissionApplicationService 权限应用服务
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public IamMenuController(PermissionApplicationService permissionApplicationService) {
-        this.permissionApplicationService = permissionApplicationService;
-    }
-
+    
     /**
      * 查询菜单无限极树（服务端 TreeUtils 组树）。
      *

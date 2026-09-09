@@ -9,6 +9,7 @@ import cn.miyf.kitchen.service.RecipeApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,21 +31,13 @@ import java.util.List;
 @Tag(name = "管理端菜谱")
 @KitchenAdminPopedom
 @RestController
-@RequestMapping("/api/admin/recipes")
+@RequestMapping("/admin/recipes")
+@RequiredArgsConstructor
 public class AdminRecipeController {
 
     private final RecipeApplicationService recipeApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param recipeApplicationService 菜谱服务
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
-     */
-    public AdminRecipeController(RecipeApplicationService recipeApplicationService) {
-        this.recipeApplicationService = recipeApplicationService;
-    }
-
+    
     /**
      * 菜谱列表；可按菜品 ID 过滤。
      *

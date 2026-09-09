@@ -41,6 +41,10 @@ public class SysConfigEntity extends BaseEntity {
     @Schema(description = "配置值")
     private String configValue;
 
+    @TableField("is_sensitive")
+    @Schema(description = "是否敏感（脱敏返回）")
+    private Boolean sensitive;
+
     @TableField("value_type")
     @Schema(description = "值类型 STRING/NUMBER/BOOLEAN/JSON")
     private String valueType;

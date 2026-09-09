@@ -6,9 +6,8 @@ import cn.miyf.infrastructure.search.SearchQueries;
 import cn.miyf.kitchen.bean.document.DishSearchDocument;
 import cn.miyf.kitchen.bean.model.Dish;
 import cn.miyf.kitchen.bean.qo.DishPageQo;
-import cn.miyf.service.SystemConfigReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,44 +15,36 @@ import java.util.List;
 /**
  * 菜品搜索：索引维护 + 基于 {@link DishPageQo}/{@link cn.miyf.common.query.AbstractCondition} 的召回。
  * 仅 ON_SALE 入索引；业务不直接接触 Elasticsearch Java API。
+ * <p>
+ * 当前暂时强制 SQL 召回（{@link #isRecallEnabled()} 恒 false）；索引同步在 ES 客户端关闭时为 no-op。
  *
  * @author XieMingJie
  * @since 2026-09-08
  */
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class DishSearchIndexService {
 
-    private static final Logger log = LoggerFactory.getLogger(DishSearchIndexService.class);
-
-    /** 与系统配置键一致，设置中心可改。 */
+    /** 与系统配置键一致；恢复 ES 召回时与 {@code searchClient.isEnabled()} 联用。 */
     public static final String CONFIG_SEARCH_ENABLED = "search.enabled";
 
     private final SearchClient searchClient;
-    private final SystemConfigReader systemConfigReader;
 
     private volatile boolean indexReady;
 
     /**
-     * 构造索引服务。
+     * 是否可走 ES 召回。
+     * <p>
+     * 暂时强制关闭，用户端列表/热门/推荐一律走 SQL；恢复 ES 时改回：
+     * {@code searchClient.isEnabled() && systemConfigReader.getBoolean(CONFIG_SEARCH_ENABLED, false)}。
      *
-     * @param searchClient       搜索门面（yml 控制 Noop / 真实客户端）
-     * @param systemConfigReader 系统配置（search.enabled 热开关）
+     * @return 当前恒为 false（SQL）
      * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public DishSearchIndexService(SearchClient searchClient, SystemConfigReader systemConfigReader) {
-        this.searchClient = searchClient;
-        this.systemConfigReader = systemConfigReader;
-    }
-
-    /**
-     * 是否可走 ES 召回：客户端已启用 且 系统配置 search.enabled=true。
-     *
-     * @return true 表示业务应优先 ES，否则回退数据库
-     * @history 1.00 2026-09-08 XieMingJie Created.
+     * @history 1.01 2026-09-09 XieMingJie 暂时强制 SQL，不走 ES 召回.
      */
     public boolean isRecallEnabled() {
-        return searchClient.isEnabled()
-                && systemConfigReader.getBoolean(CONFIG_SEARCH_ENABLED, false);
+        return false;
     }
 
     /**

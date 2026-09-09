@@ -16,7 +16,7 @@ import lombok.experimental.Accessors;
 import java.io.Serial;
 
 /**
- * 微信登录请求。
+ * 微信登录请求。仅 code 必填；资料字段可选（兼容旧客户端补全）。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:06
@@ -38,19 +38,16 @@ public class WxLoginDto extends BaseDto {
     @Schema(description = "微信临时登录 code", requiredMode = Schema.RequiredMode.REQUIRED)
     private String code;
 
-    @NotBlank
     @Size(max = 64)
-    @Schema(description = "用户名", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "用户名，可选；缺省时服务端按 openid 生成")
     private String username;
 
-    @NotBlank
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
-    @Schema(description = "手机号", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "手机号，可选")
     private String phone;
 
-    @NotBlank
     @Size(max = 64)
-    @Schema(description = "微信号", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "微信号，可选")
     private String wechatId;
 
     @Size(max = 64)

@@ -30,8 +30,11 @@ public class SysConfigSaveDto {
     @Schema(description = "配置键")
     private String configKey;
 
-    @Schema(description = "配置值")
+    @Schema(description = "配置值；敏感配置更新时留空表示保留原值")
     private String configValue;
+
+    @Schema(description = "是否敏感")
+    private Boolean sensitive;
 
     @Schema(description = "值类型 STRING/NUMBER/BOOLEAN/JSON")
     private String valueType;

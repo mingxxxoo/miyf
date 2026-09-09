@@ -5,6 +5,7 @@ import cn.miyf.common.ErrorCode;
 import cn.miyf.notification.entity.SysInboxMessageEntity;
 import cn.miyf.notification.repository.mapper.SysInboxMessageMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -17,13 +18,10 @@ import java.util.List;
  * @since 2026-09-06
  */
 @Component
+@RequiredArgsConstructor
 public class InboxNotificationSender implements NotificationSender {
 
     private final SysInboxMessageMapper sysInboxMessageMapper;
-
-    public InboxNotificationSender(SysInboxMessageMapper sysInboxMessageMapper) {
-        this.sysInboxMessageMapper = sysInboxMessageMapper;
-    }
 
     @Override
     public NotificationChannel channel() {

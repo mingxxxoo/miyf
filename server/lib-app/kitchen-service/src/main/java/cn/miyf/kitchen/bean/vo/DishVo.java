@@ -1,7 +1,7 @@
 package cn.miyf.kitchen.bean.vo;
 
 import cn.miyf.bean.vo.BaseVo;
-
+import cn.miyf.oss.security.FileAccess;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -56,6 +56,7 @@ public class DishVo extends BaseVo {
     @Schema(description = "简介")
     private String description;
 
+    @FileAccess
     @Schema(description = "封面图")
     private String coverImage;
 
@@ -83,6 +84,7 @@ public class DishVo extends BaseVo {
     @Schema(description = "评价人数")
     private Integer ratingCount;
 
+    @FileAccess
     @Schema(description = "图片列表")
     private List<String> images;
 }

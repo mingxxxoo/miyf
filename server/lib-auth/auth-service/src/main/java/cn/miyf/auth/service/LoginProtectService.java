@@ -2,12 +2,12 @@ package cn.miyf.auth.service;
 
 import cn.miyf.auth.bean.vo.CaptchaVo;
 import cn.miyf.auth.bean.vo.LoginRiskVo;
+import cn.miyf.auth.cache.AuthCacheKeys;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.config.RedisAppProperties;
-import cn.miyf.infrastructure.redis.CacheKeys;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -26,14 +26,15 @@ import java.util.concurrent.TimeUnit;
  * 管理端登录风控：失败累计、验证码（≥3）、阶梯封禁（≥6）。
  * <p>
  * 阶梯：6→5min，7→10min，8→30min，9→2h，≥10→24h；成功登录清零。
+ * Redis 已启用时读写失败一律拒绝登录（fail-closed），避免风控失效。
  *
  * @author XieMingJie
  * @since 2026-09-06
  */
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class LoginProtectService {
-
-    private static final Logger log = LoggerFactory.getLogger(LoginProtectService.class);
 
     /**
      * 验证码门槛
@@ -62,18 +63,6 @@ public class LoginProtectService {
 
     private final StringRedisTemplate stringRedisTemplate;
     private final RedisAppProperties properties;
-
-    /**
-     * 构造登录风控服务。
-     *
-     * @param stringRedisTemplate Redis
-     * @param properties          配置
-     * @history 1.00 2026-09-06 XieMingJie Created.
-     */
-    public LoginProtectService(StringRedisTemplate stringRedisTemplate, RedisAppProperties properties) {
-        this.stringRedisTemplate = stringRedisTemplate;
-        this.properties = properties;
-    }
 
     /**
      * 查询登录风控状态。
@@ -138,7 +127,7 @@ public class LoginProtectService {
             return status(principalKey);
         }
         try {
-            String failKey = CacheKeys.loginFail(principalKey);
+            String failKey = AuthCacheKeys.loginFail(principalKey);
             Long count = stringRedisTemplate.opsForValue().increment(failKey);
             if (count != null && count == 1L) {
                 stringRedisTemplate.expire(failKey, FAIL_WINDOW_SECONDS, TimeUnit.SECONDS);
@@ -148,32 +137,46 @@ public class LoginProtectService {
                 long lockSec = lockSecondsForFailCount(failCount);
                 long until = Instant.now().getEpochSecond() + lockSec;
                 stringRedisTemplate.opsForValue().set(
-                        CacheKeys.loginLock(principalKey),
+                        AuthCacheKeys.loginLock(principalKey),
                         String.valueOf(until),
                         lockSec,
                         TimeUnit.SECONDS);
             }
         } catch (Exception ex) {
-            log.warn("record login failure failed. principal={}", principalKey, ex);
+            log.error("record login failure failed. principal={}", principalKey, ex);
+            throw redisUnavailable();
         }
         return status(principalKey);
     }
 
     /**
      * 登录成功清除风控状态。
+     * 删除失败时尝试将残留键 TTL 缩短为 1 秒，并返回 false 供登录响应提示。
      *
      * @param principalKey 主体
+     * @return true 已清理或 Redis 未启用；false 清理失败（已尽力缩短残留 TTL）
      * @history 1.00 2026-09-06 XieMingJie Created.
      */
-    public void clear(String principalKey) {
+    public boolean clear(String principalKey) {
         if (!properties.isEnabled()) {
-            return;
+            return true;
         }
+        String failKey = AuthCacheKeys.loginFail(principalKey);
+        String lockKey = AuthCacheKeys.loginLock(principalKey);
         try {
-            stringRedisTemplate.delete(CacheKeys.loginFail(principalKey));
-            stringRedisTemplate.delete(CacheKeys.loginLock(principalKey));
+            stringRedisTemplate.delete(failKey);
+            stringRedisTemplate.delete(lockKey);
+            return true;
         } catch (Exception ex) {
-            log.warn("clear login protect failed. principal={}", principalKey, ex);
+            log.error("ALERT clear login protect failed. principal={}", principalKey, ex);
+            try {
+                // 兜底：尽快过期残留失败态，避免登录成功后长期触发验证码/封禁
+                stringRedisTemplate.expire(failKey, 1, TimeUnit.SECONDS);
+                stringRedisTemplate.expire(lockKey, 1, TimeUnit.SECONDS);
+            } catch (Exception expireEx) {
+                log.error("ALERT shorten login protect TTL failed. principal={}", principalKey, expireEx);
+            }
+            return false;
         }
     }
 
@@ -188,7 +191,7 @@ public class LoginProtectService {
         String captchaId = UUID.randomUUID().toString().replace("-", "");
         try {
             stringRedisTemplate.opsForValue().set(
-                    CacheKeys.captcha(captchaId),
+                    AuthCacheKeys.captcha(captchaId),
                     code.toLowerCase(),
                     CAPTCHA_TTL_SECONDS,
                     TimeUnit.SECONDS);
@@ -204,7 +207,7 @@ public class LoginProtectService {
     }
 
     private void verifyCaptcha(String captchaId, String captchaCode) {
-        String key = CacheKeys.captcha(captchaId);
+        String key = AuthCacheKeys.captcha(captchaId);
         try {
             String expect = stringRedisTemplate.opsForValue().get(key);
             stringRedisTemplate.delete(key);
@@ -224,14 +227,17 @@ public class LoginProtectService {
             return 0;
         }
         try {
-            String raw = stringRedisTemplate.opsForValue().get(CacheKeys.loginFail(principalKey));
+            String raw = stringRedisTemplate.opsForValue().get(AuthCacheKeys.loginFail(principalKey));
             if (raw == null) {
                 return 0;
             }
             return Integer.parseInt(raw);
-        } catch (Exception ex) {
-            log.warn("read fail count failed", ex);
+        } catch (NumberFormatException ex) {
+            log.warn("invalid fail count value", ex);
             return 0;
+        } catch (Exception ex) {
+            log.error("read fail count failed", ex);
+            throw redisUnavailable();
         }
     }
 
@@ -240,16 +246,23 @@ public class LoginProtectService {
             return null;
         }
         try {
-            String raw = stringRedisTemplate.opsForValue().get(CacheKeys.loginLock(principalKey));
+            String raw = stringRedisTemplate.opsForValue().get(AuthCacheKeys.loginLock(principalKey));
             if (raw == null) {
                 return null;
             }
             long epochSec = Long.parseLong(raw);
             return epochSec * 1000L;
-        } catch (Exception ex) {
-            log.warn("read lock failed", ex);
+        } catch (NumberFormatException ex) {
+            log.warn("invalid lock value", ex);
             return null;
+        } catch (Exception ex) {
+            log.error("read lock failed", ex);
+            throw redisUnavailable();
         }
+    }
+
+    private static BusinessException redisUnavailable() {
+        return new BusinessException(ErrorCode.INTERNAL_ERROR, "登录风控服务暂不可用，请稍后重试");
     }
 
     private static long lockSecondsForFailCount(int failCount) {

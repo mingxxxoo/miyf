@@ -1,127 +1,159 @@
 package cn.miyf.kitchen.repository;
 
-import cn.miyf.common.PageResult;
-import cn.miyf.kitchen.bean.model.Dish;
-import cn.miyf.repository.BaseRepository;
+import cn.miyf.kitchen.bean.entity.DishEntity;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 菜品领域仓储。
- * <p>
- * 继承 {@link BaseRepository} 获得单表 CRUD；分页/库存/评分等复杂能力在此扩展。
+ * 菜品数据访问接口（MyBatis Mapper）。
+ * 单表 CRUD 继承 {@link BaseMapper}；分页/热门/库存/评分等复杂 SQL 见 DishRepository.xml。
+ * 合并原 DishMapper；图集与分类名 enrich 由 DishApplicationService 编排。
  *
  * @author XieMingJie
  * @since 2026-09-04 16:35
  */
-public interface DishRepository extends BaseRepository<Dish, Long> {
+@Mapper
+public interface DishRepository extends BaseMapper<DishEntity> {
 
     /**
-     * 用户端分页（仅 ON_SALE）。
+     * 用户端分页查询已上架菜品，支持分类、关键词与推荐筛选。
      *
-     * @param categoryId 分类，可空
+     * @param categoryId 分类 ID，可空
      * @param keyword    关键词，可空
-     * @param recommend  是否推荐，可空
-     * @param page       页码
-     * @param pageSize   每页条数
-     * @return 分页结果
+     * @param recommend  是否仅推荐，可空
+     * @param offset     偏移量
+     * @param limit      条数
+     * @return 菜品实体列表
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
-    PageResult<Dish> pageUser(Long categoryId, String keyword, Boolean recommend, long page, long pageSize);
+    List<DishEntity> selectUserPage(@Param("categoryId") Long categoryId,
+                                    @Param("keyword") String keyword,
+                                    @Param("recommend") Boolean recommend,
+                                    @Param("offset") long offset,
+                                    @Param("limit") long limit);
 
     /**
-     * 管理端分页。
+     * 用户端分页总数，条件与 {@link #selectUserPage} 一致。
      *
-     * @param categoryId 分类，可空
+     * @param categoryId 分类 ID，可空
+     * @param keyword    关键词，可空
+     * @param recommend  是否仅推荐，可空
+     * @return 总数
+     * @history 1.00 2026-09-04 16:35 XieMingJie Created.
+     */
+    long countUserPage(@Param("categoryId") Long categoryId,
+                       @Param("keyword") String keyword,
+                       @Param("recommend") Boolean recommend);
+
+    /**
+     * 管理端分页查询，可按分类、状态、关键词筛选。
+     *
+     * @param categoryId 分类 ID，可空
      * @param status     状态，可空
      * @param keyword    关键词，可空
-     * @param page       页码
-     * @param pageSize   每页条数
-     * @return 分页结果
+     * @param offset     偏移量
+     * @param limit      条数
+     * @return 菜品实体列表
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
-    PageResult<Dish> pageAdmin(Long categoryId, String status, String keyword, long page, long pageSize);
+    List<DishEntity> selectAdminPage(@Param("categoryId") Long categoryId,
+                                     @Param("status") String status,
+                                     @Param("keyword") String keyword,
+                                     @Param("offset") long offset,
+                                     @Param("limit") long limit);
 
     /**
-     * 热门菜品列表。
+     * 管理端分页总数，条件与 {@link #selectAdminPage} 一致。
+     *
+     * @param categoryId 分类 ID，可空
+     * @param status     状态，可空
+     * @param keyword    关键词，可空
+     * @return 总数
+     * @history 1.00 2026-09-04 16:35 XieMingJie Created.
+     */
+    long countAdminPage(@Param("categoryId") Long categoryId,
+                        @Param("status") String status,
+                        @Param("keyword") String keyword);
+
+    /**
+     * 热门菜品列表：按评分、评价数降序。
      *
      * @param limit 条数
-     * @return 列表
+     * @return 菜品列表
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
-    List<Dish> findHot(int limit);
+    List<DishEntity> selectHot(@Param("limit") int limit);
 
     /**
-     * 推荐菜品列表。
+     * 今日推荐菜品列表。
      *
      * @param limit 条数
-     * @return 列表
+     * @return 菜品列表
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
-    List<Dish> findRecommend(int limit);
+    List<DishEntity> selectRecommend(@Param("limit") int limit);
 
     /**
-     * 有限量库存原子扣减。
+     * 有限量模式下原子扣减可提供份数。
+     * SQL 条件包含 stock &gt;= qty，影响行数为 0 表示并发下库存不足。
      *
-     * @param dishId   菜品 ID
-     * @param quantity 数量
-     * @return true 扣减成功
+     * @param id  菜品 ID
+     * @param qty 扣减数量
+     * @return 影响行数，0 表示扣减失败
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
-    boolean deductStock(Long dishId, int quantity);
+    int deductStock(@Param("id") Long id, @Param("qty") int qty);
 
     /**
-     * 有限量库存回补。
+     * 有限量模式下回补可提供份数，用于取消预约等回滚场景。
      *
-     * @param dishId   菜品 ID
-     * @param quantity 数量
+     * @param id  菜品 ID
+     * @param qty 回补数量
+     * @return 影响行数
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
-    void restoreStock(Long dishId, int quantity);
+    int restoreStock(@Param("id") Long id, @Param("qty") int qty);
 
     /**
-     * 写入聚合评分。
+     * 写入菜品聚合评分；仅应由评论域在隐藏/恢复/删除后触发，禁止管理端直接改。
      *
-     * @param dishId      菜品 ID
+     * @param id          菜品 ID
      * @param rating      平均分
-     * @param ratingCount 评价数
+     * @param ratingCount 有效评价数
+     * @return 影响行数
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
-    void updateRating(Long dishId, BigDecimal rating, int ratingCount);
+    int updateRating(@Param("id") Long id,
+                     @Param("rating") BigDecimal rating,
+                     @Param("ratingCount") int ratingCount);
 
     /**
-     * 替换菜品图集（先删后插）。
+     * 统计菜品在历史预约明细中的出现次数；大于 0 时删除应走逻辑删除。
      *
-     * @param dishId    菜品 ID
-     * @param imageUrls 图片 URL 列表
+     * @param dishId 菜品 ID
+     * @return 明细条数
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
-    void replaceImages(Long dishId, List<String> imageUrls);
+    long countOrderItems(@Param("dishId") Long dishId);
 
     /**
-     * 上架菜品数量。
+     * 统计上架菜品数量，供仪表盘展示。
      *
-     * @return 数量
+     * @return 上架数
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
     long countOnSale();
 
     /**
-     * 是否存在预约历史（决定删除策略）。
-     *
-     * @param dishId 菜品 ID
-     * @return true 表示有历史
-     * @history 1.00 2026-09-04 16:35 XieMingJie Created.
-     */
-    boolean hasOrderHistory(Long dishId);
-
-    /**
-     * 统计分类下未删除菜品数量。
+     * 统计分类下未删除菜品数，删除分类前用于冲突校验。
      *
      * @param categoryId 分类 ID
      * @return 菜品数
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
-    long countByCategoryId(Long categoryId);
+    long countByCategoryId(@Param("categoryId") Long categoryId);
 }

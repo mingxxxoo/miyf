@@ -72,7 +72,7 @@ public class HealthProperties {
         /**
          * 为 true 时不调真实华为接口，返回演示采样（本地联调）
          */
-        private boolean mockEnabled = true;
+        private boolean mockEnabled = false;
         private String clientId = "";
         private String clientSecret = "";
         private String redirectUri = "http://localhost:5173/health/providers";

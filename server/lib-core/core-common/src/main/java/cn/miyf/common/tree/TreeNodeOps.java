@@ -1,5 +1,7 @@
 package cn.miyf.common.tree;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -13,6 +15,7 @@ import java.util.function.Function;
  * @author XieMingJie
  * @since 2026-09-08
  */
+@RequiredArgsConstructor
 public final class TreeNodeOps<T, K> {
 
     private final Function<T, K> idGetter;
@@ -20,25 +23,7 @@ public final class TreeNodeOps<T, K> {
     private final Function<T, List<T>> childrenGetter;
     private final BiConsumer<T, List<T>> childrenSetter;
 
-    /**
-     * 构造节点字段访问器。
-     *
-     * @param idGetter        主键（本节点编码）
-     * @param parentGetter    父编码字段（可定制为 parentId / parentCode 等）
-     * @param childrenGetter  子节点列表读取
-     * @param childrenSetter  子节点列表写入
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public TreeNodeOps(Function<T, K> idGetter,
-                       Function<T, K> parentGetter,
-                       Function<T, List<T>> childrenGetter,
-                       BiConsumer<T, List<T>> childrenSetter) {
-        this.idGetter = idGetter;
-        this.parentGetter = parentGetter;
-        this.childrenGetter = childrenGetter;
-        this.childrenSetter = childrenSetter;
-    }
-
+    
     /**
      * @return 主键读取
      * @history 1.00 2026-09-08 XieMingJie Created.

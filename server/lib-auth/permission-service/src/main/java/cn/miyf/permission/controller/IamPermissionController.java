@@ -7,6 +7,7 @@ import cn.miyf.permission.bean.vo.SysPermissionTreeVo;
 import cn.miyf.permission.service.PermissionApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,21 +24,13 @@ import java.util.List;
 @Tag(name = "IAM-权限")
 @IamAdminPopedom
 @RestController
-@RequestMapping("/api/iam/permissions")
+@RequestMapping("/iam/permissions")
+@RequiredArgsConstructor
 public class IamPermissionController {
 
     private final PermissionApplicationService permissionApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param permissionApplicationService 权限应用服务
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public IamPermissionController(PermissionApplicationService permissionApplicationService) {
-        this.permissionApplicationService = permissionApplicationService;
-    }
-
+    
     /**
      * 查询权限点无限极树（服务端 TreeUtils 组树）。
      *

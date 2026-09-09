@@ -3,6 +3,7 @@ package cn.miyf.service;
 import cn.miyf.bean.entity.SysConfigEntity;
 import cn.miyf.repository.mapper.SysConfigMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -17,20 +18,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 2026-09-08
  */
 @Service
+@RequiredArgsConstructor
 public class SystemConfigReader {
 
     private final SysConfigMapper configMapper;
     private final Map<String, String> cache = new ConcurrentHashMap<>();
-
-    /**
-     * 构造读取器。
-     *
-     * @param configMapper 配置 Mapper
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public SystemConfigReader(SysConfigMapper configMapper) {
-        this.configMapper = configMapper;
-    }
 
     /**
      * 读取布尔配置；键不存在或非 ENABLED 时返回默认值。

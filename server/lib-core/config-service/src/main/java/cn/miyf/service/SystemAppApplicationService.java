@@ -7,6 +7,7 @@ import cn.miyf.common.ErrorCode;
 import cn.miyf.common.id.SnowflakeIdGenerator;
 import cn.miyf.repository.mapper.SysAppMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -26,17 +27,13 @@ import java.util.Set;
  * @since 2026-09-07
  */
 @Service
+@RequiredArgsConstructor
 public class SystemAppApplicationService {
 
     private static final Set<String> STATUSES = Set.of("ENABLED", "DISABLED");
 
     private final SysAppMapper appMapper;
     private final SnowflakeIdGenerator snowflakeIdGenerator;
-
-    public SystemAppApplicationService(SysAppMapper appMapper, SnowflakeIdGenerator snowflakeIdGenerator) {
-        this.appMapper = appMapper;
-        this.snowflakeIdGenerator = snowflakeIdGenerator;
-    }
 
     /**
      * 应用列表。

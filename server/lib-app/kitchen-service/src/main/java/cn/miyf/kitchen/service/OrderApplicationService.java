@@ -8,6 +8,9 @@ import cn.miyf.common.query.QueryConditionHolder;
 import cn.miyf.kitchen.bean.dto.OrderCreateDto;
 import cn.miyf.kitchen.bean.dto.OrderItemCreateDto;
 import cn.miyf.kitchen.bean.dto.OrderStatusUpdateDto;
+import cn.miyf.kitchen.bean.entity.DishEntity;
+import cn.miyf.kitchen.bean.entity.OrderEntity;
+import cn.miyf.kitchen.bean.entity.OrderItemEntity;
 import cn.miyf.kitchen.bean.model.Dish;
 import cn.miyf.kitchen.bean.model.Order;
 import cn.miyf.kitchen.bean.model.OrderItem;
@@ -16,12 +19,16 @@ import cn.miyf.kitchen.bean.model.order.OrderStatusMachine;
 import cn.miyf.kitchen.bean.qo.OrderPageQo;
 import cn.miyf.kitchen.bean.vo.OrderItemVo;
 import cn.miyf.kitchen.bean.vo.OrderVo;
+import cn.miyf.kitchen.helper.EntityConverters;
 import cn.miyf.kitchen.repository.DishRepository;
+import cn.miyf.kitchen.repository.OrderItemRepository;
 import cn.miyf.kitchen.repository.OrderRepository;
 import cn.miyf.service.BaseApplicationService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -40,31 +47,21 @@ import java.util.stream.Collectors;
  * @since 2026-09-04 17:40
  */
 @Service
+@RequiredArgsConstructor
 public class OrderApplicationService extends BaseApplicationService {
 
     private static final DateTimeFormatter ORDER_NO_TIME = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
     private final DishRepository dishRepository;
-
-    /**
-     * 构造预约服务。
-     *
-     * @param orderRepository 预约仓储
-     * @param dishRepository  菜品仓储
-     * @history 1.00 2026-09-04 17:40 XieMingJie Created.
-     */
-    public OrderApplicationService(OrderRepository orderRepository, DishRepository dishRepository) {
-        this.orderRepository = orderRepository;
-        this.dishRepository = dishRepository;
-    }
 
     /**
      * 用户创建预约：校验上架 → 原子扣库存 → 写单头与明细。
      *
      * @param dto 请求
      * @return 预约 VO（含「厨房收到啦」提示）
-     * @history 1.00 2026-09-04 17:40 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Transactional
     public OrderVo create(OrderCreateDto dto) {
@@ -77,10 +74,10 @@ public class OrderApplicationService extends BaseApplicationService {
         for (Map.Entry<Long, Integer> entry : quantityByDish.entrySet()) {
             Long dishId = entry.getKey();
             int quantity = entry.getValue();
-            Dish dish = requireById(dishRepository, dishId, "菜品不存在");
+            Dish dish = EntityConverters.toDish(requireById(dishRepository, dishId, "菜品不存在"));
             requireTrue("ON_SALE".equals(dish.getStatus()), ErrorCode.INVALID_STATUS, "菜品未上架，暂时不能预约");
             if ("LIMITED".equals(dish.getStockType())) {
-                requireTrue(dishRepository.deductStock(dishId, quantity),
+                requireTrue(dishRepository.deductStock(dishId, quantity) > 0,
                         ErrorCode.STOCK_INSUFFICIENT, "「" + dish.getName() + "」可提供份数不足");
             }
             OrderItem item = new OrderItem();
@@ -98,7 +95,7 @@ public class OrderApplicationService extends BaseApplicationService {
         order.setStatus(OrderStatus.PENDING.name());
         order.setRemark(dto.getRemark());
         order.setItems(items);
-        Order saved = orderRepository.insertWithItems(order);
+        Order saved = insertWithItems(order);
         OrderVo vo = toVo(saved);
         vo.setDisplayTip("厨房收到啦");
         return vo;
@@ -109,7 +106,7 @@ public class OrderApplicationService extends BaseApplicationService {
      *
      * @param qo 查询条件
      * @return 分页
-     * @history 1.00 2026-09-04 17:40 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public PageResult<OrderVo> pageMine(OrderPageQo qo) {
         return QueryConditionHolder.run(qo, "create_time DESC", () -> {
@@ -117,9 +114,12 @@ public class OrderApplicationService extends BaseApplicationService {
             String status = normalizeStatusFilter(qo.getStatus());
             long page = pageOf(qo);
             long pageSize = pageSizeOf(qo);
-            PageResult<Order> result = orderRepository.pageByUser(userId, status, page, pageSize);
-            return PageResult.of(result.records().stream().map(this::toVo).toList(),
-                    result.total(), result.page(), result.pageSize());
+            long off = offset(page, pageSize);
+            List<OrderVo> records = orderRepository.selectUserPage(userId, status, off, pageSize).stream()
+                    .map(e -> toVo(enrichItems(EntityConverters.toOrder(e, null))))
+                    .toList();
+            long total = orderRepository.countUserPage(userId, status);
+            return PageResult.of(records, total, page, pageSize);
         });
     }
 
@@ -128,10 +128,10 @@ public class OrderApplicationService extends BaseApplicationService {
      *
      * @param id 预约 ID
      * @return 详情
-     * @history 1.00 2026-09-04 17:40 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public OrderVo getMine(Long id) {
-        Order order = requireById(orderRepository, id, "预约不存在");
+        Order order = requireOrder(id);
         requireTrue(order.getUserId().equals(SecurityUtils.currentUserId()),
                 ErrorCode.FORBIDDEN, "只能查看自己的预约");
         return toVo(order);
@@ -142,18 +142,18 @@ public class OrderApplicationService extends BaseApplicationService {
      *
      * @param id 预约 ID
      * @return 取消后预约
-     * @history 1.00 2026-09-04 17:40 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Transactional
     public OrderVo cancelMine(Long id) {
-        Order order = requireById(orderRepository, id, "预约不存在");
+        Order order = requireOrder(id);
         requireTrue(order.getUserId().equals(SecurityUtils.currentUserId()),
                 ErrorCode.FORBIDDEN, "只能取消自己的预约");
         OrderStatus current = OrderStatus.from(order.getStatus());
         requireTrue(OrderStatusMachine.canUserCancel(current),
                 ErrorCode.INVALID_STATUS, "当前状态不可取消");
         transitAndRestore(order, OrderStatus.CANCELLED);
-        OrderVo vo = toVo(requireById(orderRepository, id, "预约不存在"));
+        OrderVo vo = toVo(requireOrder(id));
         vo.setDisplayTip("这次预约取消啦");
         return vo;
     }
@@ -163,17 +163,20 @@ public class OrderApplicationService extends BaseApplicationService {
      *
      * @param qo 查询条件
      * @return 分页
-     * @history 1.00 2026-09-04 17:40 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public PageResult<OrderVo> pageAdmin(OrderPageQo qo) {
         return QueryConditionHolder.run(qo, "create_time DESC", () -> {
             String status = normalizeStatusFilter(qo.getStatus());
             long page = pageOf(qo);
             long pageSize = pageSizeOf(qo);
-            PageResult<Order> result = orderRepository.pageAdmin(
-                    status, qo.getOrderNo(), qo.getUserId(), page, pageSize);
-            return PageResult.of(result.records().stream().map(this::toVo).toList(),
-                    result.total(), result.page(), result.pageSize());
+            long off = offset(page, pageSize);
+            List<OrderVo> records = orderRepository.selectAdminPage(
+                            status, qo.getOrderNo(), qo.getUserId(), off, pageSize).stream()
+                    .map(e -> toVo(enrichItems(EntityConverters.toOrder(e, null))))
+                    .toList();
+            long total = orderRepository.countAdminPage(status, qo.getOrderNo(), qo.getUserId());
+            return PageResult.of(records, total, page, pageSize);
         });
     }
 
@@ -182,10 +185,10 @@ public class OrderApplicationService extends BaseApplicationService {
      *
      * @param id 预约 ID
      * @return 详情
-     * @history 1.00 2026-09-04 17:40 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public OrderVo getAdmin(Long id) {
-        return toVo(requireById(orderRepository, id, "预约不存在"));
+        return toVo(requireOrder(id));
     }
 
     /**
@@ -194,28 +197,89 @@ public class OrderApplicationService extends BaseApplicationService {
      * @param id  预约 ID
      * @param dto 目标状态
      * @return 更新后预约
-     * @history 1.00 2026-09-04 17:40 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Transactional
     public OrderVo updateStatusAdmin(Long id, OrderStatusUpdateDto dto) {
-        Order order = requireById(orderRepository, id, "预约不存在");
+        Order order = requireOrder(id);
         OrderStatus target = parseStatus(dto.getStatus());
         assertAdminPermissionForTarget(target);
         transitAndRestore(order, target);
-        return toVo(requireById(orderRepository, id, "预约不存在"));
+        return toVo(requireOrder(id));
     }
 
     /**
-     * 状态流转；若目标为 CANCELLED 则回补 LIMITED 份数。
+     * 插入预约头并写入明细；明细 orderId 绑定头表主键。
+     *
+     * @param order 预约（含明细）
+     * @return 含明细的预约
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    private Order insertWithItems(Order order) {
+        OrderEntity entity = EntityConverters.toOrderEntity(order);
+        insert(orderRepository, entity);
+        Instant now = Instant.now();
+        List<OrderItem> items = order.getItems() == null ? List.of() : order.getItems();
+        for (OrderItem item : items) {
+            OrderItemEntity itemEntity = new OrderItemEntity();
+            itemEntity.setOrderId(entity.getId());
+            itemEntity.setDishId(item.getDishId());
+            itemEntity.setDishName(item.getDishName());
+            itemEntity.setQuantity(item.getQuantity());
+            // 未传单位时默认「份」，与前端展示约定一致
+            itemEntity.setUnit(item.getUnit() == null ? "份" : item.getUnit());
+            itemEntity.setRemark(item.getRemark());
+            itemEntity.setCreateTime(now);
+            orderItemRepository.insert(itemEntity);
+            item.setId(itemEntity.getId());
+            item.setOrderId(entity.getId());
+            item.setCreateTime(now);
+        }
+        Order saved = EntityConverters.toOrder(entity, null);
+        saved.setItems(new ArrayList<>(items));
+        return saved;
+    }
+
+    /**
+     * 按 ID 加载预约并装载明细，不存在则抛出。
+     *
+     * @param id 预约 ID
+     * @return 含明细的预约
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    private Order requireOrder(Long id) {
+        return enrichItems(EntityConverters.toOrder(requireById(orderRepository, id, "预约不存在"), null));
+    }
+
+    /**
+     * 装载预约明细列表。
+     *
+     * @param order 预约头
+     * @return 含明细的预约
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    private Order enrichItems(Order order) {
+        if (order == null) {
+            return null;
+        }
+        List<OrderItemEntity> items = orderItemRepository.selectByOrderId(order.getId());
+        order.setItems(items.stream().map(EntityConverters::toOrderItem).toList());
+        return order;
+    }
+
+    /**
+     * 状态流转；目标为 CANCELLED 时回补 LIMITED 份数。
+     * 乐观锁更新失败表示并发冲突，需刷新后重试。
      *
      * @param order  当前预约（含明细）
      * @param target 目标状态
-     * @history 1.00 2026-09-04 17:40 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private void transitAndRestore(Order order, OrderStatus target) {
         OrderStatus from = OrderStatus.from(order.getStatus());
         OrderStatusMachine.assertTransit(from, target);
-        boolean updated = orderRepository.updateStatus(order.getId(), from.name(), target.name());
+        // updateStatus 仅当当前状态仍为 from 时成功
+        boolean updated = orderRepository.updateStatus(order.getId(), from.name(), target.name()) > 0;
         requireTrue(updated, ErrorCode.CONFLICT, "预约状态已变更，请刷新后重试");
         if (target == OrderStatus.CANCELLED) {
             restoreStock(order);
@@ -226,7 +290,7 @@ public class OrderApplicationService extends BaseApplicationService {
      * 取消时回补 LIMITED 菜品份数；UNLIMITED 不处理。
      *
      * @param order 预约（含明细）
-     * @history 1.00 2026-09-04 17:40 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private void restoreStock(Order order) {
         if (order.getItems() == null) {
@@ -242,7 +306,7 @@ public class OrderApplicationService extends BaseApplicationService {
      * 管理端按目标状态校验权限码。
      *
      * @param target 目标状态
-     * @history 1.00 2026-09-04 17:40 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private void assertAdminPermissionForTarget(OrderStatus target) {
         var principal = SecurityUtils.requireAdmin();
@@ -333,11 +397,10 @@ public class OrderApplicationService extends BaseApplicationService {
                 .collect(Collectors.toSet());
         Map<Long, String> covers = new LinkedHashMap<>();
         for (Long dishId : dishIds) {
-            dishRepository.findById(dishId).ifPresent(dish -> {
-                if (dish.getCoverImage() != null && !dish.getCoverImage().isBlank()) {
-                    covers.put(dishId, dish.getCoverImage());
-                }
-            });
+            DishEntity dish = dishRepository.selectById(dishId);
+            if (dish != null && dish.getCoverImage() != null && !dish.getCoverImage().isBlank()) {
+                covers.put(dishId, dish.getCoverImage());
+            }
         }
         return covers;
     }

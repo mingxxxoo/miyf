@@ -43,7 +43,8 @@ class MinioFileStorageServiceTest {
         properties.setType("minio");
         properties.setEndpoint("http://localhost:9000");
         properties.setBucket("miyf");
-        properties.setBaseUrl("http://localhost:9000/miyf");
+        properties.setBaseUrl("http://localhost:8080");
+        properties.setPathNamespace("miyf");
         properties.setAccessKey("minioadmin");
         properties.setSecretKey("minioadmin");
         properties.setMaxSizeBytes(1024);
@@ -56,22 +57,33 @@ class MinioFileStorageServiceTest {
     @Test
     void store_shouldPutValidJpeg() throws Exception {
         byte[] jpeg = new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x00, 0x01};
-        StoredFile stored = storage.store(new ByteArrayInputStream(jpeg), jpeg.length, "image/jpeg", "a.jpg");
+        String path = "miyf/kitchen/2026/09/9";
+        StoredFile stored = storage.store(new ByteArrayInputStream(jpeg), jpeg.length, "image/jpeg", path);
         assertEquals("image/jpeg", stored.contentType());
-        assertTrue(stored.url().startsWith("http://localhost:9000/miyf/"));
-        assertTrue(stored.objectKey().endsWith(".jpg"));
+        assertEquals(path, stored.path());
+        assertEquals(32, stored.md5().length());
+        assertEquals("http://localhost:8080/r/9", StoragePathUtils.publicResourceUrl(properties.getBaseUrl(), 9L));
         ArgumentCaptor<PutObjectArgs> captor = ArgumentCaptor.forClass(PutObjectArgs.class);
         verify(minioClient).putObject(captor.capture());
         assertEquals("miyf", captor.getValue().bucket());
-        assertEquals(stored.objectKey(), captor.getValue().object());
+        assertEquals(stored.path(), captor.getValue().object());
     }
 
     @Test
     void store_shouldRejectInvalidMagicBeforePut() {
         byte[] data = new byte[]{0x00, 0x01, 0x02};
         BusinessException ex = assertThrows(BusinessException.class,
-                () -> storage.store(new ByteArrayInputStream(data), data.length, "image/png", "x.png"));
+                () -> storage.store(new ByteArrayInputStream(data), data.length, "image/png", "miyf/health/2026/09/1"));
         assertEquals(ErrorCode.INVALID_FILE.getCode(), ex.getCode());
     }
+
+    @Test
+    void buildStoragePath_shouldSegmentByApp() {
+        String kitchen = StoragePathUtils.buildStoragePath("miyf", "kitchen", 1L);
+        String health = StoragePathUtils.buildStoragePath("miyf", "health", 2L);
+        assertTrue(kitchen.startsWith("miyf/kitchen/"));
+        assertTrue(health.startsWith("miyf/health/"));
+        assertTrue(kitchen.endsWith("/1"));
+        assertTrue(health.endsWith("/2"));
+    }
 }
-

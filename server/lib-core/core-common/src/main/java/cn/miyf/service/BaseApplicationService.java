@@ -1,20 +1,23 @@
 package cn.miyf.service;
 
+import cn.miyf.bean.entity.BaseEntity;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.common.PageResult;
 import cn.miyf.common.query.AbstractCondition;
-import cn.miyf.repository.BaseRepository;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
- * 应用层通用基类：分页规范化、存在性校验，以及仓储单表 CRUD / 批量操作封装。
+ * 应用层通用基类：分页规范化、存在性校验，以及 Mapper 单表 CRUD / 批量操作封装。
  * <p>
- * 业务编排放在具体 Service；数据访问只依赖 Repository 接口，不直接依赖 Mapper。
+ * 业务编排放在具体 Service；数据访问依赖 {@link BaseMapper} 接口。
  * 单表按 ID 删除/修改、新数据保存请优先调用本类方法，避免各业务重复编写。
  *
  * @author XieMingJie
@@ -166,32 +169,32 @@ public abstract class BaseApplicationService {
     /**
      * 按主键加载，不存在则抛出。
      *
-     * @param repository 仓储
-     * @param id         主键
-     * @param message    不存在提示
-     * @param <T>        领域类型
-     * @return 领域对象
+     * @param mapper  Mapper
+     * @param id      主键
+     * @param message 不存在提示
+     * @param <E>     实体类型
+     * @return 实体
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
-    protected <T> T requireById(BaseRepository<T, Long> repository, Long id, String message) {
-        return requireFound(repository.findById(id), message);
+    protected <E> E requireById(BaseMapper<E> mapper, Long id, String message) {
+        return requireFound(mapper.selectById(id), message);
     }
 
     /**
      * 按主键集合加载；任一条不存在则抛出。
      *
-     * @param repository 仓储
-     * @param ids        主键集合
-     * @param message    不存在提示
-     * @param <T>        领域类型
-     * @return 领域对象列表
+     * @param mapper  Mapper
+     * @param ids     主键集合
+     * @param message 不存在提示
+     * @param <E>     实体类型
+     * @return 实体列表
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
-    protected <T> List<T> requireByIds(BaseRepository<T, Long> repository, Collection<Long> ids, String message) {
+    protected <E> List<E> requireByIds(BaseMapper<E> mapper, Collection<Long> ids, String message) {
         if (ids == null || ids.isEmpty()) {
             return Collections.emptyList();
         }
-        List<T> list = repository.findByIds(ids);
+        List<E> list = mapper.selectBatchIds(ids);
         requireTrue(list.size() == ids.size(), ErrorCode.NOT_FOUND, message);
         return list;
     }
@@ -199,102 +202,147 @@ public abstract class BaseApplicationService {
     /**
      * 插入新数据。
      *
-     * @param repository 仓储
-     * @param domain     领域对象
-     * @param <T>        领域类型
-     * @return 插入后对象
+     * @param mapper Mapper
+     * @param entity 实体
+     * @param <E>    实体类型
+     * @return 插入后实体
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
-    protected <T> T insert(BaseRepository<T, Long> repository, T domain) {
-        return repository.insert(domain);
+    protected <E extends BaseEntity> E insert(BaseMapper<E> mapper, E entity) {
+        mapper.insert(entity);
+        return entity;
     }
 
     /**
      * 批量插入新数据。
      *
-     * @param repository 仓储
-     * @param domains    领域对象集合
-     * @param <T>        领域类型
+     * @param mapper   Mapper
+     * @param entities 实体集合
+     * @param <E>      实体类型
      * @return 插入后列表
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
-    protected <T> List<T> insertAll(BaseRepository<T, Long> repository, Collection<T> domains) {
-        return repository.insertAll(domains);
+    protected <E extends BaseEntity> List<E> insertAll(BaseMapper<E> mapper, Collection<E> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Db.saveBatch(entities);
+        return List.copyOf(entities);
     }
 
     /**
      * 按主键更新。
      *
-     * @param repository 仓储
-     * @param domain     领域对象（须带主键）
-     * @param <T>        领域类型
-     * @return 更新后对象
+     * @param mapper Mapper
+     * @param entity 实体（须带主键）
+     * @param <E>    实体类型
+     * @return 更新后实体
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
-    protected <T> T update(BaseRepository<T, Long> repository, T domain) {
-        return repository.update(domain);
+    protected <E extends BaseEntity> E update(BaseMapper<E> mapper, E entity) {
+        mapper.updateById(entity);
+        return entity;
     }
 
     /**
      * 批量按主键更新。
      *
-     * @param repository 仓储
-     * @param domains    领域对象集合
-     * @param <T>        领域类型
+     * @param mapper   Mapper
+     * @param entities 实体集合
+     * @param <E>      实体类型
      * @return 更新后列表
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
-    protected <T> List<T> updateAll(BaseRepository<T, Long> repository, Collection<T> domains) {
-        return repository.updateAll(domains);
+    protected <E extends BaseEntity> List<E> updateAll(BaseMapper<E> mapper, Collection<E> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Db.updateBatchById(entities);
+        return List.copyOf(entities);
     }
 
     /**
      * 保存（无主键插入，有主键更新）。
      *
-     * @param repository 仓储
-     * @param domain     领域对象
-     * @param <T>        领域类型
-     * @return 保存后对象
+     * @param mapper Mapper
+     * @param entity 实体
+     * @param <E>    实体类型
+     * @return 保存后实体
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
-    protected <T> T save(BaseRepository<T, Long> repository, T domain) {
-        return repository.save(domain);
+    protected <E extends BaseEntity> E save(BaseMapper<E> mapper, E entity) {
+        if (entity.getId() == null) {
+            mapper.insert(entity);
+        } else {
+            mapper.updateById(entity);
+        }
+        return entity;
     }
 
     /**
      * 批量保存。
      *
-     * @param repository 仓储
-     * @param domains    领域对象集合
-     * @param <T>        领域类型
+     * @param mapper   Mapper
+     * @param entities 实体集合
+     * @param <E>      实体类型
      * @return 保存后列表
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
-    protected <T> List<T> saveAll(BaseRepository<T, Long> repository, Collection<T> domains) {
-        return repository.saveAll(domains);
+    protected <E extends BaseEntity> List<E> saveAll(BaseMapper<E> mapper, Collection<E> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<E> toInsert = entities.stream().filter(e -> e.getId() == null).toList();
+        List<E> toUpdate = entities.stream().filter(e -> e.getId() != null).toList();
+        if (!toInsert.isEmpty()) {
+            Db.saveBatch(toInsert);
+        }
+        if (!toUpdate.isEmpty()) {
+            Db.updateBatchById(toUpdate);
+        }
+        return List.copyOf(entities);
     }
 
     /**
      * 按主键物理删除。
      *
-     * @param repository 仓储
-     * @param id         主键
-     * @param <T>        领域类型
+     * @param mapper Mapper
+     * @param id     主键
+     * @param <E>    实体类型
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
-    protected <T> void deleteById(BaseRepository<T, Long> repository, Long id) {
-        repository.deleteById(id);
+    protected <E> void deleteById(BaseMapper<E> mapper, Long id) {
+        mapper.deleteById(id);
     }
 
     /**
      * 按主键集合批量物理删除。
      *
-     * @param repository 仓储
-     * @param ids        主键集合
-     * @param <T>        领域类型
+     * @param mapper Mapper
+     * @param ids    主键集合
+     * @param <E>    实体类型
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
-    protected <T> void deleteByIds(BaseRepository<T, Long> repository, Collection<Long> ids) {
-        repository.deleteByIds(ids);
+    protected <E> void deleteByIds(BaseMapper<E> mapper, Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        List<Long> idList = ids.stream().filter(Objects::nonNull).distinct().toList();
+        if (!idList.isEmpty()) {
+            mapper.deleteBatchIds(idList);
+        }
+    }
+
+    /**
+     * 判断主键是否存在。
+     *
+     * @param mapper Mapper
+     * @param id     主键
+     * @param <E>    实体类型
+     * @return true 表示存在
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    protected <E> boolean existsById(BaseMapper<E> mapper, Long id) {
+        return mapper.selectById(id) != null;
     }
 }

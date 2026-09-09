@@ -346,8 +346,14 @@ export default function HealthProvidersPage({ embedded = false }: { embedded?: b
           locale={{ emptyText: subjectId ? '暂无绑定' : '请先选择主体' }}
           columns={[
             { title: '数据源', dataIndex: 'providerCode', width: 140 },
-            { title: '外部账号', dataIndex: 'externalAccountId' },
-            { title: '凭证引用', dataIndex: 'credentialRef', ellipsis: true },
+            { title: '名称', dataIndex: 'providerDisplayName', width: 140 },
+            { title: '外部账号', dataIndex: 'externalAccountMasked' },
+            {
+              title: '凭证',
+              dataIndex: 'hasCredential',
+              width: 90,
+              render: (v: boolean) => (v ? '已配置' : '未配置'),
+            },
             { title: '状态', dataIndex: 'status', width: 110 },
             { title: '最近同步', dataIndex: 'lastSyncTime', width: 200 },
           ]}

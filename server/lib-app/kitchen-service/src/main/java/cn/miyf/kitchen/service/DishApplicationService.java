@@ -11,11 +11,16 @@ import cn.miyf.infrastructure.cache.ListCache;
 import cn.miyf.infrastructure.search.SearchIdPage;
 import cn.miyf.kitchen.bean.document.DishSearchDocument;
 import cn.miyf.kitchen.bean.dto.DishSaveDto;
+import cn.miyf.kitchen.bean.entity.CategoryEntity;
+import cn.miyf.kitchen.bean.entity.DishEntity;
+import cn.miyf.kitchen.bean.entity.DishImageEntity;
 import cn.miyf.kitchen.bean.model.Dish;
 import cn.miyf.kitchen.bean.qo.DishPageQo;
 import cn.miyf.kitchen.bean.vo.DishVo;
-import cn.miyf.kitchen.constant.CacheKeys;
+import cn.miyf.kitchen.constant.KitchenCacheKeys;
+import cn.miyf.kitchen.helper.EntityConverters;
 import cn.miyf.kitchen.repository.CategoryRepository;
+import cn.miyf.kitchen.repository.DishImageRepository;
 import cn.miyf.kitchen.repository.DishRepository;
 import cn.miyf.kitchen.search.DishSearchIndexService;
 import cn.miyf.service.BaseApplicationService;
@@ -24,15 +29,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 菜品应用服务：用户端只读上架；管理端 CRUD、上下架、推荐与份数。
- * 微信端列表查询优先走 Elasticsearch（仅索引 ON_SALE）；关闭 ES 时回退数据库。
+ * 微信端列表/热门/推荐暂时一律走 SQL；ES 召回已在 {@link DishSearchIndexService#isRecallEnabled()} 关闭。
+ * 数据访问直接使用 {@link DishRepository}/{@link DishImageRepository}（Mapper 接口），
+ * 图集替换、分类名 enrich 与默认字段补齐在本服务编排。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:30
@@ -46,6 +55,7 @@ public class DishApplicationService extends BaseApplicationService {
     private static final int MAX_LIST_LIMIT = 50;
 
     private final DishRepository dishRepository;
+    private final DishImageRepository dishImageRepository;
     private final CategoryRepository categoryRepository;
     private final ListCache<DishVo> dishListCache;
     private final RedisAppProperties redisAppProperties;
@@ -56,20 +66,22 @@ public class DishApplicationService extends BaseApplicationService {
      * 构造菜品服务。
      *
      * @param dishRepository           菜品仓储
+     * @param dishImageRepository      菜品图片仓储
      * @param categoryRepository       分类仓储
      * @param cacheClient              缓存门面
      * @param redisAppProperties       Redis 配置
      * @param kitchenCacheEvictService 失效服务
      * @param dishSearchIndexService   菜品 ES 索引
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     public DishApplicationService(DishRepository dishRepository,
+                                  DishImageRepository dishImageRepository,
                                   CategoryRepository categoryRepository,
                                   CacheClient cacheClient,
                                   RedisAppProperties redisAppProperties,
                                   KitchenCacheEvictService kitchenCacheEvictService,
                                   DishSearchIndexService dishSearchIndexService) {
         this.dishRepository = dishRepository;
+        this.dishImageRepository = dishImageRepository;
         this.categoryRepository = categoryRepository;
         this.dishListCache = cacheClient.lists(DishVo.class);
         this.redisAppProperties = redisAppProperties;
@@ -78,23 +90,26 @@ public class DishApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 用户端分页：仅 ON_SALE；ES 召回开启时与 SQL 共用 AbstractCondition 分页/排序/关键字语义。
+     * 用户端分页：仅 ON_SALE（暂时一律 SQL；ES 召回关闭）。
      *
      * @param qo 查询条件
      * @return 分页 VO
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
     public PageResult<DishVo> pageUser(DishPageQo qo) {
         return QueryConditionHolder.run(qo, DishSearchDocument.DEFAULT_ORDER, () -> {
+            // ES 只返回 ID，再按 ID 顺序回表补充分类名与图集
             if (dishSearchIndexService.isRecallEnabled()) {
                 SearchIdPage idPage = dishSearchIndexService.searchUser(qo);
                 return PageResult.of(hydrateByIds(idPage.ids()), idPage.total(), idPage.page(), idPage.pageSize());
             }
-            PageResult<Dish> result = dishRepository.pageUser(
-                    qo.getCategoryId(), qo.getKeyword(), qo.getRecommend(),
-                    qo.normalizedPage(), qo.normalizedRows());
-            return PageResult.of(result.records().stream().map(this::toVo).toList(),
-                    result.total(), result.page(), result.pageSize());
+            long page = qo.normalizedPage();
+            long pageSize = qo.normalizedRows();
+            long off = offset(page, pageSize);
+            List<DishVo> records = dishRepository.selectUserPage(
+                            qo.getCategoryId(), qo.getKeyword(), qo.getRecommend(), off, pageSize)
+                    .stream().map(e -> toVo(enrich(EntityConverters.toDish(e)))).toList();
+            long total = dishRepository.countUserPage(qo.getCategoryId(), qo.getKeyword(), qo.getRecommend());
+            return PageResult.of(records, total, page, pageSize);
         });
     }
 
@@ -103,54 +118,56 @@ public class DishApplicationService extends BaseApplicationService {
      *
      * @param id 菜品 ID
      * @return 菜品 VO
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public DishVo getUserDetail(Long id) {
-        Dish dish = requireById(dishRepository, id, "菜品不存在");
+        Dish dish = requireDish(id);
         requireTrue("ON_SALE".equals(dish.getStatus()), ErrorCode.NOT_FOUND, "菜品不存在或未上架");
         return toVo(dish);
     }
 
     /**
-     * 热门菜品：rating DESC, rating_count DESC（列表缓存；启用 ES 时从索引召回）。
+     * 热门菜品：rating DESC, rating_count DESC（列表缓存；暂时 SQL）。
      *
      * @param limit 条数
      * @return 列表
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public List<DishVo> listHot(Integer limit) {
         int normalized = normalizeListLimit(limit);
         Duration ttl = Duration.ofSeconds(redisAppProperties.getCache().getHotDishTtlSeconds());
         return dishListCache.getOrLoadList(
-                CacheKeys.dishesHot(normalized),
+                KitchenCacheKeys.dishesHot(normalized),
                 ttl,
                 () -> {
                     if (dishSearchIndexService.isRecallEnabled()) {
                         return hydrateByIds(dishSearchIndexService.searchHotIds(normalized));
                     }
-                    return dishRepository.findHot(normalized).stream().map(this::toVo).toList();
+                    return dishRepository.selectHot(normalized).stream()
+                            .map(e -> toVo(enrich(EntityConverters.toDish(e)))).toList();
                 }
         );
     }
 
     /**
-     * 推荐菜品列表（列表缓存；启用 ES 时从索引召回）。
+     * 推荐菜品列表（列表缓存；暂时 SQL）。
      *
      * @param limit 条数
      * @return 列表
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public List<DishVo> listRecommend(Integer limit) {
         int normalized = normalizeListLimit(limit);
         Duration ttl = Duration.ofSeconds(redisAppProperties.getCache().getHotDishTtlSeconds());
         return dishListCache.getOrLoadList(
-                CacheKeys.dishesRecommend(normalized),
+                KitchenCacheKeys.dishesRecommend(normalized),
                 ttl,
                 () -> {
                     if (dishSearchIndexService.isRecallEnabled()) {
                         return hydrateByIds(dishSearchIndexService.searchRecommendIds(normalized));
                     }
-                    return dishRepository.findRecommend(normalized).stream().map(this::toVo).toList();
+                    return dishRepository.selectRecommend(normalized).stream()
+                            .map(e -> toVo(enrich(EntityConverters.toDish(e)))).toList();
                 }
         );
     }
@@ -160,7 +177,7 @@ public class DishApplicationService extends BaseApplicationService {
      *
      * @param qo 查询条件
      * @return 分页 VO
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public PageResult<DishVo> pageAdmin(DishPageQo qo) {
         if (qo.getStatus() != null && !qo.getStatus().isBlank()) {
@@ -171,10 +188,12 @@ public class DishApplicationService extends BaseApplicationService {
         return QueryConditionHolder.run(qo, "d.sort_order ASC, d.last_modify_time DESC", () -> {
             long page = pageOf(qo);
             long pageSize = pageSizeOf(qo);
-            PageResult<Dish> result = dishRepository.pageAdmin(
-                    qo.getCategoryId(), qo.getStatus(), qo.getKeyword(), page, pageSize);
-            return PageResult.of(result.records().stream().map(this::toVo).toList(),
-                    result.total(), result.page(), result.pageSize());
+            long off = offset(page, pageSize);
+            List<DishVo> records = dishRepository.selectAdminPage(
+                            qo.getCategoryId(), qo.getStatus(), qo.getKeyword(), off, pageSize)
+                    .stream().map(e -> toVo(enrich(EntityConverters.toDish(e)))).toList();
+            long total = dishRepository.countAdminPage(qo.getCategoryId(), qo.getStatus(), qo.getKeyword());
+            return PageResult.of(records, total, page, pageSize);
         });
     }
 
@@ -183,10 +202,10 @@ public class DishApplicationService extends BaseApplicationService {
      *
      * @param id 菜品 ID
      * @return 菜品 VO
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public DishVo getAdminDetail(Long id) {
-        return toVo(requireById(dishRepository, id, "菜品不存在"));
+        return toVo(requireDish(id));
     }
 
     /**
@@ -194,7 +213,7 @@ public class DishApplicationService extends BaseApplicationService {
      *
      * @param dto 请求
      * @return 新建菜品
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Transactional
     public DishVo create(DishSaveDto dto) {
@@ -208,43 +227,43 @@ public class DishApplicationService extends BaseApplicationService {
         dish.setRatingCount(0);
         dish.setCreatedBy(adminId);
         dish.setUpdatedBy(adminId);
-        Dish saved = save(dishRepository, dish);
-        // 草稿不入 ES
+        Dish saved = persistDish(dish);
         kitchenCacheEvictService.evictDishBrowse();
         return toVo(saved);
     }
 
     /**
-     * 更新菜品基础信息（不改状态与评分）；已上架则刷新 ES。
+     * 更新菜品基础信息（不改状态与评分）；刷新浏览缓存。
      *
      * @param id  菜品 ID
      * @param dto 请求
      * @return 更新后菜品
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
+     * @history 1.01 2026-09-09 XieMingJie 暂时去掉 ES 同步，仅 SQL + 缓存失效.
      */
     @Transactional
     public DishVo update(Long id, DishSaveDto dto) {
-        Dish dish = requireById(dishRepository, id, "菜品不存在");
+        Dish dish = requireDish(id);
         validateCategory(dto.getCategoryId());
         validateStock(dto.getStockType(), dto.getStock());
         applyDto(dish, dto, false);
         dish.setUpdatedBy(SecurityUtils.currentAdminId());
-        Dish saved = save(dishRepository, dish);
-        dishSearchIndexService.sync(saved);
+        Dish saved = persistDish(dish);
         kitchenCacheEvictService.evictDishBrowse();
         return toVo(saved);
     }
 
     /**
-     * 上架：DRAFT / OFF_SALE → ON_SALE，并写入 ES。
+     * 上架：DRAFT / OFF_SALE → ON_SALE（写库 + 失效浏览缓存；暂时不写 ES）。
      *
      * @param id 菜品 ID
      * @return 更新后菜品
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
+     * @history 1.01 2026-09-09 XieMingJie 暂时去掉 ES 写入，仅 SQL.
      */
     @Transactional
     public DishVo publish(Long id) {
-        Dish dish = requireById(dishRepository, id, "菜品不存在");
+        Dish dish = requireDish(id);
         requireTrue(!"ON_SALE".equals(dish.getStatus()), ErrorCode.INVALID_STATUS, "菜品已上架");
         requireTrue(dish.getCategoryId() != null, ErrorCode.BAD_REQUEST, "上架前请先选择分类");
         validateCategory(dish.getCategoryId());
@@ -253,48 +272,48 @@ public class DishApplicationService extends BaseApplicationService {
         }
         dish.setStatus("ON_SALE");
         dish.setUpdatedBy(SecurityUtils.currentAdminId());
-        // 上架不改图集：置 null 避免 save 触发 replaceImages
+        // 上架不改图集：置 null 避免 persist 触发 replaceImages
         dish.setImages(null);
-        Dish saved = save(dishRepository, dish);
-        dishSearchIndexService.indexOnSale(saved);
+        Dish saved = persistDish(dish);
         kitchenCacheEvictService.evictDishBrowse();
         return toVo(saved);
     }
 
     /**
-     * 下架：ON_SALE → OFF_SALE，并从 ES 移除。
+     * 下架：ON_SALE → OFF_SALE（写库 + 失效浏览缓存；暂时不删 ES）。
      *
      * @param id 菜品 ID
      * @return 更新后菜品
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
+     * @history 1.01 2026-09-09 XieMingJie 暂时去掉 ES 删除，仅 SQL.
      */
     @Transactional
     public DishVo unpublish(Long id) {
-        Dish dish = requireById(dishRepository, id, "菜品不存在");
+        Dish dish = requireDish(id);
         requireTrue("ON_SALE".equals(dish.getStatus()), ErrorCode.INVALID_STATUS, "仅上架菜品可下架");
         dish.setStatus("OFF_SALE");
         dish.setUpdatedBy(SecurityUtils.currentAdminId());
         dish.setImages(null);
-        Dish saved = save(dishRepository, dish);
-        dishSearchIndexService.remove(id);
+        Dish saved = persistDish(dish);
         kitchenCacheEvictService.evictDishBrowse();
         return toVo(saved);
     }
 
     /**
-     * 物理删除菜品；有预约历史时禁止删除；同步移除 ES。
+     * 物理删除菜品；有预约历史时禁止删除。
      *
      * @param id 菜品 ID
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
+     * @history 1.01 2026-09-09 XieMingJie 暂时去掉 ES 删除，仅 SQL.
      */
     @Transactional
     public void delete(Long id) {
         requireById(dishRepository, id, "菜品不存在");
-        if (dishRepository.hasOrderHistory(id)) {
+        if (dishRepository.countOrderItems(id) > 0) {
             throw new BusinessException(ErrorCode.CONFLICT, "有预约历史的菜品无法删除");
         }
+        dishImageRepository.deleteByDishId(id);
         deleteById(dishRepository, id);
-        dishSearchIndexService.remove(id);
         kitchenCacheEvictService.evictDishBrowse();
     }
 
@@ -321,7 +340,9 @@ public class DishApplicationService extends BaseApplicationService {
             return List.of();
         }
         Map<Long, Dish> byId = new LinkedHashMap<>();
-        for (Dish dish : dishRepository.findByIds(ids)) {
+        List<DishEntity> entities = dishRepository.selectBatchIds(ids);
+        for (DishEntity entity : entities) {
+            Dish dish = enrich(EntityConverters.toDish(entity));
             if (dish != null && dish.getId() != null && "ON_SALE".equals(dish.getStatus())) {
                 byId.put(dish.getId(), dish);
             }
@@ -336,17 +357,104 @@ public class DishApplicationService extends BaseApplicationService {
         return result;
     }
 
+    private Dish requireDish(Long id) {
+        return enrich(EntityConverters.toDish(requireById(dishRepository, id, "菜品不存在")));
+    }
+
+    /**
+     * 保存菜品主表；images 非 null 时同步替换图集。
+     * 新建时补齐评分/库存/状态默认值，避免空字段入库。
+     *
+     * @param dish 菜品领域对象
+     * @return 丰富后的菜品（含分类名与图集）
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    private Dish persistDish(Dish dish) {
+        DishEntity entity = EntityConverters.toDishEntity(dish);
+        // 仅新建时写默认值，更新保留已有评分与状态
+        if (entity.getId() == null) {
+            if (entity.getRating() == null) {
+                entity.setRating(BigDecimal.ZERO);
+            }
+            if (entity.getRatingCount() == null) {
+                entity.setRatingCount(0);
+            }
+            if (entity.getStock() == null) {
+                entity.setStock(0);
+            }
+            if (entity.getStockType() == null) {
+                entity.setStockType("LIMITED");
+            }
+            if (entity.getStatus() == null) {
+                entity.setStatus("DRAFT");
+            }
+        }
+        save(dishRepository, entity);
+        dish.setId(entity.getId());
+        // null 表示本次不改图集；空列表表示清空
+        if (dish.getImages() != null) {
+            replaceImages(entity.getId(), dish.getImages());
+        }
+        return enrich(EntityConverters.toDish(dishRepository.selectById(entity.getId())));
+    }
+
+    /**
+     * 替换菜品图集：先删后按顺序插入，保证 sort_order 稳定。
+     *
+     * @param dishId    菜品 ID
+     * @param imageUrls 图片 URL；空列表表示清空
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    private void replaceImages(Long dishId, List<String> imageUrls) {
+        dishImageRepository.deleteByDishId(dishId);
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            return;
+        }
+        int sort = 0;
+        Instant now = Instant.now();
+        for (String url : imageUrls) {
+            DishImageEntity img = new DishImageEntity();
+            img.setDishId(dishId);
+            img.setUrl(url);
+            img.setSortOrder(sort++);
+            img.setCreateTime(now);
+            dishImageRepository.insert(img);
+        }
+    }
+
+    /**
+     * 补充分类名与图片 URL 列表，供展示层直接使用。
+     *
+     * @param dish 菜品
+     * @return 丰富后的菜品
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    private Dish enrich(Dish dish) {
+        if (dish == null) {
+            return null;
+        }
+        if (dish.getCategoryId() != null) {
+            CategoryEntity category = categoryRepository.selectById(dish.getCategoryId());
+            if (category != null) {
+                dish.setCategoryName(category.getName());
+            }
+        }
+        List<DishImageEntity> images = dishImageRepository.selectByDishId(dish.getId());
+        dish.setImages(images.stream().map(DishImageEntity::getUrl).collect(Collectors.toCollection(ArrayList::new)));
+        return dish;
+    }
+
     /**
      * 校验分类存在且启用。
      *
      * @param categoryId 分类 ID，可空（草稿允许暂不绑分类）
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private void validateCategory(Long categoryId) {
         if (categoryId == null) {
             return;
         }
-        var category = requireById(categoryRepository, categoryId, "分类不存在");
+        CategoryEntity category = requireById(categoryRepository, categoryId, "分类不存在");
         requireTrue("ENABLED".equals(category.getStatus()), ErrorCode.BAD_REQUEST, "分类已停用");
     }
 
@@ -355,7 +463,7 @@ public class DishApplicationService extends BaseApplicationService {
      *
      * @param stockType 模式
      * @param stock     份数
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private void validateStock(String stockType, Integer stock) {
         requireTrue(stockType != null && STOCK_TYPES.contains(stockType.trim().toUpperCase()),
@@ -371,7 +479,7 @@ public class DishApplicationService extends BaseApplicationService {
      * @param dish     菜品
      * @param dto      请求
      * @param creating 是否新建
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private void applyDto(Dish dish, DishSaveDto dto, boolean creating) {
         dish.setCategoryId(dto.getCategoryId());
@@ -410,7 +518,7 @@ public class DishApplicationService extends BaseApplicationService {
      *
      * @param limit 请求条数
      * @return 合法条数
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private int normalizeListLimit(Integer limit) {
         if (limit == null || limit < 1) {
@@ -424,7 +532,7 @@ public class DishApplicationService extends BaseApplicationService {
      *
      * @param dish 菜品
      * @return VO
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private DishVo toVo(Dish dish) {
         return new DishVo()

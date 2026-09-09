@@ -49,6 +49,9 @@ function groupTitle(code: string) {
 }
 
 function isHighRisk(cfg: SysConfig) {
+  if (cfg.sensitive) {
+    return true;
+  }
   const key = (cfg.configKey || '').toLowerCase();
   const group = (cfg.groupCode || '').toLowerCase();
   return (
@@ -81,7 +84,8 @@ export default function SystemConfigPage() {
     const nextOrig: Record<string, string> = {};
     const nextVals: Record<string, string> = {};
     for (const item of list) {
-      const v = normalizeValue(item.configValue);
+      // 敏感配置不回传明文：编辑区留空，表示“未改动则保留原值”
+      const v = item.sensitive ? '' : normalizeValue(item.configValue);
       nextOrig[item.id] = v;
       nextVals[item.id] = v;
     }
@@ -111,7 +115,13 @@ export default function SystemConfigPage() {
 
   const dirtyIds = useMemo(() => {
     return configs
-      .filter((c) => normalizeValue(values[c.id]) !== normalizeValue(originals[c.id]))
+      .filter((c) => {
+        const next = normalizeValue(values[c.id]);
+        if (c.sensitive) {
+          return next !== '';
+        }
+        return next !== normalizeValue(originals[c.id]);
+      })
       .map((c) => c.id);
   }, [configs, values, originals]);
 
@@ -172,6 +182,7 @@ export default function SystemConfigPage() {
       groupCode: 'platform',
       status: 'ENABLED',
       sortOrder: 0,
+      sensitive: false,
     });
     setCreateOpen(true);
   };
@@ -183,6 +194,7 @@ export default function SystemConfigPage() {
         await sysConfigApi.create({
           configKey: raw.configKey as string,
           configValue: raw.configValue as string | undefined,
+          sensitive: Boolean(raw.sensitive),
           valueType: raw.valueType as string,
           groupCode: raw.groupCode as string,
           name: raw.name as string,
@@ -225,7 +237,9 @@ export default function SystemConfigPage() {
           if (!cfg) continue;
           await sysConfigApi.update(id, {
             configKey: cfg.configKey,
-            configValue: values[id],
+            // 敏感项留空表示保留原值
+            configValue: cfg.sensitive && !normalizeValue(values[id]) ? undefined : values[id],
+            sensitive: cfg.sensitive,
             valueType: cfg.valueType,
             groupCode: cfg.groupCode,
             name: cfg.name,
@@ -245,6 +259,16 @@ export default function SystemConfigPage() {
   const renderEditor = (cfg: SysConfig) => {
     const value = values[cfg.id] ?? '';
     const type = (cfg.valueType || 'STRING').toUpperCase();
+    if (cfg.sensitive) {
+      return (
+        <Input.Password
+          value={value}
+          onChange={(e) => setValue(cfg.id, e.target.value)}
+          placeholder={cfg.configured ? '已配置，留空保留原值' : '未配置'}
+          autoComplete="new-password"
+        />
+      );
+    }
     if (type === 'BOOLEAN') {
       return (
         <Switch
@@ -417,6 +441,9 @@ export default function SystemConfigPage() {
         </FormItem>
         <FormItem name="sortOrder" label="排序">
           <InputNumber style={{ width: '100%' }} min={0} />
+        </FormItem>
+        <FormItem name="sensitive" label="敏感配置" valuePropName="checked">
+          <Switch />
         </FormItem>
         <FormItem name="configValue" label="配置值" full>
           <Input.TextArea rows={3} />

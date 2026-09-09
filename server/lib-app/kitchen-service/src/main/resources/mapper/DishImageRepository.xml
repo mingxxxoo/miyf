@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  菜品图片 SQL
+  @author XieMingJie
+  @since 2026-09-04 16:35
+-->
+<mapper namespace="cn.miyf.kitchen.repository.DishImageRepository">
+
+    <select id="selectByDishId"
+            resultType="cn.miyf.kitchen.bean.entity.DishImageEntity">
+        SELECT id, dish_id, image_url AS url, sort_order, create_time, last_modify_time
+        FROM dish_image
+        WHERE dish_id = #{dishId}
+        ORDER BY sort_order ASC
+    </select>
+
+    <delete id="deleteByDishId">
+        DELETE FROM dish_image
+        WHERE dish_id = #{dishId}
+    </delete>
+</mapper>

@@ -5,14 +5,16 @@ import cn.miyf.auth.security.SystemSettingsPopedom;
 import cn.miyf.common.ApiResult;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
-import cn.miyf.infrastructure.storage.FileStorageService;
-import cn.miyf.infrastructure.storage.StoredFile;
+import cn.miyf.oss.bean.dto.FileUploadCommand;
 import cn.miyf.oss.bean.vo.UploadedFileVo;
+import cn.miyf.oss.enums.FileAccessPermission;
+import cn.miyf.oss.service.FileResourceApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,49 +31,50 @@ import java.io.InputStream;
 @Tag(name = "文件上传")
 @SystemSettingsPopedom
 @RestController
-@RequestMapping("/api")
+@RequiredArgsConstructor
 public class FileUploadController {
 
-    private final FileStorageService fileStorageService;
-
-    /**
-     * 构造控制器。
-     *
-     * @param fileStorageService 存储服务
-     * @history 1.00 2026-09-05 09:19 XieMingJie Created.
-     * @history 1.01 2026-09-08 XieMingJie 迁入 oss-service，权限码改为 file:upload。
-     */
-    public FileUploadController(FileStorageService fileStorageService) {
-        this.fileStorageService = fileStorageService;
-    }
+    private final FileResourceApplicationService fileResourceApplicationService;
 
     /**
      * 上传图片文件（JPG / PNG / WebP）。
      *
-     * @param file 表单字段名 file
-     * @return 上传结果（含公开 URL）
-     * @history 1.00 2026-09-05 09:19 XieMingJie Created.
-     * @history 1.01 2026-09-08 XieMingJie 权限码改为 file:upload。
+     * @param file             表单字段名 file
+     * @param appCode          产品应用编码（kitchen / health 等）
+     * @param source           来源（可选）
+     * @param temp             是否临时文件
+     * @param compress         是否压缩
+     * @param accessPermission 访问权限
+     * @return 上传结果（含文件 ID 与 /r/{id}）
+     * @history 1.00 2026-09-05 XieMingJie Created.
      */
     @Operation(summary = "上传图片")
     @MiyfPermission(code = "file:upload")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResult<UploadedFileVo> upload(@RequestPart("file") MultipartFile file) {
+    public ApiResult<UploadedFileVo> upload(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam("appCode") String appCode,
+            @RequestParam(value = "source", required = false) String source,
+            @RequestParam(value = "temp", required = false, defaultValue = "false") boolean temp,
+            @RequestParam(value = "compress", required = false, defaultValue = "false") boolean compress,
+            @RequestParam(value = "accessPermission", required = false) FileAccessPermission accessPermission) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_FILE, "请选择文件");
         }
+        FileUploadCommand command = new FileUploadCommand()
+                .setAppCode(appCode)
+                .setSource(source)
+                .setTemp(temp)
+                .setCompress(compress)
+                .setAccessPermission(accessPermission == null ? FileAccessPermission.OWNER : accessPermission);
         try (InputStream in = file.getInputStream()) {
-            StoredFile stored = fileStorageService.store(
+            UploadedFileVo vo = fileResourceApplicationService.store(
                     in,
                     file.getSize(),
                     file.getContentType(),
-                    file.getOriginalFilename()
+                    file.getOriginalFilename(),
+                    command
             );
-            UploadedFileVo vo = new UploadedFileVo()
-                    .setObjectKey(stored.objectKey())
-                    .setUrl(stored.url())
-                    .setContentType(stored.contentType())
-                    .setSize(stored.size());
             return ApiResult.ok(vo);
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.STORAGE_UNAVAILABLE, "读取上传流失败");

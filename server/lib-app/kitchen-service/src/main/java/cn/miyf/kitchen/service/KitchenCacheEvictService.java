@@ -1,7 +1,8 @@
 package cn.miyf.kitchen.service;
 
 import cn.miyf.infrastructure.cache.CacheClient;
-import cn.miyf.kitchen.constant.CacheKeys;
+import cn.miyf.kitchen.constant.KitchenCacheKeys;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -11,19 +12,10 @@ import org.springframework.stereotype.Service;
  * @since 2026-09-05 09:13
  */
 @Service
+@RequiredArgsConstructor
 public class KitchenCacheEvictService {
 
     private final CacheClient cacheClient;
-
-    /**
-     * 构造失效服务。
-     *
-     * @param cacheClient 缓存门面
-     * @history 1.00 2026-09-05 09:13 XieMingJie Created.
-     */
-    public KitchenCacheEvictService(CacheClient cacheClient) {
-        this.cacheClient = cacheClient;
-    }
 
     /**
      * 分类列表变更后失效。
@@ -34,7 +26,7 @@ public class KitchenCacheEvictService {
         if (!cacheClient.isEnabled()) {
             return;
         }
-        cacheClient.evict(CacheKeys.categoriesEnabled());
+        cacheClient.evict(KitchenCacheKeys.categoriesEnabled());
     }
 
     /**
@@ -46,7 +38,7 @@ public class KitchenCacheEvictService {
         if (!cacheClient.isEnabled()) {
             return;
         }
-        cacheClient.evictByPrefix(CacheKeys.dishesBrowsePrefix());
+        cacheClient.evictByPrefix(KitchenCacheKeys.dishesBrowsePrefix());
     }
 
     /**

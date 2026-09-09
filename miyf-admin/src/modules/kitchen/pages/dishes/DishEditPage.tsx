@@ -286,7 +286,7 @@ export default function DishEditPage() {
 
             <Form.Item name="coverImage" label="封面图">
 
-              <ImageUploader />
+              <ImageUploader appCode="kitchen" source="dish-cover" />
 
             </Form.Item>
 

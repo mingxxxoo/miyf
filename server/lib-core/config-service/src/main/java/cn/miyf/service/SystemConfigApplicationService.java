@@ -2,11 +2,13 @@ package cn.miyf.service;
 
 import cn.miyf.bean.dto.SysConfigSaveDto;
 import cn.miyf.bean.entity.SysConfigEntity;
+import cn.miyf.bean.vo.SysConfigVo;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.common.id.SnowflakeIdGenerator;
 import cn.miyf.repository.mapper.SysConfigMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -18,11 +20,13 @@ import java.util.Set;
 
 /**
  * 系统配置应用服务。
+ * 管理端读写经 VO 脱敏；敏感配置更新时空值保留原值。
  *
  * @author XieMingJie
  * @since 2026-09-06
  */
 @Service
+@RequiredArgsConstructor
 public class SystemConfigApplicationService {
 
     private static final Set<String> VALUE_TYPES = Set.of("STRING", "NUMBER", "BOOLEAN", "JSON");
@@ -32,88 +36,77 @@ public class SystemConfigApplicationService {
     private final SnowflakeIdGenerator snowflakeIdGenerator;
     private final SystemConfigReader systemConfigReader;
 
-    public SystemConfigApplicationService(SysConfigMapper configMapper,
-                                          SnowflakeIdGenerator snowflakeIdGenerator,
-                                          SystemConfigReader systemConfigReader) {
-        this.configMapper = configMapper;
-        this.snowflakeIdGenerator = snowflakeIdGenerator;
-        this.systemConfigReader = systemConfigReader;
-    }
-
     /**
-     * 配置列表。
+     * 配置列表（脱敏）。
      *
      * @param groupCode 可选分组
      * @param keyword   可选关键字（键/名称）
      * @return 列表
      * @history 1.00 2026-09-06 XieMingJie Created.
      */
-    public List<SysConfigEntity> list(String groupCode, String keyword) {
+    public List<SysConfigVo> list(String groupCode, String keyword) {
         return configMapper.selectList(Wrappers.<SysConfigEntity>lambdaQuery()
-                .eq(StringUtils.hasText(groupCode), SysConfigEntity::getGroupCode, groupCode)
-                .and(StringUtils.hasText(keyword), w -> w
-                        .like(SysConfigEntity::getConfigKey, keyword)
-                        .or()
-                        .like(SysConfigEntity::getName, keyword))
-                .orderByAsc(SysConfigEntity::getGroupCode)
-                .orderByAsc(SysConfigEntity::getSortOrder)
-                .orderByAsc(SysConfigEntity::getConfigKey));
+                        .eq(StringUtils.hasText(groupCode), SysConfigEntity::getGroupCode, groupCode)
+                        .and(StringUtils.hasText(keyword), w -> w
+                                .like(SysConfigEntity::getConfigKey, keyword)
+                                .or()
+                                .like(SysConfigEntity::getName, keyword))
+                        .orderByAsc(SysConfigEntity::getGroupCode)
+                        .orderByAsc(SysConfigEntity::getSortOrder)
+                        .orderByAsc(SysConfigEntity::getConfigKey))
+                .stream()
+                .map(this::toVo)
+                .toList();
     }
 
     /**
-     * 按键查询。
+     * 按键查询（脱敏）。
      *
      * @param configKey 配置键
-     * @return 实体
+     * @return VO
      * @history 1.00 2026-09-06 XieMingJie Created.
      */
-    public SysConfigEntity getByKey(String configKey) {
-        SysConfigEntity entity = configMapper.selectOne(Wrappers.<SysConfigEntity>lambdaQuery()
-                .eq(SysConfigEntity::getConfigKey, configKey)
-                .last("LIMIT 1"));
-        if (entity == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "配置不存在");
-        }
-        return entity;
+    public SysConfigVo getByKey(String configKey) {
+        return toVo(requireByKey(configKey));
     }
 
     /**
      * 创建配置。
      *
      * @param dto 请求
-     * @return 实体
+     * @return VO
      * @history 1.00 2026-09-06 XieMingJie Created.
      */
     @Transactional
-    public SysConfigEntity create(SysConfigSaveDto dto) {
+    public SysConfigVo create(SysConfigSaveDto dto) {
         assertKeyUnique(dto.getConfigKey(), null);
         Instant now = Instant.now();
-        SysConfigEntity entity = mapDto(new SysConfigEntity(), dto);
+        SysConfigEntity entity = mapDto(new SysConfigEntity(), dto, true);
         entity.setId(snowflakeIdGenerator.nextId());
         entity.setCreateTime(now);
         entity.setLastModifyTime(now);
         configMapper.insert(entity);
         systemConfigReader.invalidate(entity.getConfigKey());
-        return entity;
+        return toVo(entity);
     }
 
     /**
-     * 更新配置。
+     * 更新配置；敏感项 configValue 为空时保留原值。
      *
      * @param id  ID
      * @param dto 请求
-     * @return 实体
+     * @return VO
      * @history 1.00 2026-09-06 XieMingJie Created.
      */
     @Transactional
-    public SysConfigEntity update(Long id, SysConfigSaveDto dto) {
+    public SysConfigVo update(Long id, SysConfigSaveDto dto) {
         SysConfigEntity entity = require(id);
         assertKeyUnique(dto.getConfigKey(), id);
-        mapDto(entity, dto);
+        mapDto(entity, dto, false);
         entity.setLastModifyTime(Instant.now());
         configMapper.updateById(entity);
         systemConfigReader.invalidateAll();
-        return entity;
+        return toVo(entity);
     }
 
     /**
@@ -137,6 +130,16 @@ public class SystemConfigApplicationService {
         return entity;
     }
 
+    private SysConfigEntity requireByKey(String configKey) {
+        SysConfigEntity entity = configMapper.selectOne(Wrappers.<SysConfigEntity>lambdaQuery()
+                .eq(SysConfigEntity::getConfigKey, configKey)
+                .last("LIMIT 1"));
+        if (entity == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "配置不存在");
+        }
+        return entity;
+    }
+
     private void assertKeyUnique(String configKey, Long excludeId) {
         Long cnt = configMapper.selectCount(Wrappers.<SysConfigEntity>lambdaQuery()
                 .eq(SysConfigEntity::getConfigKey, configKey)
@@ -146,19 +149,55 @@ public class SystemConfigApplicationService {
         }
     }
 
-    private SysConfigEntity mapDto(SysConfigEntity entity, SysConfigSaveDto dto) {
+    private SysConfigEntity mapDto(SysConfigEntity entity, SysConfigSaveDto dto, boolean creating) {
         String valueType = normalizeValueType(dto.getValueType());
         String status = normalizeStatus(dto.getStatus());
         String group = StringUtils.hasText(dto.getGroupCode()) ? dto.getGroupCode().trim() : "default";
-        return entity
-                .setConfigKey(dto.getConfigKey().trim())
-                .setConfigValue(dto.getConfigValue())
+        boolean sensitive = dto.getSensitive() != null
+                ? dto.getSensitive()
+                : (creating ? inferSensitive(dto.getConfigKey(), group) : Boolean.TRUE.equals(entity.getSensitive()));
+        entity.setConfigKey(dto.getConfigKey().trim())
                 .setValueType(valueType)
                 .setGroupCode(group)
                 .setName(dto.getName().trim())
                 .setDescription(dto.getDescription())
                 .setStatus(status)
-                .setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder());
+                .setSortOrder(dto.getSortOrder() == null ? 0 : dto.getSortOrder())
+                .setSensitive(sensitive);
+        // 敏感配置更新时空值保留原值；非敏感或新建按 DTO 写入
+        if (creating || !sensitive || StringUtils.hasText(dto.getConfigValue())) {
+            entity.setConfigValue(dto.getConfigValue());
+        }
+        return entity;
+    }
+
+    private boolean inferSensitive(String configKey, String groupCode) {
+        String key = configKey == null ? "" : configKey.toLowerCase(Locale.ROOT);
+        String group = groupCode == null ? "" : groupCode.toLowerCase(Locale.ROOT);
+        return group.contains("security")
+                || key.contains("secret")
+                || key.contains("password")
+                || key.contains("token")
+                || key.contains("credential")
+                || key.contains("webhook");
+    }
+
+    private SysConfigVo toVo(SysConfigEntity entity) {
+        boolean sensitive = Boolean.TRUE.equals(entity.getSensitive());
+        boolean configured = StringUtils.hasText(entity.getConfigValue());
+        return new SysConfigVo()
+                .setId(entity.getId())
+                .setConfigKey(entity.getConfigKey())
+                .setConfigValue(sensitive ? null : entity.getConfigValue())
+                .setSensitive(sensitive)
+                .setConfigured(configured)
+                .setValueType(entity.getValueType())
+                .setGroupCode(entity.getGroupCode())
+                .setName(entity.getName())
+                .setDescription(entity.getDescription())
+                .setStatus(entity.getStatus())
+                .setSortOrder(entity.getSortOrder())
+                .setLastModifyTime(entity.getLastModifyTime());
     }
 
     private String normalizeValueType(String raw) {

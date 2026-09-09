@@ -15,6 +15,7 @@ import java.time.LocalDate;
 
 /**
  * 健康主体保存。
+ * orgUnitId 可选；非 ALL 数据范围时由服务端按当前管理员归属组织约束。
  *
  * @author XieMingJie
  * @since 2026-09-06
@@ -44,6 +45,9 @@ public class HealthSubjectSaveDto {
 
     @Schema(description = "外部用户 ID")
     private String externalUserId;
+
+    @Schema(description = "所属组织 ID（ALL 范围可指定；其他范围按当前用户约束）")
+    private String orgUnitId;
 
     @Schema(description = "状态")
     private String status;

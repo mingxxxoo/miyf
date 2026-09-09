@@ -11,7 +11,7 @@ public final class KitchenPopedomCodes {
     private KitchenPopedomCodes() {
     }
 
-    /** 厨房个人端（预留）。 */
+    /** 厨房个人端（普通用户 / 小程序）。 */
     public static final class Personal {
         public static final String CODE = "11010000";
         public static final String NAME = "个人";

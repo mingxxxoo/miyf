@@ -34,7 +34,7 @@ public final class RecipeStructureValidator {
      * 校验并规范化保存请求中的结构化字段（会回写规范化后的列表）。
      *
      * @param dto 保存请求
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public static void validateAndNormalize(RecipeSaveDto dto) {
         if (dto.getDifficulty() != null && !dto.getDifficulty().isBlank()) {
@@ -62,7 +62,7 @@ public final class RecipeStructureValidator {
      * @param items 原始列表
      * @param label 文案前缀
      * @return 规范化列表
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private static List<RecipeMaterialDto> normalizeMaterials(List<RecipeMaterialDto> items, String label) {
         if (items == null) {
@@ -88,7 +88,7 @@ public final class RecipeStructureValidator {
      *
      * @param steps 原始步骤
      * @return 规范化步骤
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private static List<RecipeStepDto> normalizeSteps(List<RecipeStepDto> steps) {
         if (steps == null) {
@@ -130,7 +130,7 @@ public final class RecipeStructureValidator {
      *
      * @param nutrition 原始营养 Map
      * @return 规范化 Map，可空
-     * @history 1.00 2026-09-04 17:35 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private static Map<String, Object> normalizeNutrition(Map<String, Object> nutrition) {
         if (nutrition == null || nutrition.isEmpty()) {

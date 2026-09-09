@@ -4,16 +4,19 @@ import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.config.FileStorageProperties;
 import io.minio.BucketExistsArgs;
+import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.SetBucketPolicyArgs;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 
 /**
  * MinIO 对象存储实现。
@@ -21,9 +24,8 @@ import java.io.InputStream;
  * @author XieMingJie
  * @since 2026-09-05 09:22
  */
+@Slf4j
 public class MinioFileStorageService implements FileStorageService {
-
-    private static final Logger log = LoggerFactory.getLogger(MinioFileStorageService.class);
 
     private final FileStorageProperties properties;
     private final MinioClient minioClient;
@@ -47,28 +49,53 @@ public class MinioFileStorageService implements FileStorageService {
      * @history 1.00 2026-09-05 09:22 XieMingJie Created.
      */
     @Override
-    public StoredFile store(InputStream inputStream, long size, String contentType, String originalName) {
+    public StoredFile store(InputStream inputStream, long size, String contentType, String path) {
+        if (!StringUtils.hasText(path)) {
+            throw new BusinessException(ErrorCode.INVALID_FILE, "存储路径不能为空");
+        }
         try {
             byte[] header = FileUploadValidator.readHeader(inputStream, 16);
             String mime = FileUploadValidator.validateAndDetect(properties, contentType, header, size);
-            String objectKey = StoragePathUtils.nextObjectKey(mime);
-            try (InputStream full = FileUploadValidator.concat(header, inputStream)) {
+            MessageDigest digest = MessageDigest.getInstance("MD5");
+            try (InputStream full = FileUploadValidator.concat(header, inputStream);
+                 DigestInputStream dig = new DigestInputStream(full, digest)) {
                 minioClient.putObject(PutObjectArgs.builder()
                         .bucket(properties.getBucket())
-                        .object(objectKey)
-                        .stream(full, size, -1)
+                        .object(path)
+                        .stream(dig, size, -1)
                         .contentType(mime)
                         .build());
             }
-            String url = StoragePathUtils.joinUrl(properties.getBaseUrl(), objectKey);
-            log.info("Stored minio object bucket={} key={} size={} original={}",
-                    properties.getBucket(), objectKey, size, originalName);
-            return new StoredFile(objectKey, url, mime, size);
+            String md5 = HexFormat.of().formatHex(digest.digest());
+            log.info("Stored minio object bucket={} path={} size={} md5={}",
+                    properties.getBucket(), path, size, md5);
+            return new StoredFile(path, mime, size, md5);
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {
-            log.error("MinIO store failed bucket={}", properties.getBucket(), ex);
+            log.error("MinIO store failed bucket={} path={}", properties.getBucket(), path, ex);
             throw new BusinessException(ErrorCode.STORAGE_UNAVAILABLE, "MinIO 存储失败");
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    @Override
+    public InputStream open(String path) {
+        if (!StringUtils.hasText(path)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "文件不存在");
+        }
+        try {
+            return minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(properties.getBucket())
+                    .object(path)
+                    .build());
+        } catch (Exception ex) {
+            log.warn("MinIO open failed path={}", path, ex);
+            throw new BusinessException(ErrorCode.NOT_FOUND, "文件不存在");
         }
     }
 
@@ -78,17 +105,17 @@ public class MinioFileStorageService implements FileStorageService {
      * @history 1.00 2026-09-05 09:22 XieMingJie Created.
      */
     @Override
-    public void delete(String objectKey) {
-        if (!StringUtils.hasText(objectKey)) {
+    public void delete(String path) {
+        if (!StringUtils.hasText(path)) {
             return;
         }
         try {
             minioClient.removeObject(RemoveObjectArgs.builder()
                     .bucket(properties.getBucket())
-                    .object(objectKey)
+                    .object(path)
                     .build());
         } catch (Exception ex) {
-            log.warn("MinIO delete failed key={}", objectKey, ex);
+            log.warn("MinIO delete failed path={}", path, ex);
         }
     }
 
@@ -130,4 +157,3 @@ public class MinioFileStorageService implements FileStorageService {
         }
     }
 }
-

@@ -4,6 +4,8 @@ export interface SysConfig {
   id: string;
   configKey: string;
   configValue?: string;
+  sensitive?: boolean;
+  configured?: boolean;
   valueType: string;
   groupCode: string;
   name: string;
@@ -58,6 +60,8 @@ function mapConfig(raw: Record<string, unknown>): SysConfig {
     id: sid(raw.id),
     configKey: String(raw.configKey ?? ''),
     configValue: raw.configValue == null ? undefined : String(raw.configValue),
+    sensitive: Boolean(raw.sensitive),
+    configured: Boolean(raw.configured),
     valueType: String(raw.valueType ?? 'STRING'),
     groupCode: String(raw.groupCode ?? 'default'),
     name: String(raw.name ?? ''),
@@ -118,6 +122,7 @@ export const sysConfigApi = {
   create: async (payload: {
     configKey: string;
     configValue?: string;
+    sensitive?: boolean;
     valueType?: string;
     groupCode?: string;
     name: string;
@@ -133,6 +138,7 @@ export const sysConfigApi = {
     payload: {
       configKey: string;
       configValue?: string;
+      sensitive?: boolean;
       valueType?: string;
       groupCode?: string;
       name: string;

@@ -6,6 +6,7 @@ import cn.miyf.auth.bean.dto.WxLoginDto;
 import cn.miyf.auth.bean.vo.LoginVo;
 import cn.miyf.auth.security.LoginUserContext;
 import cn.miyf.auth.service.AuthApplicationService;
+import cn.miyf.auth.service.WxLoginService;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.kitchen.bean.dto.CommentCreateDto;
@@ -21,7 +22,6 @@ import cn.miyf.kitchen.bean.vo.OrderVo;
 import cn.miyf.kitchen.service.CategoryApplicationService;
 import cn.miyf.kitchen.service.CommentApplicationService;
 import cn.miyf.kitchen.service.DishApplicationService;
-import cn.miyf.kitchen.service.KitchenAuthApplicationService;
 import cn.miyf.kitchen.service.OrderApplicationService;
 import cn.miyf.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
@@ -55,7 +55,7 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private AuthApplicationService authApplicationService;
     @Autowired
-    private KitchenAuthApplicationService kitchenAuthApplicationService;
+    private WxLoginService wxLoginService;
     @Autowired
     private CategoryApplicationService categoryApplicationService;
     @Autowired
@@ -78,7 +78,7 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
                         new AdminLoginDto().setUsername("admin").setPassword("wrong")));
         assertEquals(ErrorCode.LOGIN_FAILED.getCode(), bad.getCode());
 
-        LoginVo user = kitchenAuthApplicationService.wxLogin(
+        LoginVo user = wxLoginService.wxLogin(
                 new WxLoginDto().setCode("it-user-login")
                         .setUsername("集成用户")
                         .setPhone("13800138001")
@@ -91,9 +91,9 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void coreFlow_orderCommentRating_andHideRecalc() {
-        LoginVo user1 = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("flow-u1")
+        LoginVo user1 = wxLoginService.wxLogin(new WxLoginDto().setCode("flow-u1")
                 .setUsername("U1").setPhone("13800138002").setWechatId("wx_u1").setNickname("U1"));
-        LoginVo user2 = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("flow-u2")
+        LoginVo user2 = wxLoginService.wxLogin(new WxLoginDto().setCode("flow-u2")
                 .setUsername("U2").setPhone("13800138003").setWechatId("wx_u2").setNickname("U2"));
         LoginVo adminLogin = authApplicationService.adminLogin(
                 new AdminLoginDto().setUsername("admin").setPassword("change-me"));
@@ -142,7 +142,7 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void cancel_shouldRestoreLimitedStock() {
-        LoginVo user = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("cancel-u")
+        LoginVo user = wxLoginService.wxLogin(new WxLoginDto().setCode("cancel-u")
                 .setUsername("CU").setPhone("13800138004").setWechatId("wx_cu").setNickname("CU"));
         LoginVo adminLogin = authApplicationService.adminLogin(
                 new AdminLoginDto().setUsername("admin").setPassword("change-me"));
@@ -170,7 +170,7 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void commentRules_requireCompleted_andRejectDuplicate() {
-        LoginVo user = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("cmt-u")
+        LoginVo user = wxLoginService.wxLogin(new WxLoginDto().setCode("cmt-u")
                 .setUsername("CM").setPhone("13800138005").setWechatId("wx_cm").setNickname("CM"));
         LoginVo adminLogin = authApplicationService.adminLogin(
                 new AdminLoginDto().setUsername("admin").setPassword("change-me"));
@@ -211,7 +211,7 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void rbac_shouldForbidStatusChangeWithoutPermission() {
-        LoginVo user = kitchenAuthApplicationService.wxLogin(new WxLoginDto().setCode("rbac-u")
+        LoginVo user = wxLoginService.wxLogin(new WxLoginDto().setCode("rbac-u")
                 .setUsername("RU").setPhone("13800138006").setWechatId("wx_ru").setNickname("RU"));
         LoginVo adminLogin = authApplicationService.adminLogin(
                 new AdminLoginDto().setUsername("admin").setPassword("change-me"));
@@ -266,7 +266,7 @@ class CoreKitchenIntegrationTest extends AbstractIntegrationTest {
             final int idx = i;
             pool.submit(() -> {
                 try {
-                    LoginVo u = kitchenAuthApplicationService.wxLogin(
+                    LoginVo u = wxLoginService.wxLogin(
                             new WxLoginDto().setCode("conc-" + idx + "-" + System.nanoTime())
                                     .setUsername("C" + idx)
                                     .setPhone(String.format("139%08d", idx))

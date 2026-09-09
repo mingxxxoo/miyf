@@ -1,5 +1,6 @@
 package cn.miyf.kitchen.bean.vo;
 
+import cn.miyf.oss.security.FileAccess;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -44,6 +45,7 @@ public class OrderItemVo implements Serializable {
     @Schema(description = "菜品名称快照")
     private String dishName;
 
+    @FileAccess
     @Schema(description = "菜品封面（当前菜品封面，非下单快照）")
     private String coverImage;
 

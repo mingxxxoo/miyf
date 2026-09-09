@@ -16,8 +16,8 @@ import cn.miyf.permission.repository.mapper.SysRolePermGroupMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -55,9 +55,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since 2026-09-05
  */
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class PermissionBootstrap implements ApplicationRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(PermissionBootstrap.class);
     private static final String SUPER_ADMIN = "SUPER_ADMIN";
     private static final String FALLBACK_GROUP = "19990000";
     private static final String FALLBACK_GROUP_NAME = "未分组";
@@ -78,22 +79,6 @@ public class PermissionBootstrap implements ApplicationRunner {
     private final AtomicInteger bizCounter = new AtomicInteger(0);
     /** 启动同步前已有条目的权限组：不再 ensure 回填缺失 API（尊重人工裁剪）。 */
     private final Set<Long> groupsLockedFromRefill = ConcurrentHashMap.newKeySet();
-
-    public PermissionBootstrap(ApplicationContext applicationContext,
-                               SnowflakeIdGenerator snowflakeIdGenerator,
-                               SysPermissionMapper permissionMapper,
-                               SysPermGroupMapper permGroupMapper,
-                               SysPermGroupItemMapper permGroupItemMapper,
-                               SysRoleMapper roleMapper,
-                               SysRolePermGroupMapper rolePermGroupMapper) {
-        this.applicationContext = applicationContext;
-        this.snowflakeIdGenerator = snowflakeIdGenerator;
-        this.permissionMapper = permissionMapper;
-        this.permGroupMapper = permGroupMapper;
-        this.permGroupItemMapper = permGroupItemMapper;
-        this.roleMapper = roleMapper;
-        this.rolePermGroupMapper = rolePermGroupMapper;
-    }
 
     /**
      * 扫描并同步权限元数据：启动时先清理孤儿/不合规权限，再按标准 upsert 重建。

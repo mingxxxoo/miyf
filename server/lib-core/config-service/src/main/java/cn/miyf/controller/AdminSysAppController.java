@@ -10,6 +10,7 @@ import cn.miyf.service.SystemAppApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,21 +33,13 @@ import java.util.List;
 @Tag(name = "系统-应用")
 @SystemSettingsPopedom
 @RestController
-@RequestMapping("/api/admin/system/apps")
+@RequestMapping("/admin/system/apps")
+@RequiredArgsConstructor
 public class AdminSysAppController {
 
     private final SystemAppApplicationService systemAppApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param systemAppApplicationService 应用服务
-     * @history 1.00 2026-09-07 XieMingJie Created.
-     */
-    public AdminSysAppController(SystemAppApplicationService systemAppApplicationService) {
-        this.systemAppApplicationService = systemAppApplicationService;
-    }
-
+    
     /**
      * 应用列表，支持关键字与状态过滤。
      * 列表权限允许与角色列表权限 OR 匹配，便于授权页下拉。

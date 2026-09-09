@@ -7,6 +7,7 @@ import cn.miyf.health.bean.dto.HealthSyncRequestDto;
 import cn.miyf.health.bean.entity.HealthProviderBindingEntity;
 import cn.miyf.health.bean.entity.HealthSampleEntity;
 import cn.miyf.health.bean.entity.HealthSyncRunEntity;
+import cn.miyf.health.bean.vo.HealthSyncRunVo;
 import cn.miyf.health.config.HealthProperties;
 import cn.miyf.health.domain.HealthMetricCodes;
 import cn.miyf.health.repository.HealthProviderBindingRepository;
@@ -16,8 +17,11 @@ import cn.miyf.health.spi.HealthDataProvider;
 import cn.miyf.health.spi.HealthDataProviderRegistry;
 import cn.miyf.health.spi.HealthFetchRequest;
 import cn.miyf.health.spi.HealthSampleDraft;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -25,15 +29,18 @@ import org.springframework.util.StringUtils;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * 健康同步应用服务：远程拉取、幂等入库与同步运行记录。
+ * 同源采样（provider + sourceSampleId）已存在则跳过；并发冲突依赖库唯一索引并吞掉重复键。
  *
  * @author XieMingJie
  * @since 2026-09-08
  */
 @Service
+@RequiredArgsConstructor
 public class HealthSyncApplicationService {
 
     private static final Set<String> QUALITIES = Set.of("NORMAL", "ESTIMATED", "SUSPECT");
@@ -48,48 +55,40 @@ public class HealthSyncApplicationService {
     private final ObjectMapper objectMapper;
 
     /**
-     * 构造同步服务。
-     *
-     * @param healthProperties             配置
-     * @param providerRegistry             数据源注册表
-     * @param healthCrudApplicationService CRUD（requireSubject）
-     * @param bindingRepository            绑定仓储
-     * @param sampleRepository             采样仓储
-     * @param syncRunRepository            同步运行仓储
-     * @param snowflakeIdGenerator         雪花 ID
-     * @param objectMapper                 JSON
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public HealthSyncApplicationService(HealthProperties healthProperties,
-                                        HealthDataProviderRegistry providerRegistry,
-                                        HealthCrudApplicationService healthCrudApplicationService,
-                                        HealthProviderBindingRepository bindingRepository,
-                                        HealthSampleRepository sampleRepository,
-                                        HealthSyncRunRepository syncRunRepository,
-                                        SnowflakeIdGenerator snowflakeIdGenerator,
-                                        ObjectMapper objectMapper) {
-        this.healthProperties = healthProperties;
-        this.providerRegistry = providerRegistry;
-        this.healthCrudApplicationService = healthCrudApplicationService;
-        this.bindingRepository = bindingRepository;
-        this.sampleRepository = sampleRepository;
-        this.syncRunRepository = syncRunRepository;
-        this.snowflakeIdGenerator = snowflakeIdGenerator;
-        this.objectMapper = objectMapper;
-    }
-
-    /**
-     * 同步运行记录列表。
+     * 同步运行记录列表（管理端按主体数据范围过滤）。
      *
      * @param providerCode 可选数据源
      * @param subjectId    可选主体
      * @param limit        条数上限
-     * @return 记录
+     * @return 记录 VO
      * @history 1.00 2026-09-08 XieMingJie Created.
      */
-    public List<HealthSyncRunEntity> listSyncRuns(String providerCode, Long subjectId, Integer limit) {
+    public List<HealthSyncRunVo> listSyncRuns(String providerCode, Long subjectId, Integer limit) {
         int size = limit == null || limit <= 0 ? 50 : Math.min(limit, 200);
-        return syncRunRepository.list(providerCode, subjectId, size);
+        if (subjectId != null) {
+            healthCrudApplicationService.requireAccessibleSubject(subjectId);
+            return syncRunRepository.selectList(Wrappers.<HealthSyncRunEntity>lambdaQuery()
+                            .eq(StringUtils.hasText(providerCode), HealthSyncRunEntity::getProviderCode, providerCode)
+                            .eq(HealthSyncRunEntity::getSubjectId, subjectId)
+                            .orderByDesc(HealthSyncRunEntity::getStartedTime)
+                            .last("LIMIT " + size))
+                    .stream()
+                    .map(this::toSyncRunVo)
+                    .toList();
+        }
+        List<Long> allowedSubjectIds = healthCrudApplicationService.resolveAccessibleSubjectIdsOrNull();
+        if (allowedSubjectIds != null && allowedSubjectIds.isEmpty()) {
+            return List.of();
+        }
+        var query = Wrappers.<HealthSyncRunEntity>lambdaQuery()
+                .eq(StringUtils.hasText(providerCode), HealthSyncRunEntity::getProviderCode, providerCode)
+                .orderByDesc(HealthSyncRunEntity::getStartedTime)
+                .last("LIMIT " + size);
+        // null = ALL；非空则 SQL 一次过滤，避免 N+1 鉴权查询
+        if (allowedSubjectIds != null) {
+            query.in(HealthSyncRunEntity::getSubjectId, allowedSubjectIds);
+        }
+        return syncRunRepository.selectList(query).stream().map(this::toSyncRunVo).toList();
     }
 
     /**
@@ -99,7 +98,11 @@ public class HealthSyncApplicationService {
      * @history 1.00 2026-09-08 XieMingJie Created.
      */
     public List<HealthProviderBindingEntity> listActiveRemoteBindings() {
-        return bindingRepository.listByStatus("ACTIVE").stream()
+        return bindingRepository.selectList(Wrappers.<HealthProviderBindingEntity>lambdaQuery()
+                        .eq(HealthProviderBindingEntity::getStatus, "ACTIVE")
+                        .orderByAsc(HealthProviderBindingEntity::getProviderCode)
+                        .orderByAsc(HealthProviderBindingEntity::getSubjectId))
+                .stream()
                 .filter(row -> providerRegistry.find(row.getProviderCode())
                         .filter(p -> p.enabled() && p.supportsRemoteFetch())
                         .isPresent())
@@ -108,10 +111,11 @@ public class HealthSyncApplicationService {
 
     /**
      * 触发数据源同步并入库。
+     * 管理端调用时校验 DataScope；定时任务无登录上下文时仅校验主体存在。
      *
      * @param providerCode 数据源
      * @param dto          请求
-     * @return 同步任务
+     * @return 同步任务实体（任务内部使用）；对外 API 再转 VO
      * @history 1.00 2026-09-08 XieMingJie Created.
      */
     @Transactional
@@ -121,7 +125,7 @@ public class HealthSyncApplicationService {
         }
         HealthDataProvider provider = providerRegistry.requireEnabled(providerCode);
         Long subjectId = parseId(dto.getSubjectId(), "主体 ID");
-        healthCrudApplicationService.requireSubject(subjectId);
+        healthCrudApplicationService.requireSubjectForSync(subjectId);
 
         Instant now = Instant.now();
         HealthSyncRunEntity run = new HealthSyncRunEntity()
@@ -166,15 +170,29 @@ public class HealthSyncApplicationService {
         } catch (Exception ex) {
             finishRun(run, "FAILED", 0, 0, truncate(ex.getMessage(), 500), Instant.now());
         }
-        return syncRunRepository.findById(run.getId()).orElse(run);
+        return Optional.ofNullable(syncRunRepository.selectById(run.getId())).orElse(run);
+    }
+
+    /**
+     * 触发同步并返回脱敏 VO（管理端 API）。
+     *
+     * @param providerCode 数据源
+     * @param dto          请求
+     * @return 同步运行 VO
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    @Transactional
+    public HealthSyncRunVo syncAsVo(String providerCode, HealthSyncRequestDto dto) {
+        return toSyncRunVo(sync(providerCode, dto));
     }
 
     /**
      * 幂等入库草稿。
+     * 草稿若携带 subjectId，必须与本次同步请求主体一致，否则拒绝，防止 Provider 覆盖目标主体。
      *
      * @param providerCode 数据源
      * @param draft        草稿
-     * @param subjectId    主体（覆盖 draft.subjectId 若空）
+     * @param subjectId    本次同步目标主体
      * @return true 新写入
      * @history 1.00 2026-09-08 XieMingJie Created.
      */
@@ -183,13 +201,17 @@ public class HealthSyncApplicationService {
         if (draft == null || draft.getValueNum() == null || !StringUtils.hasText(draft.getMetricCode())) {
             return false;
         }
-        Long sid = draft.getSubjectId() != null ? draft.getSubjectId() : subjectId;
-        if (sid == null) {
+        if (subjectId == null) {
             return false;
         }
+        // Provider 不得改写同步目标主体
+        if (draft.getSubjectId() != null && !subjectId.equals(draft.getSubjectId())) {
+            return false;
+        }
+        Long sid = subjectId;
         healthCrudApplicationService.requireSubject(sid);
         if (StringUtils.hasText(draft.getSourceSampleId())
-                && sampleRepository.existsByProviderAndSourceSampleId(providerCode, draft.getSourceSampleId().trim())) {
+                && existsSample(providerCode, draft.getSourceSampleId().trim())) {
             return false;
         }
         Instant now = Instant.now();
@@ -208,8 +230,26 @@ public class HealthSyncApplicationService {
         entity.setId(snowflakeIdGenerator.nextId());
         entity.setCreateTime(now);
         entity.setLastModifyTime(now);
-        sampleRepository.insert(entity);
-        return true;
+        try {
+            sampleRepository.insert(entity);
+            return true;
+        } catch (DuplicateKeyException ex) {
+            // 并发同步命中 uk_health_sample_provider_source，视为已入库
+            return false;
+        }
+    }
+
+    private HealthSyncRunVo toSyncRunVo(HealthSyncRunEntity entity) {
+        return new HealthSyncRunVo()
+                .setId(entity.getId())
+                .setProviderCode(entity.getProviderCode())
+                .setSubjectId(entity.getSubjectId())
+                .setStatus(entity.getStatus())
+                .setFetchedCount(entity.getFetchedCount())
+                .setIngestedCount(entity.getIngestedCount())
+                .setErrorMessage(entity.getErrorMessage())
+                .setStartedTime(entity.getStartedTime())
+                .setFinishedTime(entity.getFinishedTime());
     }
 
     private void finishRun(HealthSyncRunEntity run, String status, int fetched, int ingested,
@@ -224,17 +264,40 @@ public class HealthSyncApplicationService {
     }
 
     private String resolveExternalAccountId(Long subjectId, String providerCode) {
-        return bindingRepository.findBySubjectProviderAndStatus(subjectId, providerCode, "ACTIVE")
+        return Optional.ofNullable(bindingRepository.selectOne(Wrappers.<HealthProviderBindingEntity>lambdaQuery()
+                        .eq(HealthProviderBindingEntity::getSubjectId, subjectId)
+                        .eq(HealthProviderBindingEntity::getProviderCode, providerCode)
+                        .eq(HealthProviderBindingEntity::getStatus, "ACTIVE")
+                        .last("LIMIT 1")))
                 .map(HealthProviderBindingEntity::getExternalAccountId)
                 .orElse(null);
     }
 
     private void touchBindingSync(Long subjectId, String providerCode, Instant at) {
-        bindingRepository.findBySubjectAndProvider(subjectId, providerCode).ifPresent(binding -> {
-            binding.setLastSyncTime(at);
-            binding.setLastModifyTime(at);
-            bindingRepository.updateById(binding);
-        });
+        Optional.ofNullable(bindingRepository.selectOne(Wrappers.<HealthProviderBindingEntity>lambdaQuery()
+                        .eq(HealthProviderBindingEntity::getSubjectId, subjectId)
+                        .eq(HealthProviderBindingEntity::getProviderCode, providerCode)
+                        .last("LIMIT 1")))
+                .ifPresent(binding -> {
+                    binding.setLastSyncTime(at);
+                    binding.setLastModifyTime(at);
+                    bindingRepository.updateById(binding);
+                });
+    }
+
+    /**
+     * 按数据源与源采样 ID 判断是否已入库（幂等键）。
+     *
+     * @param providerCode   数据源编码
+     * @param sourceSampleId 源侧采样 ID
+     * @return true 已存在
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    private boolean existsSample(String providerCode, String sourceSampleId) {
+        Long n = sampleRepository.selectCount(Wrappers.<HealthSampleEntity>lambdaQuery()
+                .eq(HealthSampleEntity::getProviderCode, providerCode)
+                .eq(HealthSampleEntity::getSourceSampleId, sourceSampleId));
+        return n != null && n > 0;
     }
 
     private String toMetaJson(HealthSampleDraft draft) {

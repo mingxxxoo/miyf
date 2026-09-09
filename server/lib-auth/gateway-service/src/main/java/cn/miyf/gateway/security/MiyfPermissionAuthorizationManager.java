@@ -2,11 +2,11 @@ package cn.miyf.gateway.security;
 
 import cn.miyf.auth.security.AuthPrincipal;
 import cn.miyf.auth.security.MiyfPermission;
+import cn.miyf.auth.security.PopedomGroup;
 import cn.miyf.auth.security.PrincipalType;
 import cn.miyf.auth.security.RequirePermission;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.authorization.AuthorizationResult;
@@ -22,6 +22,11 @@ import java.util.stream.Collectors;
  * Spring Security 方法鉴权：校验 {@link MiyfPermission#code()}。
  * <p>
  * 若同方法已标注 {@link RequirePermission}，则交由后者处理，避免重复拒绝。
+ * <ul>
+ *   <li>匿名：放行（由 HttpSecurity 控制公开路径）</li>
+ *   <li>管理员：必须持有对应权限码</li>
+ *   <li>普通用户：仅允许访问「个人」权限组接口；token 未挂权限码时登录即可，已挂码则校验</li>
+ * </ul>
  *
  * @author XieMingJie
  * @since 2026-09-05
@@ -50,15 +55,44 @@ public class MiyfPermissionAuthorizationManager implements AuthorizationManager<
 
         Authentication auth = authentication.get();
         if (auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof AuthPrincipal principal)) {
-            throw new AuthenticationCredentialsNotFoundException("未登录");
-        }
-        if (principal.getType() != PrincipalType.ADMIN) {
-            return new AuthorizationDecision(false);
+            // 匿名交给 HttpSecurity（如 /dishes/** permitAll）
+            return new AuthorizationDecision(true);
         }
 
         Set<String> authorities = auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toSet());
-        return new AuthorizationDecision(authorities.contains(annotation.code()));
+
+        if (principal.getType() == PrincipalType.ADMIN) {
+            return new AuthorizationDecision(authorities.contains(annotation.code()));
+        }
+
+        if (principal.getType() == PrincipalType.USER) {
+            PopedomGroup popedom = resolvePopedomGroup(invocation);
+            if (!isPersonalPopedom(popedom)) {
+                return new AuthorizationDecision(false);
+            }
+            if (authorities.isEmpty()) {
+                return new AuthorizationDecision(true);
+            }
+            return new AuthorizationDecision(authorities.contains(annotation.code()));
+        }
+
+        return new AuthorizationDecision(false);
+    }
+
+    private static PopedomGroup resolvePopedomGroup(MethodInvocation invocation) {
+        Class<?> targetClass = invocation.getThis() == null ? null : invocation.getThis().getClass();
+        if (targetClass != null) {
+            PopedomGroup onClass = AnnotationUtils.findAnnotation(targetClass, PopedomGroup.class);
+            if (onClass != null) {
+                return onClass;
+            }
+        }
+        return AnnotationUtils.findAnnotation(invocation.getMethod().getDeclaringClass(), PopedomGroup.class);
+    }
+
+    private static boolean isPersonalPopedom(PopedomGroup popedom) {
+        return popedom != null && "个人".equals(popedom.name());
     }
 }

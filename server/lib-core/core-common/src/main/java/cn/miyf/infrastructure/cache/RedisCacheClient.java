@@ -4,6 +4,7 @@ import cn.miyf.infrastructure.cache.support.CacheViews;
 import cn.miyf.infrastructure.cache.support.JsonRedisCacheStore;
 import cn.miyf.infrastructure.cache.support.RedisJsonValueCache;
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -13,20 +14,12 @@ import java.util.List;
  * @author XieMingJie
  * @since 2026-09-08
  */
+@RequiredArgsConstructor
 public class RedisCacheClient implements CacheClient {
 
     private final JsonRedisCacheStore store;
 
-    /**
-     * 构造 Redis 缓存门面。
-     *
-     * @param store JSON 存储内核
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public RedisCacheClient(JsonRedisCacheStore store) {
-        this.store = store;
-    }
-
+    
     /**
      * {@inheritDoc}
      *

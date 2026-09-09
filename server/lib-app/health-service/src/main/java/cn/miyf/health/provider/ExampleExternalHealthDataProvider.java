@@ -5,6 +5,7 @@ import cn.miyf.health.domain.HealthMetricCodes;
 import cn.miyf.health.spi.HealthDataProvider;
 import cn.miyf.health.spi.HealthFetchRequest;
 import cn.miyf.health.spi.HealthSampleDraft;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -23,22 +24,14 @@ import java.util.Set;
  * @since 2026-09-06
  */
 @Component
+@RequiredArgsConstructor
 public class ExampleExternalHealthDataProvider implements HealthDataProvider {
 
     public static final String CODE = "example";
 
     private final HealthProperties healthProperties;
 
-    /**
-     * 构造示例数据源。
-     *
-     * @param healthProperties 配置（providers.example.enabled）
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public ExampleExternalHealthDataProvider(HealthProperties healthProperties) {
-        this.healthProperties = healthProperties;
-    }
-
+    
     /**
      * {@inheritDoc}
      *

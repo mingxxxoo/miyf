@@ -8,6 +8,9 @@ import { notifyError } from '@/api/errors';
 interface ImageUploaderProps {
   value?: string;
   onChange?: (url: string) => void;
+  /** 产品应用编码，决定存储分区，如 kitchen / health */
+  appCode: string;
+  source?: string;
   maxSizeMB?: number;
   accept?: string;
 }
@@ -18,6 +21,8 @@ interface ImageUploaderProps {
 export default function ImageUploader({
   value,
   onChange,
+  appCode,
+  source,
   maxSizeMB = 5,
   accept = 'image/jpeg,image/png,image/webp',
 }: ImageUploaderProps) {
@@ -42,7 +47,7 @@ export default function ImageUploader({
     const file = options.file as File;
     setLoading(true);
     try {
-      const data = await uploadFile(file);
+      const data = await uploadFile(file, { appCode, source });
       onChange?.(data.url);
       options.onSuccess?.(data);
       message.success('图片上传成功');

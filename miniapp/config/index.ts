@@ -18,7 +18,7 @@ export default defineConfig<'webpack5'>(async (merge) => {
     plugins: ['@tarojs/plugin-framework-react'],
     defineConstants: {
     'process.env.TARO_APP_API_BASE': JSON.stringify(
-      process.env.TARO_APP_API_BASE || 'http://www.miyf.cn'
+      process.env.TARO_APP_API_BASE || 'https://www.miyf.cn'
     )
     },
     copy: {

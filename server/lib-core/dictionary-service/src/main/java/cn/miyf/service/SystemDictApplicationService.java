@@ -10,6 +10,7 @@ import cn.miyf.common.id.SnowflakeIdGenerator;
 import cn.miyf.repository.mapper.SysDictItemMapper;
 import cn.miyf.repository.mapper.SysDictTypeMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -26,6 +27,7 @@ import java.util.Set;
  * @since 2026-09-06
  */
 @Service
+@RequiredArgsConstructor
 public class SystemDictApplicationService {
 
     private static final Set<String> STATUSES = Set.of("ENABLED", "DISABLED");
@@ -33,14 +35,6 @@ public class SystemDictApplicationService {
     private final SysDictTypeMapper dictTypeMapper;
     private final SysDictItemMapper dictItemMapper;
     private final SnowflakeIdGenerator snowflakeIdGenerator;
-
-    public SystemDictApplicationService(SysDictTypeMapper dictTypeMapper,
-                                        SysDictItemMapper dictItemMapper,
-                                        SnowflakeIdGenerator snowflakeIdGenerator) {
-        this.dictTypeMapper = dictTypeMapper;
-        this.dictItemMapper = dictItemMapper;
-        this.snowflakeIdGenerator = snowflakeIdGenerator;
-    }
 
     /**
      * 字典类型列表。

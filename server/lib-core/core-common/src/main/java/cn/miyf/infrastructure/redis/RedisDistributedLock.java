@@ -3,56 +3,45 @@ package cn.miyf.infrastructure.redis;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.config.RedisAppProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
  * 基于 SET NX + Lua 释放的简单分布式锁。
+ * <ul>
+ *   <li>{@link LockMode#STRICT}：Redis 异常时失败（默认，强一致场景）</li>
+ *   <li>{@link LockMode#DEGRADABLE}：Redis 异常时无锁继续（仅明确允许降级的场景）</li>
+ * </ul>
  *
  * @author XieMingJie
  * @since 2026-09-05 09:13
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class RedisDistributedLock {
 
-    private static final Logger log = LoggerFactory.getLogger(RedisDistributedLock.class);
-
-    private static final DefaultRedisScript<Long> UNLOCK_SCRIPT = new DefaultRedisScript<>(
-            """
-                    if redis.call('get', KEYS[1]) == ARGV[1] then
-                      return redis.call('del', KEYS[1])
-                    end
-                    return 0
-                    """,
-            Long.class
-    );
+    /**
+     * 锁失败策略。
+     */
+    public enum LockMode {
+        /** Redis 故障或加锁异常时抛错，禁止无锁执行。 */
+        STRICT,
+        /** Redis 故障时降级为无锁执行（需调用方明确接受并发风险）。 */
+        DEGRADABLE
+    }
 
     private final StringRedisTemplate stringRedisTemplate;
     private final RedisAppProperties properties;
 
     /**
-     * 构造锁组件。
-     *
-     * @param stringRedisTemplate Redis
-     * @param properties          配置
-     * @history 1.00 2026-09-05 09:13 XieMingJie Created.
-     */
-    public RedisDistributedLock(StringRedisTemplate stringRedisTemplate, RedisAppProperties properties) {
-        this.stringRedisTemplate = stringRedisTemplate;
-        this.properties = properties;
-    }
-
-    /**
-     * 尝试加锁执行；拿不到锁抛 {@link ErrorCode#LOCK_BUSY}。
+     * 强锁执行；拿不到锁抛 {@link ErrorCode#LOCK_BUSY}，Redis 异常抛 {@link ErrorCode#INTERNAL_ERROR}。
      *
      * @param lockKey  锁键
      * @param supplier 业务
@@ -61,11 +50,11 @@ public class RedisDistributedLock {
      * @history 1.00 2026-09-05 09:13 XieMingJie Created.
      */
     public <T> T executeWithLock(String lockKey, Supplier<T> supplier) {
-        return executeWithLock(lockKey, properties.getLock().getDefaultLeaseSeconds(), supplier);
+        return executeWithLock(lockKey, properties.getLock().getDefaultLeaseSeconds(), LockMode.STRICT, supplier);
     }
 
     /**
-     * 尝试加锁执行。
+     * 强锁执行（可指定租约）。
      *
      * @param lockKey      锁键
      * @param leaseSeconds 租约秒数
@@ -75,8 +64,40 @@ public class RedisDistributedLock {
      * @history 1.00 2026-09-05 09:13 XieMingJie Created.
      */
     public <T> T executeWithLock(String lockKey, long leaseSeconds, Supplier<T> supplier) {
+        return executeWithLock(lockKey, leaseSeconds, LockMode.STRICT, supplier);
+    }
+
+    /**
+     * 可降级锁：Redis 不可用时无锁继续执行。
+     *
+     * @param lockKey  锁键
+     * @param supplier 业务
+     * @param <T>      返回类型
+     * @return 业务结果
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    public <T> T executeWithDegradableLock(String lockKey, Supplier<T> supplier) {
+        return executeWithLock(lockKey, properties.getLock().getDefaultLeaseSeconds(), LockMode.DEGRADABLE, supplier);
+    }
+
+    /**
+     * 按模式加锁执行。
+     *
+     * @param lockKey      锁键
+     * @param leaseSeconds 租约秒数
+     * @param mode         失败策略
+     * @param supplier     业务
+     * @param <T>          返回类型
+     * @return 业务结果
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    public <T> T executeWithLock(String lockKey, long leaseSeconds, LockMode mode, Supplier<T> supplier) {
+        LockMode effective = mode == null ? LockMode.STRICT : mode;
         if (!properties.isEnabled()) {
-            return supplier.get();
+            if (effective == LockMode.DEGRADABLE) {
+                return supplier.get();
+            }
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "分布式锁需要启用 Redis（严格模式不可无锁执行）");
         }
         String token = UUID.randomUUID().toString();
         boolean locked = false;
@@ -91,8 +112,12 @@ public class RedisDistributedLock {
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {
-            log.warn("Redis lock failed, execute without lock. key={}", lockKey, ex);
-            return supplier.get();
+            if (effective == LockMode.DEGRADABLE) {
+                log.warn("Redis lock failed, degrade without lock. key={}", lockKey, ex);
+                return supplier.get();
+            }
+            log.error("Redis lock failed, reject execution. key={}", lockKey, ex);
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "分布式锁服务暂不可用，请稍后重试");
         } finally {
             if (locked) {
                 unlock(lockKey, token);
@@ -101,7 +126,7 @@ public class RedisDistributedLock {
     }
 
     /**
-     * 仅当 token 匹配时释放锁。
+     * 仅当 token 匹配时释放锁（无 expire 兜底，避免误伤其他实例租约）。
      *
      * @param lockKey 锁键
      * @param token   持有者令牌
@@ -109,15 +134,9 @@ public class RedisDistributedLock {
      */
     private void unlock(String lockKey, String token) {
         try {
-            stringRedisTemplate.execute(UNLOCK_SCRIPT, Collections.singletonList(lockKey), token);
+            RedisAtomicOps.compareAndDelete(stringRedisTemplate, lockKey, token);
         } catch (Exception ex) {
             log.warn("Redis unlock failed. key={}", lockKey, ex);
-            try {
-                stringRedisTemplate.expire(lockKey, 1, TimeUnit.SECONDS);
-            } catch (Exception ignore) {
-                // ignore
-            }
         }
     }
 }
-

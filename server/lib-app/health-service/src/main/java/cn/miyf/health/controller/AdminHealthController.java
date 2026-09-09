@@ -6,12 +6,12 @@ import cn.miyf.health.bean.dto.HealthProviderBindingSaveDto;
 import cn.miyf.health.bean.dto.HealthSampleSaveDto;
 import cn.miyf.health.bean.dto.HealthSubjectSaveDto;
 import cn.miyf.health.bean.dto.HealthSyncRequestDto;
-import cn.miyf.health.bean.entity.HealthProviderBindingEntity;
-import cn.miyf.health.bean.entity.HealthSampleEntity;
-import cn.miyf.health.bean.entity.HealthSubjectEntity;
-import cn.miyf.health.bean.entity.HealthSyncRunEntity;
 import cn.miyf.health.bean.vo.HealthOverviewVo;
+import cn.miyf.health.bean.vo.HealthProviderBindingVo;
 import cn.miyf.health.bean.vo.HealthProviderVo;
+import cn.miyf.health.bean.vo.HealthSampleVo;
+import cn.miyf.health.bean.vo.HealthSubjectVo;
+import cn.miyf.health.bean.vo.HealthSyncRunVo;
 import cn.miyf.health.bean.vo.HealthTrendVo;
 import cn.miyf.health.security.HealthPersonalPopedom;
 import cn.miyf.health.service.HealthCrudApplicationService;
@@ -19,6 +19,7 @@ import cn.miyf.health.service.HealthSyncApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,7 +35,7 @@ import java.util.List;
 
 /**
  * 健康管理 API：主体、采样、数据源绑定与同步编排入口。
- * CRUD 与同步分别委托 {@link HealthCrudApplicationService}、{@link HealthSyncApplicationService}。
+ * 返回统一使用 VO；主体相关读写受 DataScope 约束。
  *
  * @author XieMingJie
  * @since 2026-09-06
@@ -42,25 +43,12 @@ import java.util.List;
 @Tag(name = "健康管理")
 @HealthPersonalPopedom
 @RestController
-@RequestMapping("/api/admin/health")
+@RequestMapping("/admin/health")
+@RequiredArgsConstructor
 public class AdminHealthController {
 
     private final HealthCrudApplicationService healthCrudApplicationService;
     private final HealthSyncApplicationService healthSyncApplicationService;
-
-    /**
-     * 构造控制器。
-     * 已拆分为 CRUD / 同步两类应用服务，避免单类过重。
-     *
-     * @param healthCrudApplicationService CRUD 服务
-     * @param healthSyncApplicationService 同步服务
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public AdminHealthController(HealthCrudApplicationService healthCrudApplicationService,
-                                 HealthSyncApplicationService healthSyncApplicationService) {
-        this.healthCrudApplicationService = healthCrudApplicationService;
-        this.healthSyncApplicationService = healthSyncApplicationService;
-    }
 
     /**
      * 查询健康模块概览（启用状态、主体/采样数量、数据源列表）。
@@ -93,15 +81,15 @@ public class AdminHealthController {
      *
      * @param providerCode 数据源编码
      * @param dto          同步请求（主体、时间窗、指标等）
-     * @return 同步运行记录
+     * @return 同步运行记录 VO
      * @history 1.00 2026-09-08 XieMingJie Created.
      */
     @Operation(summary = "触发数据源同步")
     @MiyfPermission(code = "health:sync:trigger")
     @PostMapping("/providers/{providerCode}/sync")
-    public ApiResult<HealthSyncRunEntity> sync(@PathVariable String providerCode,
-                                               @Valid @RequestBody HealthSyncRequestDto dto) {
-        return ApiResult.ok(healthSyncApplicationService.sync(providerCode, dto));
+    public ApiResult<HealthSyncRunVo> sync(@PathVariable String providerCode,
+                                           @Valid @RequestBody HealthSyncRequestDto dto) {
+        return ApiResult.ok(healthSyncApplicationService.syncAsVo(providerCode, dto));
     }
 
     /**
@@ -116,7 +104,7 @@ public class AdminHealthController {
     @Operation(summary = "同步运行记录")
     @MiyfPermission(code = "health:sync:list")
     @GetMapping("/sync-runs")
-    public ApiResult<List<HealthSyncRunEntity>> listSyncRuns(
+    public ApiResult<List<HealthSyncRunVo>> listSyncRuns(
             @RequestParam(required = false) String providerCode,
             @RequestParam(required = false) Long subjectId,
             @RequestParam(required = false) Integer limit) {
@@ -133,7 +121,7 @@ public class AdminHealthController {
     @Operation(summary = "健康主体列表")
     @MiyfPermission(code = "health:subject:list")
     @GetMapping("/subjects")
-    public ApiResult<List<HealthSubjectEntity>> listSubjects(@RequestParam(required = false) String keyword) {
+    public ApiResult<List<HealthSubjectVo>> listSubjects(@RequestParam(required = false) String keyword) {
         return ApiResult.ok(healthCrudApplicationService.listSubjects(keyword));
     }
 
@@ -147,7 +135,7 @@ public class AdminHealthController {
     @Operation(summary = "创建健康主体")
     @MiyfPermission(code = "health:subject:create")
     @PostMapping("/subjects")
-    public ApiResult<HealthSubjectEntity> createSubject(@Valid @RequestBody HealthSubjectSaveDto dto) {
+    public ApiResult<HealthSubjectVo> createSubject(@Valid @RequestBody HealthSubjectSaveDto dto) {
         return ApiResult.ok(healthCrudApplicationService.createSubject(dto));
     }
 
@@ -162,8 +150,8 @@ public class AdminHealthController {
     @Operation(summary = "更新健康主体")
     @MiyfPermission(code = "health:subject:update")
     @PutMapping("/subjects/{id}")
-    public ApiResult<HealthSubjectEntity> updateSubject(@PathVariable Long id,
-                                                        @Valid @RequestBody HealthSubjectSaveDto dto) {
+    public ApiResult<HealthSubjectVo> updateSubject(@PathVariable Long id,
+                                                    @Valid @RequestBody HealthSubjectSaveDto dto) {
         return ApiResult.ok(healthCrudApplicationService.updateSubject(id, dto));
     }
 
@@ -183,7 +171,7 @@ public class AdminHealthController {
     }
 
     /**
-     * 列出某主体已绑定的数据源账号。
+     * 列出某主体已绑定的数据源账号（脱敏，不含 credentialRef）。
      *
      * @param subjectId 主体 ID
      * @return 绑定列表
@@ -192,7 +180,7 @@ public class AdminHealthController {
     @Operation(summary = "主体数据源绑定列表")
     @MiyfPermission(code = "health:provider:list")
     @GetMapping("/subjects/{subjectId}/bindings")
-    public ApiResult<List<HealthProviderBindingEntity>> listBindings(@PathVariable Long subjectId) {
+    public ApiResult<List<HealthProviderBindingVo>> listBindings(@PathVariable Long subjectId) {
         return ApiResult.ok(healthCrudApplicationService.listBindings(subjectId));
     }
 
@@ -201,13 +189,13 @@ public class AdminHealthController {
      *
      * @param subjectId 主体 ID
      * @param dto       绑定保存请求
-     * @return 绑定实体
+     * @return 绑定 VO（脱敏）
      * @history 1.00 2026-09-08 XieMingJie Created.
      */
     @Operation(summary = "绑定/更新数据源账号")
     @MiyfPermission(code = "health:provider:list")
     @PutMapping("/subjects/{subjectId}/bindings")
-    public ApiResult<HealthProviderBindingEntity> upsertBinding(
+    public ApiResult<HealthProviderBindingVo> upsertBinding(
             @PathVariable Long subjectId,
             @Valid @RequestBody HealthProviderBindingSaveDto dto) {
         return ApiResult.ok(healthCrudApplicationService.upsertBinding(subjectId, dto));
@@ -247,7 +235,7 @@ public class AdminHealthController {
     @Operation(summary = "采样列表")
     @MiyfPermission(code = "health:sample:list")
     @GetMapping("/samples")
-    public ApiResult<List<HealthSampleEntity>> listSamples(
+    public ApiResult<List<HealthSampleVo>> listSamples(
             @RequestParam(required = false) Long subjectId,
             @RequestParam(required = false) String metricCode,
             @RequestParam(required = false) Integer limit) {
@@ -264,7 +252,7 @@ public class AdminHealthController {
     @Operation(summary = "手动录入采样")
     @MiyfPermission(code = "health:sample:create")
     @PostMapping("/samples")
-    public ApiResult<HealthSampleEntity> createSample(@Valid @RequestBody HealthSampleSaveDto dto) {
+    public ApiResult<HealthSampleVo> createSample(@Valid @RequestBody HealthSampleSaveDto dto) {
         return ApiResult.ok(healthCrudApplicationService.createManualSample(dto));
     }
 

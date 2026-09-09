@@ -1,51 +1,17 @@
 package cn.miyf.health.repository;
 
 import cn.miyf.health.bean.entity.HealthSyncRunEntity;
-
-import java.util.List;
-import java.util.Optional;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 健康同步运行记录仓储。
+ * 健康同步运行记录数据访问接口（MyBatis Mapper）。
+ * 同步任务列表筛选由 Service 通过 Wrapper 完成。
  *
  * @author XieMingJie
  * @since 2026-09-08
+ * @history 1.00 2026-09-08 XieMingJie Created.
  */
-public interface HealthSyncRunRepository {
-
-    /**
-     * 同步运行记录列表。
-     *
-     * @param providerCode 数据源，可空
-     * @param subjectId    主体，可空
-     * @param limit        条数上限
-     * @return 列表（按开始时间倒序）
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    List<HealthSyncRunEntity> list(String providerCode, Long subjectId, int limit);
-
-    /**
-     * 按 ID 查询。
-     *
-     * @param id ID
-     * @return 记录
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    Optional<HealthSyncRunEntity> findById(Long id);
-
-    /**
-     * 插入。
-     *
-     * @param entity 实体
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    void insert(HealthSyncRunEntity entity);
-
-    /**
-     * 按 ID 更新。
-     *
-     * @param entity 实体
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    void updateById(HealthSyncRunEntity entity);
+@Mapper
+public interface HealthSyncRunRepository extends BaseMapper<HealthSyncRunEntity> {
 }

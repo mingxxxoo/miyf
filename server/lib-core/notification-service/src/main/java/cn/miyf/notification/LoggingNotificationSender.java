@@ -1,7 +1,6 @@
 package cn.miyf.notification;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +12,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Order(100)
+@Slf4j
 public class LoggingNotificationSender implements NotificationSender {
-
-    private static final Logger log = LoggerFactory.getLogger(LoggingNotificationSender.class);
 
     @Override
     public NotificationChannel channel() {

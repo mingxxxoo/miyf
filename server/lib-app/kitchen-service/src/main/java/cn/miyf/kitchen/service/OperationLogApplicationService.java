@@ -1,11 +1,12 @@
 package cn.miyf.kitchen.service;
 
 import cn.miyf.common.PageResult;
-import cn.miyf.kitchen.bean.model.OperationLog;
 import cn.miyf.kitchen.bean.qo.OperationLogPageQo;
 import cn.miyf.kitchen.bean.vo.OperationLogVo;
+import cn.miyf.kitchen.helper.EntityConverters;
 import cn.miyf.kitchen.repository.OperationLogRepository;
 import cn.miyf.service.BaseApplicationService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -15,19 +16,10 @@ import org.springframework.stereotype.Service;
  * @since 2026-09-05
  */
 @Service
+@RequiredArgsConstructor
 public class OperationLogApplicationService extends BaseApplicationService {
 
     private final OperationLogRepository operationLogRepository;
-
-    /**
-     * 构造服务。
-     *
-     * @param operationLogRepository 日志仓储
-     * @history 1.00 2026-09-05 XieMingJie Created.
-     */
-    public OperationLogApplicationService(OperationLogRepository operationLogRepository) {
-        this.operationLogRepository = operationLogRepository;
-    }
 
     /**
      * 管理端分页。
@@ -39,13 +31,16 @@ public class OperationLogApplicationService extends BaseApplicationService {
     public PageResult<OperationLogVo> pageAdmin(OperationLogPageQo qo) {
         long page = pageOf(qo);
         long rows = pageSizeOf(qo);
-        PageResult<OperationLog> result = operationLogRepository.page(
-                qo.getOperationType(), qo.getKeyword(), page, rows);
-        return PageResult.of(result.records().stream().map(this::toVo).toList(),
-                result.total(), result.page(), result.pageSize());
+        long off = offset(page, rows);
+        var records = operationLogRepository.selectPage(qo.getOperationType(), qo.getKeyword(), off, rows).stream()
+                .map(EntityConverters::toLog)
+                .map(this::toVo)
+                .toList();
+        long total = operationLogRepository.countPage(qo.getOperationType(), qo.getKeyword());
+        return PageResult.of(records, total, page, rows);
     }
 
-    private OperationLogVo toVo(OperationLog log) {
+    private OperationLogVo toVo(cn.miyf.kitchen.bean.model.OperationLog log) {
         return new OperationLogVo()
                 .setId(log.getId())
                 .setOperatorId(log.getOperatorId())

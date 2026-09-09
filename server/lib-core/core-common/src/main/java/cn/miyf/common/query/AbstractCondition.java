@@ -13,8 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -39,10 +38,9 @@ import java.util.Set;
 @EqualsAndHashCode
 @NoArgsConstructor
 @Accessors(chain = true)
+@Slf4j
 @Schema(description = "通用分页查询条件")
 public abstract class AbstractCondition implements Serializable {
-
-    private static final Logger log = LoggerFactory.getLogger(AbstractCondition.class);
 
     @Serial
     private static final long serialVersionUID = 1L;

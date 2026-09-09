@@ -1,12 +1,14 @@
 package cn.miyf.health.provider.huawei;
 
+import cn.miyf.auth.security.SecurityUtils;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.health.config.HealthProperties;
+import cn.miyf.infrastructure.redis.RedisAtomicOps;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
@@ -30,9 +32,9 @@ import java.util.stream.Collectors;
  * @since 2026-09-06
  */
 @Component
+@Slf4j
 public class HuaweiHealthOAuthService {
 
-    private static final Logger log = LoggerFactory.getLogger(HuaweiHealthOAuthService.class);
     public static final String TOKEN_KEY_PREFIX = "miyf:health:huawei:token:";
     public static final String STATE_KEY_PREFIX = "miyf:health:huawei:oauth:state:";
 
@@ -59,17 +61,35 @@ public class HuaweiHealthOAuthService {
     }
 
     /**
-     * 生成授权跳转 URL，并将 state→subjectId 写入 Redis（15 分钟）。
+     * 生成授权跳转 URL，并将 state→(subjectId,adminId) 写入 Redis（15 分钟）。
+     * state 绑定当前管理员，回调时校验，防止 CSRF 绑定攻击。
      *
      * @param subjectId 健康主体
      * @return 授权 URL
      * @history 1.00 2026-09-08 XieMingJie Created.
      */
     public String buildAuthorizeUrl(Long subjectId) {
+        if (subjectId == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "subjectId 不能为空");
+        }
+        Long adminId = SecurityUtils.requireAdmin().getId();
+        if (adminId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "无法识别当前管理员");
+        }
         HealthProperties.Huawei cfg = healthProperties.getHuawei();
         requireClientConfigured(cfg);
         String state = UUID.randomUUID().toString().replace("-", "");
-        redis().opsForValue().set(STATE_KEY_PREFIX + state, String.valueOf(subjectId), Duration.ofMinutes(15));
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("subjectId", subjectId);
+        payload.put("adminId", adminId);
+        try {
+            redis().opsForValue().set(
+                    STATE_KEY_PREFIX + state,
+                    objectMapper.writeValueAsString(payload),
+                    Duration.ofMinutes(15));
+        } catch (Exception ex) {
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "保存 OAuth state 失败");
+        }
         String scope = cfg.getScopes().stream()
                 .filter(StringUtils::hasText)
                 .collect(Collectors.joining(" "));
@@ -83,11 +103,11 @@ public class HuaweiHealthOAuthService {
     }
 
     /**
-     * 用授权 code 换 token 并缓存；校验 state 与主体一致性。
+     * 用授权 code 换 token 并缓存；强制消费 state，并校验发起管理员。
      *
-     * @param subjectId 主体（可空，则从 state 解析）
+     * @param subjectId 主体（可选，须与 state 一致）
      * @param code      授权码
-     * @param state     OAuth state
+     * @param state     OAuth state（管理端回调必填）
      * @return 主体与 token
      * @history 1.00 2026-09-08 XieMingJie Created.
      */
@@ -95,14 +115,18 @@ public class HuaweiHealthOAuthService {
         if (!StringUtils.hasText(code)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "授权 code 不能为空");
         }
-        Long stateSubject = resolveStateSubject(state);
-        if (stateSubject != null && subjectId != null && !stateSubject.equals(subjectId)) {
+        if (!StringUtils.hasText(state)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "OAuth state 不能为空");
+        }
+        HuaweiOAuthStatePayload statePayload = consumeState(state);
+        Long currentAdminId = SecurityUtils.requireAdmin().getId();
+        if (currentAdminId == null || !currentAdminId.equals(statePayload.adminId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "OAuth state 与当前管理员不匹配");
+        }
+        if (subjectId != null && !subjectId.equals(statePayload.subjectId())) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "OAuth state 与主体不匹配");
         }
-        Long sid = subjectId != null ? subjectId : stateSubject;
-        if (sid == null) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "subjectId 不能为空");
-        }
+        Long sid = statePayload.subjectId();
         HealthProperties.Huawei cfg = healthProperties.getHuawei();
         requireClientConfigured(cfg);
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
@@ -114,9 +138,6 @@ public class HuaweiHealthOAuthService {
         HuaweiTokenBundle bundle = requestToken(form);
         bundle.setSource("oauth");
         saveToken(sid, bundle);
-        if (StringUtils.hasText(state)) {
-            redis().delete(STATE_KEY_PREFIX + state.trim());
-        }
         return new OAuthResult(sid, bundle);
     }
 
@@ -275,23 +296,76 @@ public class HuaweiHealthOAuthService {
     }
 
     /**
-     * 解析 OAuth state 对应的主体；无效或过期抛业务异常。
+     * 原子消费 OAuth state，解析 subjectId + adminId。
+     *
+     * @param state state（必填）
+     * @return 载荷
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    public HuaweiOAuthStatePayload consumeState(String state) {
+        if (!StringUtils.hasText(state)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "OAuth state 不能为空");
+        }
+        String key = STATE_KEY_PREFIX + state.trim();
+        String raw = RedisAtomicOps.getAndDelete(redis(), key);
+        if (!StringUtils.hasText(raw)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "OAuth state 无效或已过期");
+        }
+        try {
+            JsonNode node = objectMapper.readTree(raw);
+            // 兼容旧格式：纯数字 subjectId（无 adminId）一律拒绝，强制重新授权
+            if (node.isNumber() || (!node.isObject() && StringUtils.hasText(raw) && raw.chars().allMatch(Character::isDigit))) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "OAuth state 已失效，请重新发起授权");
+            }
+            Long subjectId = node.path("subjectId").isNumber()
+                    ? node.path("subjectId").asLong()
+                    : Long.parseLong(node.path("subjectId").asText());
+            Long adminId = node.path("adminId").isNumber()
+                    ? node.path("adminId").asLong()
+                    : Long.parseLong(node.path("adminId").asText());
+            if (subjectId == null || adminId == null) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "OAuth state 损坏");
+            }
+            return new HuaweiOAuthStatePayload(subjectId, adminId);
+        } catch (BusinessException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "OAuth state 损坏");
+        }
+    }
+
+    /**
+     * @deprecated 请使用 {@link #consumeState(String)}
+     */
+    @Deprecated
+    public Long consumeStateSubject(String state) {
+        return consumeState(state).subjectId();
+    }
+
+    /**
+     * 解析 OAuth state 对应的主体（只读，不删除）；无效或过期抛业务异常。
      *
      * @param state state
-     * @return 主体 ID，state 空则 null
+     * @return 主体 ID
      * @history 1.00 2026-09-08 XieMingJie Created.
+     * @deprecated 换票请使用 {@link #consumeState(String)}
      */
+    @Deprecated
     public Long resolveStateSubject(String state) {
         if (!StringUtils.hasText(state)) {
-            return null;
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "OAuth state 不能为空");
         }
         String v = redis().opsForValue().get(STATE_KEY_PREFIX + state.trim());
         if (!StringUtils.hasText(v)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "OAuth state 无效或已过期");
         }
         try {
+            JsonNode node = objectMapper.readTree(v);
+            if (node.isObject()) {
+                return node.path("subjectId").asLong();
+            }
             return Long.parseLong(v);
-        } catch (NumberFormatException ex) {
+        } catch (Exception ex) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "OAuth state 损坏");
         }
     }

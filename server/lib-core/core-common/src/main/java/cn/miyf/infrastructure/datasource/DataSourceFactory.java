@@ -20,8 +20,7 @@ public class DataSourceFactory {
      *
      * @param item 数据源配置
      * @return Hikari 数据源
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
-     * @history 1.01 2026-09-08 XieMingJie 连接池改为 HikariCP。
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public DataSource create(DataSourceProperties.DataSourceItem item) {
         HikariConfig config = new HikariConfig();

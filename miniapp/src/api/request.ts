@@ -1,7 +1,7 @@
 import Taro from '@tarojs/taro'
 import type { ApiResult } from '@/types'
 
-const BASE_URL = process.env.TARO_APP_API_BASE || 'http://www.miyf.cn'
+const BASE_URL = process.env.TARO_APP_API_BASE || 'https://www.miyf.cn'
 
 const TOKEN_KEY = 'miyf_kitchen_token'
 

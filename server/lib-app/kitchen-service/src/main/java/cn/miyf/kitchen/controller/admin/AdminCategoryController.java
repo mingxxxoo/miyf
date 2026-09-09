@@ -9,6 +9,7 @@ import cn.miyf.kitchen.service.CategoryApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,21 +30,13 @@ import java.util.List;
 @Tag(name = "管理端分类")
 @KitchenAdminPopedom
 @RestController
-@RequestMapping("/api/admin/categories")
+@RequestMapping("/admin/categories")
+@RequiredArgsConstructor
 public class AdminCategoryController {
 
     private final CategoryApplicationService categoryApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param categoryApplicationService 分类服务
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
-     */
-    public AdminCategoryController(CategoryApplicationService categoryApplicationService) {
-        this.categoryApplicationService = categoryApplicationService;
-    }
-
+    
     /**
      * 全部分类列表。
      *

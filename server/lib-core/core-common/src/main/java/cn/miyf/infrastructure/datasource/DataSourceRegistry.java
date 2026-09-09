@@ -23,7 +23,7 @@ public class DataSourceRegistry {
      *
      * @param key        路由键
      * @param dataSource 数据源实例
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public void register(DataSourceKey key, DataSource dataSource) {
         sources.put(key, dataSource);
@@ -34,7 +34,7 @@ public class DataSourceRegistry {
      *
      * @param key 路由键
      * @return 可选数据源
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public Optional<DataSource> get(DataSourceKey key) {
         return Optional.ofNullable(sources.get(key));
@@ -44,7 +44,7 @@ public class DataSourceRegistry {
      * 返回全部已注册数据源（只读视图）。
      *
      * @return 键到数据源映射
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public Map<DataSourceKey, DataSource> all() {
         return Map.copyOf(sources);

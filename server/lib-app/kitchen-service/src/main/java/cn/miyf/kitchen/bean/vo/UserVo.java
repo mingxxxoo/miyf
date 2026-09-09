@@ -1,6 +1,7 @@
 package cn.miyf.kitchen.bean.vo;
 
 import cn.miyf.bean.vo.BaseVo;
+import cn.miyf.oss.security.FileAccess;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -50,6 +51,7 @@ public class UserVo extends BaseVo {
     @Schema(description = "微信号")
     private String wechatId;
 
+    @FileAccess
     @Schema(description = "头像")
     private String avatarUrl;
 

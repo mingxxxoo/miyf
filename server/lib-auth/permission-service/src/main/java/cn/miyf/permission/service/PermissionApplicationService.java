@@ -37,6 +37,7 @@ import cn.miyf.permission.repository.mapper.SysRoleMapper;
 import cn.miyf.permission.repository.mapper.SysRolePermGroupMapper;
 import cn.miyf.service.BaseApplicationService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -61,6 +62,7 @@ import java.util.stream.Collectors;
  * @since 2026-09-06
  */
 @Service
+@RequiredArgsConstructor
 public class PermissionApplicationService extends BaseApplicationService {
 
     private final SysMenuMapper menuMapper;
@@ -73,43 +75,6 @@ public class PermissionApplicationService extends BaseApplicationService {
     private final SysUserRoleMapper userRoleMapper;
     private final SnowflakeIdGenerator snowflakeIdGenerator;
     private final DataScopeService dataScopeService;
-
-    /**
-     * 构造权限应用服务。
-     *
-     * @param menuMapper             菜单 Mapper
-     * @param roleMapper             角色 Mapper
-     * @param permissionMapper       权限点 Mapper
-     * @param permGroupMapper        权限组 Mapper
-     * @param permGroupItemMapper    权限组条目 Mapper
-     * @param rolePermGroupMapper    角色-权限组 Mapper
-     * @param userMapper             用户 Mapper
-     * @param userRoleMapper         用户-角色 Mapper
-     * @param snowflakeIdGenerator   雪花 ID
-     * @param dataScopeService       数据范围
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public PermissionApplicationService(SysMenuMapper menuMapper,
-                                        SysRoleMapper roleMapper,
-                                        SysPermissionMapper permissionMapper,
-                                        SysPermGroupMapper permGroupMapper,
-                                        SysPermGroupItemMapper permGroupItemMapper,
-                                        SysRolePermGroupMapper rolePermGroupMapper,
-                                        SysUserMapper userMapper,
-                                        SysUserRoleMapper userRoleMapper,
-                                        SnowflakeIdGenerator snowflakeIdGenerator,
-                                        DataScopeService dataScopeService) {
-        this.menuMapper = menuMapper;
-        this.roleMapper = roleMapper;
-        this.permissionMapper = permissionMapper;
-        this.permGroupMapper = permGroupMapper;
-        this.permGroupItemMapper = permGroupItemMapper;
-        this.rolePermGroupMapper = rolePermGroupMapper;
-        this.userMapper = userMapper;
-        this.userRoleMapper = userRoleMapper;
-        this.snowflakeIdGenerator = snowflakeIdGenerator;
-        this.dataScopeService = dataScopeService;
-    }
 
     /**
      * 当前用户可见菜单树（自原 IamApplicationService 拆出）。

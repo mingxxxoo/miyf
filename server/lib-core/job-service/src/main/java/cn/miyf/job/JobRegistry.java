@@ -4,6 +4,7 @@ import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.job.entity.SysJobStateEntity;
 import cn.miyf.job.repository.mapper.SysJobStateMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -33,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 2026-09-06
  */
 @Component
+@RequiredArgsConstructor
 public class JobRegistry {
 
     private final Map<String, JobDescriptor> jobs = new LinkedHashMap<>();
@@ -40,11 +42,6 @@ public class JobRegistry {
     private final ThreadLocal<Boolean> forceRun = new ThreadLocal<>();
     private final ApplicationContext applicationContext;
     private final SysJobStateMapper sysJobStateMapper;
-
-    public JobRegistry(ApplicationContext applicationContext, SysJobStateMapper sysJobStateMapper) {
-        this.applicationContext = applicationContext;
-        this.sysJobStateMapper = sysJobStateMapper;
-    }
 
     @EventListener(ContextRefreshedEvent.class)
     public void scan() {

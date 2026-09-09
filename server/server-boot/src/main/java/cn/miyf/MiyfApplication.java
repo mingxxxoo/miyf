@@ -24,7 +24,7 @@ import java.util.TimeZone;
         ElasticsearchClientAutoConfiguration.class,
         ElasticsearchRestClientAutoConfiguration.class
 })
-@MapperScan({"cn.miyf.**.repository.mapper", "cn.miyf.**.mapper"})
+@MapperScan({"cn.miyf.**.repository", "cn.miyf.**.repository.mapper", "cn.miyf.**.mapper"})
 @EnableTransactionManagement
 public class MiyfApplication {
 

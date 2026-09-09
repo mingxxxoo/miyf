@@ -37,7 +37,7 @@ public enum OrderStatus {
      *
      * @param value 状态名
      * @return 枚举值
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public static OrderStatus from(String value) {
         return OrderStatus.valueOf(value);

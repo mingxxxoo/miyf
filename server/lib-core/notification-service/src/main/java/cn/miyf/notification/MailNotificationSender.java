@@ -1,8 +1,8 @@
 package cn.miyf.notification;
 
 import cn.miyf.notification.config.NotificationProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.annotation.Order;
@@ -21,18 +21,12 @@ import org.springframework.util.StringUtils;
 @Order(0)
 @ConditionalOnProperty(prefix = "app.notification.mail", name = "enabled", havingValue = "true")
 @ConditionalOnBean(JavaMailSender.class)
+@Slf4j
+@RequiredArgsConstructor
 public class MailNotificationSender implements NotificationSender {
-
-    private static final Logger log = LoggerFactory.getLogger(MailNotificationSender.class);
 
     private final JavaMailSender javaMailSender;
     private final NotificationProperties notificationProperties;
-
-    public MailNotificationSender(JavaMailSender javaMailSender,
-                                  NotificationProperties notificationProperties) {
-        this.javaMailSender = javaMailSender;
-        this.notificationProperties = notificationProperties;
-    }
 
     @Override
     public NotificationChannel channel() {

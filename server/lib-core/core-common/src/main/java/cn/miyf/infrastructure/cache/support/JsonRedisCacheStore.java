@@ -4,8 +4,8 @@ import cn.miyf.config.RedisAppProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -26,9 +26,10 @@ import java.util.function.Supplier;
  * @author XieMingJie
  * @since 2026-09-08
  */
+@RequiredArgsConstructor
+@Slf4j
 public class JsonRedisCacheStore {
 
-    private static final Logger log = LoggerFactory.getLogger(JsonRedisCacheStore.class);
     /** 空值占位，防止缓存穿透。 */
     public static final String NULL_MARKER = "__NULL__";
 
@@ -36,22 +37,7 @@ public class JsonRedisCacheStore {
     private final ObjectMapper objectMapper;
     private final RedisAppProperties properties;
 
-    /**
-     * 构造 JSON Redis 存储内核。
-     *
-     * @param stringRedisTemplate Lettuce 字符串模板
-     * @param objectMapper        Jackson
-     * @param properties          Redis 应用配置
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public JsonRedisCacheStore(StringRedisTemplate stringRedisTemplate,
-                               ObjectMapper objectMapper,
-                               RedisAppProperties properties) {
-        this.stringRedisTemplate = stringRedisTemplate;
-        this.objectMapper = objectMapper;
-        this.properties = properties;
-    }
-
+    
     /**
      * @return 是否启用 Redis
      * @history 1.00 2026-09-08 XieMingJie Created.

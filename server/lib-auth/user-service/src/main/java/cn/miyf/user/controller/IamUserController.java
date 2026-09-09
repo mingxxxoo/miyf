@@ -9,6 +9,7 @@ import cn.miyf.user.service.SysUserApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,21 +31,13 @@ import java.util.List;
 @Tag(name = "IAM-用户")
 @IamAdminPopedom
 @RestController
-@RequestMapping("/api/iam/users")
+@RequestMapping("/iam/users")
+@RequiredArgsConstructor
 public class IamUserController {
 
     private final SysUserApplicationService sysUserApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param sysUserApplicationService 系统用户应用服务
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public IamUserController(SysUserApplicationService sysUserApplicationService) {
-        this.sysUserApplicationService = sysUserApplicationService;
-    }
-
+    
     /**
      * 查询数据范围内的系统用户列表（脱敏 VO）。
      *

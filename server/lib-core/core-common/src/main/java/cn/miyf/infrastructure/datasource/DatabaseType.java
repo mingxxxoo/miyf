@@ -20,7 +20,7 @@ public enum DatabaseType {
      *
      * @param value 配置值
      * @return 数据库类型
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public static DatabaseType from(String value) {
         if (value == null || value.isBlank()) {

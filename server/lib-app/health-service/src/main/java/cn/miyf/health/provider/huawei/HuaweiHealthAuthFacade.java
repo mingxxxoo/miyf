@@ -5,6 +5,7 @@ import cn.miyf.common.ErrorCode;
 import cn.miyf.health.bean.dto.HealthProviderBindingSaveDto;
 import cn.miyf.health.provider.HuaweiHealthDataProvider;
 import cn.miyf.health.service.HealthCrudApplicationService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -18,23 +19,11 @@ import java.util.Map;
  * @since 2026-09-06
  */
 @Service
+@RequiredArgsConstructor
 public class HuaweiHealthAuthFacade {
 
     private final HuaweiHealthOAuthService oauthService;
     private final HealthCrudApplicationService healthCrudApplicationService;
-
-    /**
-     * 构造门面。
-     *
-     * @param oauthService                 OAuth
-     * @param healthCrudApplicationService CRUD（绑定 upsert）
-     * @history 1.00 2026-09-08 XieMingJie Use HealthCrudApplicationService.
-     */
-    public HuaweiHealthAuthFacade(HuaweiHealthOAuthService oauthService,
-                                  HealthCrudApplicationService healthCrudApplicationService) {
-        this.oauthService = oauthService;
-        this.healthCrudApplicationService = healthCrudApplicationService;
-    }
 
     /**
      * 生成华为授权 URL。
@@ -47,6 +36,7 @@ public class HuaweiHealthAuthFacade {
         if (subjectId == null) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "subjectId 不能为空");
         }
+        healthCrudApplicationService.requireAccessibleSubject(subjectId);
         String url = oauthService.buildAuthorizeUrl(subjectId);
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("authorizeUrl", url);
@@ -66,6 +56,7 @@ public class HuaweiHealthAuthFacade {
      */
     public Map<String, Object> completeOAuth(Long subjectId, String code, String state) {
         HuaweiHealthOAuthService.OAuthResult result = oauthService.exchangeCode(subjectId, code, state);
+        healthCrudApplicationService.requireAccessibleSubject(result.subjectId());
         return bindAndRespond(result.subjectId(), result.token());
     }
 
@@ -80,6 +71,7 @@ public class HuaweiHealthAuthFacade {
         if (subjectId == null) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "subjectId 不能为空");
         }
+        healthCrudApplicationService.requireAccessibleSubject(subjectId);
         HuaweiTokenBundle bundle = oauthService.peekToken(subjectId);
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("subjectId", String.valueOf(subjectId));
@@ -103,6 +95,7 @@ public class HuaweiHealthAuthFacade {
         if (subjectId == null) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "subjectId 不能为空");
         }
+        healthCrudApplicationService.requireAccessibleSubject(subjectId);
         oauthService.clearToken(subjectId);
         healthCrudApplicationService.upsertBinding(subjectId, new HealthProviderBindingSaveDto()
                 .setProviderCode(HuaweiHealthDataProvider.CODE)
@@ -125,7 +118,7 @@ public class HuaweiHealthAuthFacade {
         map.put("providerCode", HuaweiHealthDataProvider.CODE);
         map.put("authorized", true);
         map.put("source", bundle.getSource());
-        map.put("openId", openId);
+        map.put("openId", mask(openId));
         map.put("expiresTime", bundle.getExpiresTime() == null ? null : bundle.getExpiresTime().toString());
         return map;
     }

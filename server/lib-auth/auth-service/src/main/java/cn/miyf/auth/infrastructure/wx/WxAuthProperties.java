@@ -14,9 +14,9 @@ public class WxAuthProperties {
     private String appId = "";
     private String appSecret = "";
     /**
-     * 开发环境可开启 Mock，禁止写入前端
+     * 开发环境可在 application-dev.yml 开启 Mock；生产/容器必须为 false
      */
-    private boolean mockEnabled = true;
+    private boolean mockEnabled = false;
 
     public String getAppId() {
         return appId;

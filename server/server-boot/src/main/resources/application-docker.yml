@@ -1,4 +1,5 @@
 # Docker 运行配置（由 Compose 注入环境变量）
+# 与 prod 相同的安全默认：关闭 Mock、对象桶非公开读；密钥仍须由环境变量注入。
 spring:
   data:
     redis:
@@ -7,6 +8,17 @@ spring:
 
 server:
   forward-headers-strategy: framework
+
+wx:
+  auth:
+    mock-enabled: ${WX_AUTH_MOCK_ENABLED:false}
+
+app:
+  health:
+    huawei:
+      mock-enabled: ${APP_HEALTH_HUAWEI_MOCK:false}
+  file-storage:
+    public-read: ${FILE_STORAGE_PUBLIC_READ:false}
 
 # 宿主机挂载：/miyf/log/server → 容器 /miyf/log/server（按日 .gz）
 logging:

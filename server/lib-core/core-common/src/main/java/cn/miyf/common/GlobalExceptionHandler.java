@@ -1,7 +1,6 @@
 package cn.miyf.common;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
@@ -20,9 +19,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * @since 2026-09-04 16:35
  */
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
-
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * 处理可预期的业务异常；未登录/无权限时返回对应 HTTP 状态（401/403）。

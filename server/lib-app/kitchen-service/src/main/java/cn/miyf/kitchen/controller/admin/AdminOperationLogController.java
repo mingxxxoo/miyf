@@ -9,6 +9,7 @@ import cn.miyf.kitchen.security.KitchenAdminPopedom;
 import cn.miyf.kitchen.service.OperationLogApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,21 +23,13 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "管理端操作日志")
 @KitchenAdminPopedom
 @RestController
-@RequestMapping("/api/admin/operation-logs")
+@RequestMapping("/admin/operation-logs")
+@RequiredArgsConstructor
 public class AdminOperationLogController {
 
     private final OperationLogApplicationService operationLogApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param operationLogApplicationService 日志服务
-     * @history 1.00 2026-09-05 XieMingJie Created.
-     */
-    public AdminOperationLogController(OperationLogApplicationService operationLogApplicationService) {
-        this.operationLogApplicationService = operationLogApplicationService;
-    }
-
+    
     /**
      * 操作日志分页。
      *

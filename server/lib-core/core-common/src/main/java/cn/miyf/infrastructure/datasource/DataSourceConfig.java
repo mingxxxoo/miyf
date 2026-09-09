@@ -31,8 +31,7 @@ public class DataSourceConfig {
      * @param factory    HikariCP 工厂
      * @param registry   注册表
      * @return 路由 DataSource（Primary Bean）
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
-     * @history 1.01 2026-09-08 XieMingJie 连接池改为 HikariCP。
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Bean
     @Primary
@@ -70,7 +69,7 @@ public class DataSourceConfig {
      *
      * @param dataSource 路由数据源
      * @return 事务管理器
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Bean
     public PlatformTransactionManager transactionManager(DataSource dataSource) {

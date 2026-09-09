@@ -25,10 +25,14 @@ public class FileStorageProperties {
     private String path = "./uploads";
 
     /**
-     * 对外访问前缀。
-     * MinIO 默认 path-style：http://localhost:9000/{bucket}
+     * 对外访问站点前缀（不含 /r），公开 URL 为 {@code {baseUrl}/r/{fileId}}。
      */
-    private String baseUrl = "http://localhost:9000/miyf";
+    private String baseUrl = "http://localhost:8080";
+
+    /**
+     * 存储路径命名空间前缀，如 miyf → miyf/kitchen/2026/09/{id}。
+     */
+    private String pathNamespace = "miyf";
 
     /**
      * 单文件最大字节数，默认 5MB
@@ -62,9 +66,9 @@ public class FileStorageProperties {
     private boolean autoCreateBucket = true;
 
     /**
-     * 桶内对象公开可读（GetObject）
+     * 桶内对象公开可读（GetObject）。生产/容器环境须为 false，由应用鉴权或预签名访问。
      */
-    private boolean publicRead = true;
+    private boolean publicRead = false;
 
     public String getType() {
         return type;
@@ -88,6 +92,14 @@ public class FileStorageProperties {
 
     public void setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
+    }
+
+    public String getPathNamespace() {
+        return pathNamespace;
+    }
+
+    public void setPathNamespace(String pathNamespace) {
+        this.pathNamespace = pathNamespace;
     }
 
     public long getMaxSizeBytes() {

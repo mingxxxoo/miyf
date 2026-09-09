@@ -18,7 +18,7 @@ public class DataSourceRouter extends AbstractRoutingDataSource {
      * 绑定当前线程使用的数据源键。
      *
      * @param key 数据源键
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public static void use(DataSourceKey key) {
         CONTEXT.set(key);
@@ -27,7 +27,7 @@ public class DataSourceRouter extends AbstractRoutingDataSource {
     /**
      * 清理线程上下文，防止线程复用泄漏。
      *
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public static void clear() {
         CONTEXT.remove();
@@ -37,7 +37,7 @@ public class DataSourceRouter extends AbstractRoutingDataSource {
      * 决定当前查找键；未设置时回落 PRIMARY。
      *
      * @return 路由键
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Override
     protected Object determineCurrentLookupKey() {

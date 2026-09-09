@@ -3,6 +3,7 @@ package cn.miyf.monitor;
 import cn.miyf.infrastructure.datasource.DataSourceKey;
 import cn.miyf.infrastructure.datasource.DataSourceRegistry;
 import com.zaxxer.hikari.HikariDataSource;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ import java.util.Optional;
  * @since 2026-09-06
  */
 @Service
+@RequiredArgsConstructor
 public class MonitorApplicationService {
 
     private static final int RECENT_ERROR_LIMIT = 50;
@@ -38,19 +40,6 @@ public class MonitorApplicationService {
     private final DataSourceRegistry dataSourceRegistry;
     private final ObjectProvider<StringRedisTemplate> stringRedisTemplate;
     private final Deque<Map<String, Object>> recentErrors = new ArrayDeque<>();
-
-    /**
-     * 构造监控采集服务。
-     *
-     * @param dataSourceRegistry  数据源注册表
-     * @param stringRedisTemplate Redis（可选）
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public MonitorApplicationService(DataSourceRegistry dataSourceRegistry,
-                                     ObjectProvider<StringRedisTemplate> stringRedisTemplate) {
-        this.dataSourceRegistry = dataSourceRegistry;
-        this.stringRedisTemplate = stringRedisTemplate;
-    }
 
     /**
      * 监控总览：JVM、磁盘、Redis/DB 组件与近期错误。

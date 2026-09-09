@@ -4,8 +4,8 @@ import cn.miyf.MiyfApplication;
 import cn.miyf.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -46,7 +46,7 @@ class AuthHttpIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/auth/wx-login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"code":"http-wx-1","username":"小程序用户","phone":"13800138999","wechatId":"wx_http_1","nickname":"小程序用户"}
+                                {"code":"http-wx-1"}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))

@@ -21,8 +21,8 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.ExistsRequest;
 import co.elastic.clients.json.JsonData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -41,25 +41,14 @@ import java.util.Objects;
  * @author XieMingJie
  * @since 2026-09-08
  */
+@RequiredArgsConstructor
+@Slf4j
 public class ElasticsearchSearchClient implements SearchClient {
-
-    private static final Logger log = LoggerFactory.getLogger(ElasticsearchSearchClient.class);
 
     private final ElasticsearchClient client;
     private final SearchAppProperties properties;
 
-    /**
-     * 构造 ES 搜索实现。
-     *
-     * @param client     官方 Elasticsearch 客户端
-     * @param properties 搜索配置（索引前缀等）
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public ElasticsearchSearchClient(ElasticsearchClient client, SearchAppProperties properties) {
-        this.client = client;
-        this.properties = properties;
-    }
-
+    
     /**
      * {@inheritDoc}
      *

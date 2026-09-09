@@ -6,9 +6,11 @@ import cn.miyf.config.RedisAppProperties;
 import cn.miyf.infrastructure.cache.CacheClient;
 import cn.miyf.infrastructure.cache.ListCache;
 import cn.miyf.kitchen.bean.dto.CategorySaveDto;
+import cn.miyf.kitchen.bean.entity.CategoryEntity;
 import cn.miyf.kitchen.bean.model.Category;
 import cn.miyf.kitchen.bean.vo.CategoryVo;
-import cn.miyf.kitchen.constant.CacheKeys;
+import cn.miyf.kitchen.constant.KitchenCacheKeys;
+import cn.miyf.kitchen.helper.EntityConverters;
 import cn.miyf.kitchen.repository.CategoryRepository;
 import cn.miyf.kitchen.repository.DishRepository;
 import cn.miyf.service.BaseApplicationService;
@@ -44,7 +46,7 @@ public class CategoryApplicationService extends BaseApplicationService {
      * @param cacheClient              缓存门面
      * @param redisAppProperties       Redis 配置
      * @param kitchenCacheEvictService 失效服务
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public CategoryApplicationService(CategoryRepository categoryRepository,
                                       DishRepository dishRepository,
@@ -62,14 +64,17 @@ public class CategoryApplicationService extends BaseApplicationService {
      * 用户端：启用中的分类列表（列表缓存）。
      *
      * @return 分类 VO 列表
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public List<CategoryVo> listEnabled() {
         Duration ttl = Duration.ofSeconds(redisAppProperties.getCache().getCategoryTtlSeconds());
         return categoryListCache.getOrLoadList(
-                CacheKeys.categoriesEnabled(),
+                KitchenCacheKeys.categoriesEnabled(),
                 ttl,
-                () -> categoryRepository.findAllEnabled().stream().map(this::toVo).toList()
+                () -> categoryRepository.selectAllEnabled().stream()
+                        .map(EntityConverters::toCategory)
+                        .map(this::toVo)
+                        .toList()
         );
     }
 
@@ -77,10 +82,13 @@ public class CategoryApplicationService extends BaseApplicationService {
      * 管理端：全部分类（含停用）。
      *
      * @return 分类 VO 列表
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public List<CategoryVo> listAll() {
-        return categoryRepository.findAll().stream().map(this::toVo).toList();
+        return categoryRepository.selectAllOrdered().stream()
+                .map(EntityConverters::toCategory)
+                .map(this::toVo)
+                .toList();
     }
 
     /**
@@ -88,13 +96,15 @@ public class CategoryApplicationService extends BaseApplicationService {
      *
      * @param dto 请求
      * @return 新建分类
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Transactional
     public CategoryVo create(CategorySaveDto dto) {
         Category category = new Category();
         applyDto(category, dto, true);
-        CategoryVo vo = toVo(insert(categoryRepository, category));
+        CategoryEntity entity = EntityConverters.toCategoryEntity(category);
+        insert(categoryRepository, entity);
+        CategoryVo vo = toVo(EntityConverters.toCategory(entity));
         kitchenCacheEvictService.evictCategories();
         return vo;
     }
@@ -105,13 +115,15 @@ public class CategoryApplicationService extends BaseApplicationService {
      * @param id  分类 ID
      * @param dto 请求
      * @return 更新后分类
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Transactional
     public CategoryVo update(Long id, CategorySaveDto dto) {
-        Category category = requireById(categoryRepository, id, "分类不存在");
+        Category category = EntityConverters.toCategory(requireById(categoryRepository, id, "分类不存在"));
         applyDto(category, dto, false);
-        CategoryVo vo = toVo(update(categoryRepository, category));
+        CategoryEntity entity = EntityConverters.toCategoryEntity(category);
+        update(categoryRepository, entity);
+        CategoryVo vo = toVo(EntityConverters.toCategory(entity));
         kitchenCacheEvictService.evictCategories();
         return vo;
     }
@@ -120,7 +132,7 @@ public class CategoryApplicationService extends BaseApplicationService {
      * 管理端：物理删除分类；仍有菜品时拒绝。
      *
      * @param id 分类 ID
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Transactional
     public void delete(Long id) {
@@ -138,7 +150,7 @@ public class CategoryApplicationService extends BaseApplicationService {
      * @param category 领域对象
      * @param dto      请求
      * @param creating 是否新建
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private void applyDto(Category category, CategorySaveDto dto, boolean creating) {
         category.setName(dto.getName().trim());
@@ -165,7 +177,7 @@ public class CategoryApplicationService extends BaseApplicationService {
      *
      * @param category 分类
      * @return VO
-     * @history 1.00 2026-09-04 17:30 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private CategoryVo toVo(Category category) {
         return new CategoryVo()
@@ -177,4 +189,3 @@ public class CategoryApplicationService extends BaseApplicationService {
                 .setLastModifyTime(category.getLastModifyTime());
     }
 }
-

@@ -1,8 +1,7 @@
 package cn.miyf.infrastructure.search;
 
 import cn.miyf.config.SearchAppProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
 import java.util.List;
@@ -15,9 +14,8 @@ import java.util.List;
  * @author XieMingJie
  * @since 2026-09-08
  */
+@Slf4j
 public class NoopSearchClient implements SearchClient {
-
-    private static final Logger log = LoggerFactory.getLogger(NoopSearchClient.class);
 
     private final SearchAppProperties properties;
 

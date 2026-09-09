@@ -18,7 +18,7 @@ public class DataSourceProperties {
      * 获取主数据源配置。
      *
      * @return 主数据源项
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public DataSourceItem getPrimary() {
         return primary;
@@ -28,7 +28,7 @@ public class DataSourceProperties {
      * 设置主数据源配置。
      *
      * @param primary 主数据源项
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public void setPrimary(DataSourceItem primary) {
         this.primary = primary;
@@ -38,7 +38,7 @@ public class DataSourceProperties {
      * 获取次数据源配置。
      *
      * @return 次数据源项
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public DataSourceItem getSecondary() {
         return secondary;
@@ -48,7 +48,7 @@ public class DataSourceProperties {
      * 设置次数据源配置。
      *
      * @param secondary 次数据源项
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public void setSecondary(DataSourceItem secondary) {
         this.secondary = secondary;

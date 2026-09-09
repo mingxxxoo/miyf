@@ -41,27 +41,15 @@
     display: block;
     font-size: $ck-font-caption;
     color: $ck-muted;
-    margin-bottom: 36px;
-  }
-
-  &__form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-
-  &__input {
-    height: 88px;
-    padding: 0 24px;
-    border-radius: $ck-radius-sm;
-    background: rgba($ck-primary, 0.08);
-    border: 1px solid $ck-border;
-    font-size: $ck-font-body;
-    color: $ck-text;
+    margin-bottom: 48px;
   }
 
   &__btn {
     width: 100%;
+
+    &--wx {
+      background: #07c160 !important;
+      border-color: #07c160 !important;
+    }
   }
 }

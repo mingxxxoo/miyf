@@ -1,13 +1,13 @@
 import Taro from '@tarojs/taro'
 import { create } from 'zustand'
-import { wxLogin, type WxLoginProfile } from '@/api/auth'
+import { wxLogin } from '@/api/auth'
 import { getToken, setToken, clearToken } from '@/api/request'
 import type { User } from '@/types'
 
 const USER_KEY = 'miyf_user'
-const PROFILE_KEY = 'miyf_login_profile'
 const LEGACY_USER_KEY = 'ck_user'
 const LEGACY_PROFILE_KEY = 'ck_login_profile'
+const PROFILE_KEY = 'miyf_login_profile'
 
 interface UserState {
   user: User | null
@@ -16,7 +16,7 @@ interface UserState {
   isLoggedIn: boolean
   hydrate: () => void
   bootstrap: () => Promise<boolean>
-  login: (profile: WxLoginProfile) => Promise<boolean>
+  login: () => Promise<boolean>
   requireLogin: () => Promise<boolean>
   setUser: (user: User | null) => void
   logout: () => void
@@ -42,46 +42,32 @@ function persistUser(user: User | null) {
   }
 }
 
-function persistProfile(profile: WxLoginProfile | null) {
-  if (profile) {
-    Taro.setStorageSync(PROFILE_KEY, {
-      username: profile.username,
-      phone: profile.phone,
-      wechatId: profile.wechatId,
-      nickname: profile.nickname || profile.username
-    })
-    try {
-      Taro.removeStorageSync(LEGACY_PROFILE_KEY)
-    } catch {
-      // ignore
-    }
-  } else {
+function clearLegacyProfileCache() {
+  try {
     Taro.removeStorageSync(PROFILE_KEY)
-    try {
-      Taro.removeStorageSync(LEGACY_PROFILE_KEY)
-    } catch {
-      // ignore
-    }
+  } catch {
+    // ignore
   }
-}
-
-function readCachedProfile(): WxLoginProfile | null {
-  let cached = Taro.getStorageSync(PROFILE_KEY) as WxLoginProfile | ''
-  if ((!cached || typeof cached !== 'object') && LEGACY_PROFILE_KEY) {
-    cached = Taro.getStorageSync(LEGACY_PROFILE_KEY) as WxLoginProfile | ''
-    if (cached && typeof cached === 'object') {
-      persistProfile(cached)
-    }
+  try {
+    Taro.removeStorageSync(LEGACY_PROFILE_KEY)
+  } catch {
+    // ignore
   }
-  if (!cached || typeof cached !== 'object') return null
-  if (!cached.username || !cached.phone || !cached.wechatId) return null
-  return cached
 }
 
 function currentRoute(): string {
   const pages = Taro.getCurrentPages()
   const cur = pages[pages.length - 1] as { route?: string } | undefined
   return cur?.route || ''
+}
+
+async function exchangeWxCode(): Promise<{ user: User; token: string }> {
+  const { code } = await Taro.login()
+  if (!code) {
+    throw new Error('empty wx login code')
+  }
+  const { login, user } = await wxLogin(code)
+  return { user, token: login.token }
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -121,7 +107,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   /**
-   * 进入应用时先完成登录态恢复 / 静默重新登录。
+   * 进入应用时恢复登录态；无 token 时尝试微信静默登录。
    */
   bootstrap: async () => {
     set({ bootstrapping: true })
@@ -132,25 +118,12 @@ export const useUserStore = create<UserState>((set, get) => ({
       return true
     }
 
-    const profile = readCachedProfile()
-    if (!profile) {
-      set({ bootstrapping: false })
-      get().goLogin()
-      return false
-    }
-
     set({ loading: true })
     try {
-      const { code } = await Taro.login()
-      if (!code) {
-        set({ loading: false, bootstrapping: false })
-        get().goLogin()
-        return false
-      }
-      const { login, user } = await wxLogin(code, profile)
-      setToken(login.token)
+      const { user, token } = await exchangeWxCode()
+      setToken(token)
       persistUser(user)
-      persistProfile(profile)
+      clearLegacyProfileCache()
       set({ user, isLoggedIn: true, loading: false, bootstrapping: false })
       get().goHome()
       return true
@@ -163,42 +136,13 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
   },
 
-  login: async (profile) => {
-    const username = profile.username?.trim()
-    const phone = profile.phone?.trim()
-    const wechatId = profile.wechatId?.trim()
-    if (!username) {
-      Taro.showToast({ title: '请填写用户名', icon: 'none' })
-      return false
-    }
-    if (!/^1[3-9]\d{9}$/.test(phone || '')) {
-      Taro.showToast({ title: '请填写正确手机号', icon: 'none' })
-      return false
-    }
-    if (!wechatId) {
-      Taro.showToast({ title: '请填写微信号', icon: 'none' })
-      return false
-    }
-
+  login: async () => {
     set({ loading: true })
     try {
-      const { code } = await Taro.login()
-      if (!code) {
-        Taro.showToast({ title: '获取登录凭证失败', icon: 'none' })
-        set({ loading: false })
-        return false
-      }
-      const payload: WxLoginProfile = {
-        username,
-        phone: phone!,
-        wechatId,
-        nickname: profile.nickname?.trim() || username,
-        avatarUrl: profile.avatarUrl
-      }
-      const { login, user } = await wxLogin(code, payload)
-      setToken(login.token)
+      const { user, token } = await exchangeWxCode()
+      setToken(token)
       persistUser(user)
-      persistProfile(payload)
+      clearLegacyProfileCache()
       set({ user, isLoggedIn: true, loading: false })
       setTimeout(() => {
         Taro.showToast({ title: '欢迎回来', icon: 'success' })
@@ -207,6 +151,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       return true
     } catch {
       set({ loading: false })
+      Taro.showToast({ title: '微信登录失败，请重试', icon: 'none' })
       return false
     }
   },

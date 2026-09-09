@@ -14,6 +14,7 @@ import cn.miyf.service.BaseApplicationService;
 import cn.miyf.user.bean.dto.SysUserSaveDto;
 import cn.miyf.user.bean.vo.SysUserVo;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
  * @since 2026-09-06
  */
 @Service
+@RequiredArgsConstructor
 public class SysUserApplicationService extends BaseApplicationService {
 
     private final SysUserMapper userMapper;
@@ -42,28 +44,6 @@ public class SysUserApplicationService extends BaseApplicationService {
     private final SnowflakeIdGenerator snowflakeIdGenerator;
     private final PasswordEncoder passwordEncoder;
     private final DataScopeService dataScopeService;
-
-    /**
-     * 构造系统用户应用服务。
-     *
-     * @param userMapper             用户 Mapper
-     * @param userRoleMapper         用户-角色 Mapper
-     * @param snowflakeIdGenerator   雪花 ID
-     * @param passwordEncoder        密码编码器
-     * @param dataScopeService       数据范围
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public SysUserApplicationService(SysUserMapper userMapper,
-                                     SysUserRoleMapper userRoleMapper,
-                                     SnowflakeIdGenerator snowflakeIdGenerator,
-                                     PasswordEncoder passwordEncoder,
-                                     DataScopeService dataScopeService) {
-        this.userMapper = userMapper;
-        this.userRoleMapper = userRoleMapper;
-        this.snowflakeIdGenerator = snowflakeIdGenerator;
-        this.passwordEncoder = passwordEncoder;
-        this.dataScopeService = dataScopeService;
-    }
 
     /**
      * 系统用户列表（按数据范围过滤，附带角色 ID）。

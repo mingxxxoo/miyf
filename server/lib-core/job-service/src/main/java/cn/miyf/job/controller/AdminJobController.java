@@ -7,6 +7,7 @@ import cn.miyf.job.JobDescriptor;
 import cn.miyf.job.JobRegistry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,21 +26,13 @@ import java.util.List;
 @Tag(name = "系统-任务")
 @SystemSettingsPopedom
 @RestController
-@RequestMapping("/api/admin/system/jobs")
+@RequestMapping("/admin/system/jobs")
+@RequiredArgsConstructor
 public class AdminJobController {
 
     private final JobRegistry jobRegistry;
 
-    /**
-     * 构造控制器。
-     *
-     * @param jobRegistry 任务注册表
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public AdminJobController(JobRegistry jobRegistry) {
-        this.jobRegistry = jobRegistry;
-    }
-
+    
     /**
      * 列出已注册的定时任务及启停、最近运行状态。
      *

@@ -1,6 +1,7 @@
 package cn.miyf.gateway.config;
 
 import cn.miyf.gateway.interceptor.RateLimitInterceptor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -12,20 +13,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * @since 2026-09-05 09:13
  */
 @Configuration
+@RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final RateLimitInterceptor rateLimitInterceptor;
 
-    /**
-     * 构造配置（本地上传静态映射已迁至 oss-service）。
-     *
-     * @param rateLimitInterceptor 限流拦截器
-     * @history 1.00 2026-09-05 09:13 XieMingJie Created.
-     */
-    public WebMvcConfig(RateLimitInterceptor rateLimitInterceptor) {
-        this.rateLimitInterceptor = rateLimitInterceptor;
-    }
-
+    
     /**
      * 仅对 /api/** 限流，排除文档与健康检查。
      *

@@ -7,8 +7,8 @@ import cn.miyf.health.config.HealthProperties;
 import cn.miyf.health.service.HealthSyncApplicationService;
 import cn.miyf.job.JobRegistry;
 import cn.miyf.job.MiyfJob;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -26,31 +26,17 @@ import java.util.List;
  * @since 2026-09-06
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class HealthSyncJob {
 
-    private static final Logger log = LoggerFactory.getLogger(HealthSyncJob.class);
     public static final String CODE = "health.provider.sync";
 
     private final JobRegistry jobRegistry;
     private final HealthSyncApplicationService healthSyncApplicationService;
     private final HealthProperties healthProperties;
 
-    /**
-     * 构造任务。
-     *
-     * @param jobRegistry                  任务注册表
-     * @param healthSyncApplicationService 同步服务
-     * @param healthProperties             配置
-     * @history 1.00 2026-09-08 XieMingJie Use HealthSyncApplicationService.
-     */
-    public HealthSyncJob(JobRegistry jobRegistry,
-                         HealthSyncApplicationService healthSyncApplicationService,
-                         HealthProperties healthProperties) {
-        this.jobRegistry = jobRegistry;
-        this.healthSyncApplicationService = healthSyncApplicationService;
-        this.healthProperties = healthProperties;
-    }
-
+    
     /**
      * 定时同步全部可远程拉取的 ACTIVE 绑定；按 lastSyncTime 重叠 1h 增量拉取。
      *

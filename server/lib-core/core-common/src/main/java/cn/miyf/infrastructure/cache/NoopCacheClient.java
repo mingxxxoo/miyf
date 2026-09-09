@@ -1,8 +1,7 @@
 package cn.miyf.infrastructure.cache;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
 import java.util.List;
@@ -16,9 +15,8 @@ import java.util.function.Supplier;
  * @author XieMingJie
  * @since 2026-09-08
  */
+@Slf4j
 public class NoopCacheClient implements CacheClient {
-
-    private static final Logger log = LoggerFactory.getLogger(NoopCacheClient.class);
 
     /**
      * 构造 Noop 门面并输出一次提示日志。

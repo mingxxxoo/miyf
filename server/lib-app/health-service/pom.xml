@@ -26,6 +26,10 @@
         </dependency>
         <dependency>
             <groupId>cn.miyf</groupId>
+            <artifactId>organization-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.miyf</groupId>
             <artifactId>job-service</artifactId>
         </dependency>
         <dependency>

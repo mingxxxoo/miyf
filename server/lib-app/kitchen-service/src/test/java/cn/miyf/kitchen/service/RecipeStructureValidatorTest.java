@@ -30,7 +30,7 @@ class RecipeStructureValidatorTest {
                 .setSeasonings(List.of(new RecipeMaterialDto("shengchou", "2")))
                 .setSteps(List.of(
                         new RecipeStepDto(9, "prep", "wash", "https://cdn.example/1.jpg"),
-                        new RecipeStepDto(null, null, "cook", "/uploads/2.jpg")
+                        new RecipeStepDto(null, null, "cook", "/r/2")
                 ));
         RecipeStructureValidator.validateAndNormalize(dto);
         assertEquals("EASY", dto.getDifficulty());

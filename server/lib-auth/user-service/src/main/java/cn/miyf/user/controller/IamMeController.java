@@ -6,6 +6,7 @@ import cn.miyf.permission.bean.vo.SysMenuTreeVo;
 import cn.miyf.permission.service.PermissionApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,21 +23,13 @@ import java.util.List;
 @Tag(name = "IAM-当前用户")
 @IamAdminPopedom
 @RestController
-@RequestMapping("/api/iam/me")
+@RequestMapping("/iam/me")
+@RequiredArgsConstructor
 public class IamMeController {
 
     private final PermissionApplicationService permissionApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param permissionApplicationService 权限应用服务
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public IamMeController(PermissionApplicationService permissionApplicationService) {
-        this.permissionApplicationService = permissionApplicationService;
-    }
-
+    
     /**
      * 获取当前登录用户可见的菜单树。
      *

@@ -7,10 +7,14 @@ wx:
     mock-enabled: true
 
 app:
+  health:
+    huawei:
+      mock-enabled: true
   file-storage:
     type: local
     path: ${java.io.tmpdir}/miyf-it-uploads
-    base-url: http://localhost:8080/uploads
+    base-url: http://localhost:8080
+    public-read: false
   redis:
     enabled: true
     rate-limit:

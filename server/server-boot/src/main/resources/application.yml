@@ -52,6 +52,9 @@ mybatis-plus:
       id-type: assign_id
 
 app:
+  web:
+    # 业务 API 全局前缀；Controller @RequestMapping 不要再写 /api
+    api-prefix: ${APP_WEB_API_PREFIX:/api}
   id:
     worker-id: ${APP_ID_WORKER_ID:1}
     datacenter-id: ${APP_ID_DATACENTER_ID:1}
@@ -99,7 +102,8 @@ app:
   file-storage:
     type: ${FILE_STORAGE_TYPE:minio}
     path: ${FILE_STORAGE_PATH:./uploads}
-    base-url: ${FILE_STORAGE_BASE_URL:http://localhost:9000/miyf}
+    base-url: ${FILE_STORAGE_BASE_URL:http://localhost:8080}
+    path-namespace: ${FILE_STORAGE_PATH_NAMESPACE:miyf}
     max-size-bytes: ${FILE_STORAGE_MAX_SIZE_BYTES:5242880}
     allowed-content-types:
       - image/jpeg
@@ -111,7 +115,7 @@ app:
     secret-key: ${FILE_STORAGE_SECRET_KEY:minioadmin}
     region: ${FILE_STORAGE_REGION:}
     auto-create-bucket: ${FILE_STORAGE_AUTO_CREATE_BUCKET:true}
-    public-read: ${FILE_STORAGE_PUBLIC_READ:true}
+    public-read: ${FILE_STORAGE_PUBLIC_READ:false}
   security:
     # 是否放行 Swagger；生产 profile 关闭
     expose-docs: ${APP_SECURITY_EXPOSE_DOCS:true}
@@ -126,7 +130,7 @@ app:
       huawei:
         enabled: ${APP_HEALTH_PROVIDER_HUAWEI_ENABLED:false}
     huawei:
-      mock-enabled: ${APP_HEALTH_HUAWEI_MOCK:true}
+      mock-enabled: ${APP_HEALTH_HUAWEI_MOCK:false}
       client-id: ${HUAWEI_HEALTH_CLIENT_ID:}
       client-secret: ${HUAWEI_HEALTH_CLIENT_SECRET:}
       redirect-uri: ${HUAWEI_HEALTH_REDIRECT_URI:http://localhost:5173/health/providers}
@@ -141,7 +145,7 @@ app:
       enabled: ${APP_NOTIFICATION_SMS_ENABLED:false}
       provider: ${APP_NOTIFICATION_SMS_PROVIDER:logging}
   search:
-    # 默认关闭；开启需本地/compose 启动 Elasticsearch
+    # 暂时关闭：菜品查询走 SQL；恢复 ES 时改为 true 并部署 Elasticsearch
     enabled: ${APP_SEARCH_ENABLED:false}
     index-prefix: ${APP_SEARCH_INDEX_PREFIX:miyf}
     uris:
@@ -155,7 +159,7 @@ wx:
   auth:
     app-id: ${WX_APP_ID:}
     app-secret: ${WX_APP_SECRET:}
-    mock-enabled: ${WX_AUTH_MOCK_ENABLED:true}
+    mock-enabled: ${WX_AUTH_MOCK_ENABLED:false}
 
 springdoc:
   api-docs:

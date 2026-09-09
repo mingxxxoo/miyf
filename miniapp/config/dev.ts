@@ -7,7 +7,7 @@ export default {
   },
   defineConstants: {
     'process.env.TARO_APP_API_BASE': JSON.stringify(
-      process.env.TARO_APP_API_BASE || 'http://www.miyf.cn'
+      process.env.TARO_APP_API_BASE || 'https://www.miyf.cn'
     )
   },
   mini: {},

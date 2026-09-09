@@ -42,7 +42,7 @@ public final class OrderStatusMachine {
      * @param from 当前状态
      * @param to   目标状态
      * @return true 表示允许
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public static boolean canTransit(OrderStatus from, OrderStatus to) {
         Set<OrderStatus> allowed = TRANSITIONS.getOrDefault(from, EnumSet.noneOf(OrderStatus.class));
@@ -54,7 +54,7 @@ public final class OrderStatusMachine {
      *
      * @param from 当前状态
      * @param to   目标状态
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public static void assertTransit(OrderStatus from, OrderStatus to) {
         if (!canTransit(from, to)) {
@@ -68,7 +68,7 @@ public final class OrderStatusMachine {
      *
      * @param current 当前状态
      * @return true 表示可取消
-     * @history 1.00 2026-09-04 16:41 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public static boolean canUserCancel(OrderStatus current) {
         return current == OrderStatus.PENDING;

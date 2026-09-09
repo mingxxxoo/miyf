@@ -7,6 +7,7 @@ import cn.miyf.kitchen.security.KitchenAdminPopedom;
 import cn.miyf.kitchen.service.DashboardApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,21 +21,13 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "管理端仪表盘")
 @KitchenAdminPopedom
 @RestController
-@RequestMapping("/api/admin/dashboard")
+@RequestMapping("/admin/dashboard")
+@RequiredArgsConstructor
 public class AdminDashboardController {
 
     private final DashboardApplicationService dashboardApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param dashboardApplicationService 仪表盘服务
-     * @history 1.00 2026-09-05 XieMingJie Created.
-     */
-    public AdminDashboardController(DashboardApplicationService dashboardApplicationService) {
-        this.dashboardApplicationService = dashboardApplicationService;
-    }
-
+    
     /**
      * 仪表盘统计。
      *

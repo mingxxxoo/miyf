@@ -2,6 +2,7 @@ package cn.miyf.infrastructure.cache.support;
 
 import cn.miyf.infrastructure.cache.ValueCache;
 import com.fasterxml.jackson.databind.JavaType;
+import lombok.RequiredArgsConstructor;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -14,23 +15,13 @@ import java.util.function.Supplier;
  * @author XieMingJie
  * @since 2026-09-08
  */
+@RequiredArgsConstructor
 public class RedisJsonValueCache<T> implements ValueCache<T> {
 
     private final JsonRedisCacheStore store;
     private final JavaType javaType;
 
-    /**
-     * 构造缓存视图。
-     *
-     * @param store    存储内核
-     * @param javaType 值的 Jackson 类型
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public RedisJsonValueCache(JsonRedisCacheStore store, JavaType javaType) {
-        this.store = store;
-        this.javaType = javaType;
-    }
-
+    
     /**
      * {@inheritDoc}
      *

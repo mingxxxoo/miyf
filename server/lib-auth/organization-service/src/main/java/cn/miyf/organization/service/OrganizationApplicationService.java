@@ -12,6 +12,7 @@ import cn.miyf.organization.bean.vo.SysOrgUnitTreeVo;
 import cn.miyf.organization.repository.mapper.SysOrgUnitMapper;
 import cn.miyf.service.BaseApplicationService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -30,27 +31,12 @@ import java.util.Set;
  * @since 2026-09-06
  */
 @Service
+@RequiredArgsConstructor
 public class OrganizationApplicationService extends BaseApplicationService {
 
     private final SysOrgUnitMapper orgUnitMapper;
     private final SnowflakeIdGenerator snowflakeIdGenerator;
     private final DataScopeService dataScopeService;
-
-    /**
-     * 构造组织应用服务。
-     *
-     * @param orgUnitMapper          组织 Mapper
-     * @param snowflakeIdGenerator   雪花 ID
-     * @param dataScopeService       数据范围
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public OrganizationApplicationService(SysOrgUnitMapper orgUnitMapper,
-                                          SnowflakeIdGenerator snowflakeIdGenerator,
-                                          DataScopeService dataScopeService) {
-        this.orgUnitMapper = orgUnitMapper;
-        this.snowflakeIdGenerator = snowflakeIdGenerator;
-        this.dataScopeService = dataScopeService;
-    }
 
     /**
      * 组织单位列表（按当前管理员数据范围过滤）。

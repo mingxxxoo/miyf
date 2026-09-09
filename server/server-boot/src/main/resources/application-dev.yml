@@ -7,6 +7,14 @@ wx:
   auth:
     mock-enabled: true
 
+app:
+  health:
+    huawei:
+      mock-enabled: true
+  file-storage:
+    # 本地联调可按需打开公开读；默认仍跟随基线私有桶
+    public-read: false
+
 logging:
   level:
     cn.miyf: DEBUG

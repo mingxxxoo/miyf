@@ -9,6 +9,7 @@ import cn.miyf.permission.service.PermissionApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,21 +31,13 @@ import java.util.List;
 @Tag(name = "IAM-权限组")
 @IamAdminPopedom
 @RestController
-@RequestMapping("/api/iam/perm-groups")
+@RequestMapping("/iam/perm-groups")
+@RequiredArgsConstructor
 public class IamPermGroupController {
 
     private final PermissionApplicationService permissionApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param permissionApplicationService 权限应用服务
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public IamPermGroupController(PermissionApplicationService permissionApplicationService) {
-        this.permissionApplicationService = permissionApplicationService;
-    }
-
+    
     /**
      * 查询权限组列表（含组内权限码摘要）。
      *

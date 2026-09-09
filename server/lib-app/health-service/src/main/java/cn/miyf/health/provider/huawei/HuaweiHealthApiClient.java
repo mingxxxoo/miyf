@@ -9,8 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -31,9 +30,8 @@ import java.util.Set;
  * @since 2026-09-06
  */
 @Component
+@Slf4j
 public class HuaweiHealthApiClient {
-
-    private static final Logger log = LoggerFactory.getLogger(HuaweiHealthApiClient.class);
 
     /**
      * 规范指标 → 华为 dataTypeName

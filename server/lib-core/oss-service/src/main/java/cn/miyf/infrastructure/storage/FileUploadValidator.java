@@ -3,8 +3,7 @@ package cn.miyf.infrastructure.storage;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.config.FileStorageProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
@@ -20,9 +19,8 @@ import java.util.Set;
  * @author XieMingJie
  * @since 2026-09-05 09:19
  */
+@Slf4j
 public final class FileUploadValidator {
-
-    private static final Logger log = LoggerFactory.getLogger(FileUploadValidator.class);
 
     private static final Set<String> ALLOWED = Set.of("image/jpeg", "image/png", "image/webp");
 

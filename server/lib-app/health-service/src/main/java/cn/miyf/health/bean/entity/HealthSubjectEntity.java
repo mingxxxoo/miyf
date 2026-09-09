@@ -20,6 +20,7 @@ import java.time.LocalDate;
 
 /**
  * 健康主体（被采集人）。
+ * 含 orgUnitId / createdBy，供管理端 DataScope 裁剪可见范围。
  *
  * @author XieMingJie
  * @since 2026-09-06
@@ -58,6 +59,16 @@ public class HealthSubjectEntity extends BaseEntity {
     @JsonSerialize(using = ToStringSerializer.class)
     @Schema(description = "外部用户 ID（如厨房用户）", type = "string")
     private Long externalUserId;
+
+    @TableField("org_unit_id")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @Schema(description = "所属组织 ID", type = "string")
+    private Long orgUnitId;
+
+    @TableField("created_by")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @Schema(description = "创建人用户 ID", type = "string")
+    private Long createdBy;
 
     @TableField("status")
     @Schema(description = "状态")

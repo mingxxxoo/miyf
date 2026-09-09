@@ -22,7 +22,7 @@ public class MybatisConfig {
      * 分页拦截器（PostgreSQL）。
      *
      * @return 拦截器
-     * @history 1.00 2026-09-04 17:06 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
@@ -35,7 +35,7 @@ public class MybatisConfig {
      * QO 排序/聚合 SQL 拦截器（由 MyBatis-Plus 自动挂到 SqlSessionFactory）。
      *
      * @return 拦截器
-     * @history 1.00 2026-09-04 17:50 XieMingJie Created.
+     * @history 1.00 2026-09-04 XieMingJie Created.
      */
     @Bean
     public ConditionSqlInterceptor conditionSqlInterceptor() {

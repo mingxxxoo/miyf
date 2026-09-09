@@ -3,6 +3,7 @@ package cn.miyf.infrastructure.redis;
 import cn.miyf.infrastructure.cache.CacheClient;
 import cn.miyf.infrastructure.cache.ValueCache;
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -17,20 +18,12 @@ import java.util.function.Supplier;
  * @since 2026-09-05 09:13
  */
 @Component
+@RequiredArgsConstructor
 public class RedisJsonCache {
 
     private final CacheClient cacheClient;
 
-    /**
-     * 构造兼容缓存组件。
-     *
-     * @param cacheClient 抽象缓存门面
-     * @history 1.00 2026-09-05 09:13 XieMingJie Created.
-     */
-    public RedisJsonCache(CacheClient cacheClient) {
-        this.cacheClient = cacheClient;
-    }
-
+    
     /**
      * 读取缓存；未命中则加载并回填。
      *

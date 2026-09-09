@@ -15,7 +15,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-miyf}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
     volumes:
       - ${MIYF_DATA_DB:-/miyf/data/db/data}:/var/lib/postgresql/data
     networks:
@@ -32,13 +32,18 @@ services:
   redis:
     image: ${MIYF_IMAGE_REDIS:-registry.cn-shanghai.aliyuncs.com/miyf/redis:7-alpine}
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD:?Set REDIS_PASSWORD in deploy/.env}
     volumes:
       - ${MIYF_DATA_REDIS:-/miyf/data/redis/data}:/data
     networks:
       - miyf-net
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 3s
       retries: 10
@@ -50,8 +55,8 @@ services:
     restart: unless-stopped
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
-      MINIO_ROOT_USER: ${FILE_STORAGE_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${FILE_STORAGE_SECRET_KEY:-minioadmin}
+      MINIO_ROOT_USER: ${FILE_STORAGE_ACCESS_KEY:?Set FILE_STORAGE_ACCESS_KEY in deploy/.env}
+      MINIO_ROOT_PASSWORD: ${FILE_STORAGE_SECRET_KEY:?Set FILE_STORAGE_SECRET_KEY in deploy/.env}
     volumes:
       - ${MIYF_DATA_OSS:-/miyf/data/oss/resource}:/data
     networks:
@@ -65,27 +70,6 @@ services:
     # ports:
     #   - "9001:9001"
 
-  elasticsearch:
-    image: ${MIYF_IMAGE_ES:-docker.elastic.co/elasticsearch/elasticsearch:8.17.0}
-    restart: unless-stopped
-    environment:
-      discovery.type: single-node
-      xpack.security.enabled: "false"
-      ES_JAVA_OPTS: ${ES_JAVA_OPTS:--Xms512m -Xmx512m}
-      cluster.name: miyf-es
-    volumes:
-      - ${MIYF_DATA_ES:-/miyf/data/elasticsearch}:/usr/share/elasticsearch/data
-    networks:
-      - miyf-net
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9200 >/dev/null || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 20
-      start_period: 60s
-    # ports:
-    #   - "9200:9200"
-
   server:
     image: ${MIYF_IMAGE_SERVER:-registry.cn-shanghai.aliyuncs.com/miyf/miyf_app:0.1.0}
     restart: unless-stopped
@@ -94,7 +78,7 @@ services:
       SERVER_PORT: 8080
       PRIMARY_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-miyf}
       PRIMARY_DB_USERNAME: ${POSTGRES_USER:-postgres}
-      PRIMARY_DB_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      PRIMARY_DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
@@ -102,27 +86,24 @@ services:
       FILE_STORAGE_TYPE: minio
       FILE_STORAGE_ENDPOINT: http://minio:9000
       FILE_STORAGE_BUCKET: ${FILE_STORAGE_BUCKET:-miyf}
-      FILE_STORAGE_ACCESS_KEY: ${FILE_STORAGE_ACCESS_KEY:-minioadmin}
-      FILE_STORAGE_SECRET_KEY: ${FILE_STORAGE_SECRET_KEY:-minioadmin}
-      FILE_STORAGE_BASE_URL: ${FILE_STORAGE_BASE_URL:-http://localhost/media}
+      FILE_STORAGE_ACCESS_KEY: ${FILE_STORAGE_ACCESS_KEY:?Set FILE_STORAGE_ACCESS_KEY in deploy/.env}
+      FILE_STORAGE_SECRET_KEY: ${FILE_STORAGE_SECRET_KEY:?Set FILE_STORAGE_SECRET_KEY in deploy/.env}
+      FILE_STORAGE_BASE_URL: ${FILE_STORAGE_BASE_URL:-http://localhost}
       FILE_STORAGE_AUTO_CREATE_BUCKET: ${FILE_STORAGE_AUTO_CREATE_BUCKET:-true}
-      FILE_STORAGE_PUBLIC_READ: ${FILE_STORAGE_PUBLIC_READ:-true}
-      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret-at-least-32-chars}
+      FILE_STORAGE_PUBLIC_READ: ${FILE_STORAGE_PUBLIC_READ:-false}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in deploy/.env}
       JWT_EXPIRE_SECONDS: ${JWT_EXPIRE_SECONDS:-604800}
-      WX_AUTH_MOCK_ENABLED: ${WX_AUTH_MOCK_ENABLED:-true}
+      WX_AUTH_MOCK_ENABLED: ${WX_AUTH_MOCK_ENABLED:-false}
       WX_APP_ID: ${WX_APP_ID:-}
       WX_APP_SECRET: ${WX_APP_SECRET:-}
       APP_HEALTH_PROVIDER_HUAWEI_ENABLED: ${APP_HEALTH_PROVIDER_HUAWEI_ENABLED:-false}
-      APP_HEALTH_HUAWEI_MOCK: ${APP_HEALTH_HUAWEI_MOCK:-true}
+      APP_HEALTH_HUAWEI_MOCK: ${APP_HEALTH_HUAWEI_MOCK:-false}
       HUAWEI_HEALTH_CLIENT_ID: ${HUAWEI_HEALTH_CLIENT_ID:-}
       HUAWEI_HEALTH_CLIENT_SECRET: ${HUAWEI_HEALTH_CLIENT_SECRET:-}
       HUAWEI_HEALTH_REDIRECT_URI: ${HUAWEI_HEALTH_REDIRECT_URI:-http://localhost:5173/health/providers}
       APP_HEALTH_SYNC_CRON: ${APP_HEALTH_SYNC_CRON:-0 15 * * * *}
+      # 搜索暂时仅用 SQL；search-service 默认 Noop（APP_SEARCH_ENABLED 未传则为 false）
       APP_SEARCH_ENABLED: ${APP_SEARCH_ENABLED:-false}
-      APP_SEARCH_INDEX_PREFIX: ${APP_SEARCH_INDEX_PREFIX:-miyf}
-      ELASTICSEARCH_URIS: ${ELASTICSEARCH_URIS:-http://elasticsearch:9200}
-      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-}
-      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}
       LOG_PATH: ${LOG_PATH:-/miyf/log/server}
     volumes:
       - ${MIYF_LOG_SERVER:-/miyf/log/server}:/miyf/log/server
@@ -150,11 +131,11 @@ services:
     ports:
       - "${NGINX_HTTP_PORT:-80}:80"
       # 启用 HTTPS 时取消下面三行注释（须先放好证书）
-      # - "${NGINX_HTTPS_PORT:-443}:443"
+      - "${NGINX_HTTPS_PORT:-443}:443"
     volumes:
       - ${MIYF_LOG_NGINX:-/miyf/log/nginx}:/var/log/nginx
-      # - ${MIYF_DATA_NGINX_CERTS:-/miyf/data/nginx/certs}:/etc/nginx/certs:ro
-      # - ./nginx/conf.d/https.conf:/etc/nginx/conf.d/https.conf:ro
+      - ${MIYF_DATA_NGINX_CERTS:-/miyf/data/nginx/certs}:/etc/nginx/certs:ro
+      - ./nginx/conf.d/https.conf:/etc/nginx/conf.d/https.conf:ro
     depends_on:
       server:
         condition: service_healthy

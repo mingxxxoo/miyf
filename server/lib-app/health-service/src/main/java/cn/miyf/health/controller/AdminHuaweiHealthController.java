@@ -2,10 +2,16 @@ package cn.miyf.health.controller;
 
 import cn.miyf.auth.security.MiyfPermission;
 import cn.miyf.common.ApiResult;
+import cn.miyf.common.BusinessException;
+import cn.miyf.common.ErrorCode;
+import cn.miyf.health.bean.dto.HuaweiOAuthCallbackDto;
 import cn.miyf.health.provider.huawei.HuaweiHealthAuthFacade;
 import cn.miyf.health.security.HealthPersonalPopedom;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,20 +32,11 @@ import java.util.Map;
 @Tag(name = "健康-华为授权")
 @HealthPersonalPopedom
 @RestController
-@RequestMapping("/api/admin/health/providers/huawei")
+@RequestMapping("/admin/health/providers/huawei")
+@RequiredArgsConstructor
 public class AdminHuaweiHealthController {
 
     private final HuaweiHealthAuthFacade huaweiHealthAuthFacade;
-
-    /**
-     * 构造控制器。
-     *
-     * @param huaweiHealthAuthFacade 华为授权编排门面
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public AdminHuaweiHealthController(HuaweiHealthAuthFacade huaweiHealthAuthFacade) {
-        this.huaweiHealthAuthFacade = huaweiHealthAuthFacade;
-    }
 
     /**
      * 生成绑定到指定主体的华为 OAuth 授权 URL。
@@ -57,25 +54,19 @@ public class AdminHuaweiHealthController {
 
     /**
      * 使用授权码换取 Token，并写入该主体的绑定关系。
-     * body 需包含 code、state，以及可选 subjectId。
      *
-     * @param body 回调参数
+     * @param dto 回调参数（code 必填；subjectId / state 可选）
      * @return 授权结果摘要
      * @history 1.00 2026-09-08 XieMingJie Created.
      */
     @Operation(summary = "用授权码换取 Token 并绑定主体")
     @MiyfPermission(code = "health:huawei:oauth")
     @PostMapping("/oauth/callback")
-    public ApiResult<Map<String, Object>> oauthCallback(@RequestBody Map<String, String> body) {
-        Long subjectId = null;
-        // subjectId 允许缺省：部分回调仅靠 state 解析主体
-        if (body.get("subjectId") != null && !body.get("subjectId").isBlank()) {
-            subjectId = Long.parseLong(body.get("subjectId").trim());
-        }
+    public ApiResult<Map<String, Object>> oauthCallback(@Valid @RequestBody HuaweiOAuthCallbackDto dto) {
         return ApiResult.ok(huaweiHealthAuthFacade.completeOAuth(
-                subjectId,
-                body.get("code"),
-                body.get("state")));
+                parseOptionalSubjectId(dto.getSubjectId()),
+                dto.getCode(),
+                dto.getState()));
     }
 
     /**
@@ -105,5 +96,16 @@ public class AdminHuaweiHealthController {
     public ApiResult<Void> revoke(@RequestParam Long subjectId) {
         huaweiHealthAuthFacade.revoke(subjectId);
         return ApiResult.ok();
+    }
+
+    private static Long parseOptionalSubjectId(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(raw.trim());
+        } catch (NumberFormatException ex) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "subjectId 非法");
+        }
     }
 }

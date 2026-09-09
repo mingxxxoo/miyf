@@ -14,6 +14,7 @@ import cn.miyf.auth.security.PrincipalType;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.service.BaseApplicationService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,7 @@ import java.util.List;
  * @since 2026-09-04 17:06
  */
 @Service
+@RequiredArgsConstructor
 public class AuthApplicationService extends BaseApplicationService {
 
     private final SysUserMapper sysUserMapper;
@@ -33,28 +35,6 @@ public class AuthApplicationService extends BaseApplicationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final LoginProtectService loginProtectService;
-
-    /**
-     * 构造认证服务：接入验证码与阶梯封禁，权限加载委托 {@link AdminAuthAuthorityLoader}。
-     *
-     * @param sysUserMapper       系统用户 Mapper
-     * @param authorityLoader     角色/权限加载
-     * @param passwordEncoder     密码编码器
-     * @param jwtService          JWT 服务
-     * @param loginProtectService 登录风控
-     * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     */
-    public AuthApplicationService(SysUserMapper sysUserMapper,
-                                  AdminAuthAuthorityLoader authorityLoader,
-                                  PasswordEncoder passwordEncoder,
-                                  JwtService jwtService,
-                                  LoginProtectService loginProtectService) {
-        this.sysUserMapper = sysUserMapper;
-        this.authorityLoader = authorityLoader;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.loginProtectService = loginProtectService;
-    }
 
     /**
      * 查询登录风控状态。
@@ -110,8 +90,8 @@ public class AuthApplicationService extends BaseApplicationService {
                     user.getOrgUnitId(),
                     dataScope
             );
-            loginProtectService.clear(principalKey);
-            return toLoginVo(principal, user.getNickname(), user.getUsername(), roleCodes);
+            boolean cleared = loginProtectService.clear(principalKey);
+            return toLoginVo(principal, user.getNickname(), user.getUsername(), roleCodes, cleared);
         } catch (BusinessException ex) {
             if (ex.getCode() == ErrorCode.LOGIN_FAILED.getCode() && ex.getData() == null) {
                 throw loginFailed(principalKey);
@@ -144,11 +124,17 @@ public class AuthApplicationService extends BaseApplicationService {
      *
      * @param principal   主体
      * @param displayName 展示名
+     * @param username    登录名
      * @param roles       角色列表
+     * @param cleared     风控状态是否清理成功
      * @return LoginVo
      * @history 1.00 2026-09-04 17:06 XieMingJie Created.
      */
-    private LoginVo toLoginVo(AuthPrincipal principal, String displayName, String username, List<String> roles) {
+    private LoginVo toLoginVo(AuthPrincipal principal,
+                              String displayName,
+                              String username,
+                              List<String> roles,
+                              boolean cleared) {
         return new LoginVo()
                 .setToken(jwtService.createToken(principal))
                 .setExpireSeconds(jwtService.getExpireSeconds())
@@ -157,6 +143,7 @@ public class AuthApplicationService extends BaseApplicationService {
                 .setUsername(username)
                 .setPrincipalType(principal.getType().name())
                 .setPermissions(principal.getPermissions())
-                .setRoles(roles);
+                .setRoles(roles)
+                .setProtectStateCleared(cleared);
     }
 }

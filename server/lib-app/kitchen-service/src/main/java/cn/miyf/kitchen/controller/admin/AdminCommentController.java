@@ -11,13 +11,13 @@ import cn.miyf.kitchen.security.KitchenAdminPopedom;
 import cn.miyf.kitchen.service.CommentApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 
 /**
  * 管理端评价接口。
@@ -28,21 +28,13 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "管理端评价")
 @KitchenAdminPopedom
 @RestController
-@RequestMapping("/api/admin/comments")
+@RequestMapping("/admin/comments")
+@RequiredArgsConstructor
 public class AdminCommentController {
 
     private final CommentApplicationService commentApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param commentApplicationService 评价服务
-     * @history 1.00 2026-09-04 17:55 XieMingJie Created.
-     */
-    public AdminCommentController(CommentApplicationService commentApplicationService) {
-        this.commentApplicationService = commentApplicationService;
-    }
-
+    
     /**
      * 评价分页。
      *

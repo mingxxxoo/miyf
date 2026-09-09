@@ -10,6 +10,7 @@ import cn.miyf.organization.service.OrganizationApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,21 +32,13 @@ import java.util.List;
 @Tag(name = "IAM-组织单位")
 @IamAdminPopedom
 @RestController
-@RequestMapping("/api/iam/org-units")
+@RequestMapping("/iam/org-units")
+@RequiredArgsConstructor
 public class IamOrgUnitController {
 
     private final OrganizationApplicationService organizationApplicationService;
 
-    /**
-     * 构造控制器。
-     *
-     * @param organizationApplicationService 组织应用服务
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public IamOrgUnitController(OrganizationApplicationService organizationApplicationService) {
-        this.organizationApplicationService = organizationApplicationService;
-    }
-
+    
     /**
      * 查询当前用户数据范围内可见的组织单位无限极树。
      *

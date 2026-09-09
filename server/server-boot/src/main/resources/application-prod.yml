@@ -10,6 +10,11 @@ wx:
 app:
   security:
     expose-docs: false
+  health:
+    huawei:
+      mock-enabled: false
+  file-storage:
+    public-read: false
 
 springdoc:
   api-docs:

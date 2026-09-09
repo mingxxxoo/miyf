@@ -2,6 +2,7 @@ package cn.miyf.gateway.config;
 
 import cn.miyf.common.ApiResult;
 import cn.miyf.common.ErrorCode;
+import cn.miyf.config.WebAppProperties;
 import cn.miyf.gateway.security.JwtAuthFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
@@ -25,7 +26,8 @@ import java.util.List;
 /**
  * Spring Security 过滤链：无状态 JWT；细粒度权限由方法级 AuthorizationManager / {@code @PreAuthorize} 控制。
  * <p>
- * {@code /api/**} 采用显式白名单：公开浏览与登录放行，写操作与管理端需认证，其余 API 需认证。
+ * 业务 API（{@code app.web.api-prefix}，默认 {@code /api/**}）采用显式白名单：
+ * 公开浏览与登录放行，写操作与管理端需认证，其余 API 需认证。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:06
@@ -35,22 +37,26 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final ObjectMapper objectMapper;
+    private final WebAppProperties webAppProperties;
     private final boolean exposeDocs;
 
     /**
      * 构造安全配置。
      *
-     * @param jwtAuthFilter JWT 过滤器
-     * @param objectMapper  JSON 工具
-     * @param exposeDocs    是否放行 Swagger（生产应关闭）
+     * @param jwtAuthFilter    JWT 过滤器
+     * @param objectMapper     JSON 工具
+     * @param webAppProperties Web 配置（API 前缀）
+     * @param exposeDocs       是否放行 Swagger（生产应关闭）
      * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     * @history 1.01 2026-09-08 XieMingJie /api 显式白名单；文档入口可关。
+     * @history 1.01 2026-09-09 XieMingJie 路径改读 app.web.api-prefix。
      */
     public SecurityConfig(JwtAuthFilter jwtAuthFilter,
                           ObjectMapper objectMapper,
+                          WebAppProperties webAppProperties,
                           @Value("${app.security.expose-docs:true}") boolean exposeDocs) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.objectMapper = objectMapper;
+        this.webAppProperties = webAppProperties;
         this.exposeDocs = exposeDocs;
     }
 
@@ -74,20 +80,20 @@ public class SecurityConfig {
      * @return 过滤链
      * @throws Exception 配置异常
      * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     * @history 1.01 2026-09-08 XieMingJie 显式白名单，去掉 /api/** 兜底 permitAll。
+     * @history 1.01 2026-09-09 XieMingJie 路径改读 app.web.api-prefix。
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         List<String> publicPaths = new ArrayList<>(List.of(
-                "/api/auth/wx-login",
-                "/api/admin/auth/login",
-                "/api/admin/auth/login-status",
-                "/api/admin/auth/captcha",
+                webAppProperties.api("/auth/wx-login"),
+                webAppProperties.api("/admin/auth/login"),
+                webAppProperties.api("/admin/auth/login-status"),
+                webAppProperties.api("/admin/auth/captcha"),
                 "/actuator/health",
                 "/actuator/info",
-                "/uploads/**",
-                "/api/categories/**",
-                "/api/dishes/**"
+                "/r/**",
+                webAppProperties.api("/categories/**"),
+                webAppProperties.api("/dishes/**")
         ));
         if (exposeDocs) {
             publicPaths.add("/v3/api-docs/**");
@@ -101,10 +107,17 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(publics).permitAll()
-                        .requestMatchers("/api/admin/**", "/api/iam/**").authenticated()
-                        .requestMatchers("/api/upload").authenticated()
-                        .requestMatchers("/api/orders/**", "/api/comments/**", "/api/user/**").authenticated()
-                        .requestMatchers("/api/**").authenticated()
+                        .requestMatchers(
+                                webAppProperties.api("/admin/**"),
+                                webAppProperties.api("/iam/**")
+                        ).authenticated()
+                        .requestMatchers(webAppProperties.api("/upload")).authenticated()
+                        .requestMatchers(
+                                webAppProperties.api("/orders/**"),
+                                webAppProperties.api("/comments/**"),
+                                webAppProperties.api("/user/**")
+                        ).authenticated()
+                        .requestMatchers(webAppProperties.api("/**")).authenticated()
                         .anyRequest().permitAll()
                 )
                 .exceptionHandling(ex -> ex

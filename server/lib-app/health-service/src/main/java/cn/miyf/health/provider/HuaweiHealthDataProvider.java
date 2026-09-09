@@ -10,6 +10,7 @@ import cn.miyf.health.provider.huawei.HuaweiTokenBundle;
 import cn.miyf.health.spi.HealthDataProvider;
 import cn.miyf.health.spi.HealthFetchRequest;
 import cn.miyf.health.spi.HealthSampleDraft;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -30,6 +31,7 @@ import java.util.Set;
  * @since 2026-09-06
  */
 @Component
+@RequiredArgsConstructor
 public class HuaweiHealthDataProvider implements HealthDataProvider {
 
     public static final String CODE = "huawei";
@@ -38,22 +40,7 @@ public class HuaweiHealthDataProvider implements HealthDataProvider {
     private final HuaweiHealthOAuthService oauthService;
     private final HuaweiHealthApiClient apiClient;
 
-    /**
-     * 构造华为数据源。
-     *
-     * @param healthProperties 配置
-     * @param oauthService     OAuth
-     * @param apiClient        Health Kit 客户端
-     * @history 1.00 2026-09-08 XieMingJie Created.
-     */
-    public HuaweiHealthDataProvider(HealthProperties healthProperties,
-                                    HuaweiHealthOAuthService oauthService,
-                                    HuaweiHealthApiClient apiClient) {
-        this.healthProperties = healthProperties;
-        this.oauthService = oauthService;
-        this.apiClient = apiClient;
-    }
-
+    
     /**
      * {@inheritDoc}
      *

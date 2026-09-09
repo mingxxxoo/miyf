@@ -163,10 +163,13 @@ export const healthApi = {
         id: sid(raw.id),
         subjectId: sid(raw.subjectId),
         providerCode: String(raw.providerCode ?? ''),
-        externalAccountId: raw.externalAccountId
-          ? String(raw.externalAccountId)
+        providerDisplayName: raw.providerDisplayName
+          ? String(raw.providerDisplayName)
           : undefined,
-        credentialRef: raw.credentialRef ? String(raw.credentialRef) : undefined,
+        externalAccountMasked: raw.externalAccountMasked
+          ? String(raw.externalAccountMasked)
+          : undefined,
+        hasCredential: Boolean(raw.hasCredential),
         status: String(raw.status ?? 'ACTIVE'),
         lastSyncTime: raw.lastSyncTime ? String(raw.lastSyncTime) : undefined,
       }),
@@ -189,10 +192,13 @@ export const healthApi = {
       id: sid(raw.id),
       subjectId: sid(raw.subjectId),
       providerCode: String(raw.providerCode ?? ''),
-      externalAccountId: raw.externalAccountId
-        ? String(raw.externalAccountId)
+      providerDisplayName: raw.providerDisplayName
+        ? String(raw.providerDisplayName)
         : undefined,
-      credentialRef: raw.credentialRef ? String(raw.credentialRef) : undefined,
+      externalAccountMasked: raw.externalAccountMasked
+        ? String(raw.externalAccountMasked)
+        : undefined,
+      hasCredential: Boolean(raw.hasCredential),
       status: String(raw.status ?? 'ACTIVE'),
       lastSyncTime: raw.lastSyncTime ? String(raw.lastSyncTime) : undefined,
     } satisfies HealthBinding;
@@ -306,8 +312,9 @@ export interface HealthBinding {
   id: string;
   subjectId: string;
   providerCode: string;
-  externalAccountId?: string;
-  credentialRef?: string;
+  providerDisplayName?: string;
+  externalAccountMasked?: string;
+  hasCredential?: boolean;
   status: string;
   lastSyncTime?: string;
 }

@@ -6,6 +6,7 @@ import cn.miyf.permission.bean.entity.SysPermissionEntity;
 import cn.miyf.permission.bean.entity.SysRoleEntity;
 import cn.miyf.permission.repository.mapper.SysPermissionMapper;
 import cn.miyf.permission.repository.mapper.SysRoleMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -17,16 +18,11 @@ import java.util.List;
  * @since 2026-09-06
  */
 @Component
+@RequiredArgsConstructor
 public class AdminAuthAuthorityLoaderImpl implements AdminAuthAuthorityLoader {
 
     private final SysRoleMapper sysRoleMapper;
     private final SysPermissionMapper sysPermissionMapper;
-
-    public AdminAuthAuthorityLoaderImpl(SysRoleMapper sysRoleMapper,
-                                        SysPermissionMapper sysPermissionMapper) {
-        this.sysRoleMapper = sysRoleMapper;
-        this.sysPermissionMapper = sysPermissionMapper;
-    }
 
     @Override
     public List<String> loadRoleCodes(Long userId) {

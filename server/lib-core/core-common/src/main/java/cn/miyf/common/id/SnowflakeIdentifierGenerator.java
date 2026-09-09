@@ -1,6 +1,7 @@
 package cn.miyf.common.id;
 
 import com.baomidou.mybatisplus.core.incrementer.IdentifierGenerator;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -10,20 +11,12 @@ import org.springframework.stereotype.Component;
  * @since 2026-09-05 10:36
  */
 @Component
+@RequiredArgsConstructor
 public class SnowflakeIdentifierGenerator implements IdentifierGenerator {
 
     private final SnowflakeIdGenerator snowflakeIdGenerator;
 
-    /**
-     * 构造。
-     *
-     * @param snowflakeIdGenerator 雪花生成器
-     * @history 1.00 2026-09-05 10:36 XieMingJie Created.
-     */
-    public SnowflakeIdentifierGenerator(SnowflakeIdGenerator snowflakeIdGenerator) {
-        this.snowflakeIdGenerator = snowflakeIdGenerator;
-    }
-
+    
     /**
      * {@inheritDoc}
      *
