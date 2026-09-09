@@ -43,7 +43,7 @@ public class UploadedFileVo extends BaseVo {
     private String path;
 
     @FileAccess
-    @Schema(description = "可访问 URL（/r/{id}）")
+    @Schema(description = "可访问 URL（/r/{id}.jpg 等带后缀）")
     private String url;
 
     @Schema(description = "Content-Type")

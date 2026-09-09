@@ -41,7 +41,7 @@ public class FileResourceApplicationService {
     private final FileAccessPermissionCache fileAccessPermissionCache;
 
     /**
-     * 存储并登记资源索引，返回 {@code /r/{id}}。
+     * 存储并登记资源索引，返回 {@code /r/{id}.jpg} 等带后缀 URL。
      *
      * @param inputStream  内容流
      * @param size         字节数
@@ -94,7 +94,8 @@ public class FileResourceApplicationService {
         return new UploadedFileVo()
                 .setId(fileId)
                 .setPath(stored.path())
-                .setUrl(StoragePathUtils.publicResourceUrl(fileStorageProperties.getBaseUrl(), fileId))
+                .setUrl(StoragePathUtils.publicResourceUrl(
+                        fileStorageProperties.getBaseUrl(), fileId, stored.contentType()))
                 .setContentType(stored.contentType())
                 .setSize(stored.size())
                 .setMd5(stored.md5())

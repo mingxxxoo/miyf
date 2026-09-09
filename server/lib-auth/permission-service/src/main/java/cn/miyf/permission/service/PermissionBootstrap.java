@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * JWT 仅下发 API 节点权限码。
  * <p>
  * 每次启动：清理扫描不到 / 不合规的权限及授权关联，再按标准重建。
+ * 同步结束后为各「个人」权限组确保 {@code default_person} 默认角色并绑定权限组。
  *
  * @author XieMingJie
  * @since 2026-09-05
@@ -60,6 +61,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class PermissionBootstrap implements ApplicationRunner {
 
     private static final String SUPER_ADMIN = "SUPER_ADMIN";
+    private static final String DEFAULT_PERSON = "default_person";
+    private static final String PERSONAL_GROUP_NAME = "个人";
     private static final String FALLBACK_GROUP = "19990000";
     private static final String FALLBACK_GROUP_NAME = "未分组";
     private static final Set<String> NODE_TYPES = Set.of("ROOT", "PRODUCT", "BIZ", "API");
@@ -122,6 +125,7 @@ public class PermissionBootstrap implements ApplicationRunner {
         int prunedGroups = pruneUnusedGroups(liveGroupCodes);
         pruneOrphanGroupItems();
         bindAllGroupsToSuperAdmin(groupIdByCode.values(), now);
+        ensureDefaultPersonRoles(groupIdByCode.values(), now);
         log.info("Permission tree sync done, apiCount={}, groups={}, purged={}, prunedTree={}, prunedGroups={}",
                 specs.size(), groupIdByCode.size(), purged, prunedTree, prunedGroups);
     }
@@ -694,6 +698,92 @@ public class PermissionBootstrap implements ApplicationRunner {
         }
     }
 
+    /**
+     * 为名称「个人」的权限组确保各产品域的 {@code default_person} 默认角色并绑定该组。
+     * <p>
+     * 厨房对应 {@code KitchenPersonalPopedom}，健康对应 {@code HealthPersonalPopedom}。
+     * 同产品仅保留一个默认角色。
+     *
+     * @param groupIds 本次同步的权限组 ID
+     * @param now      当前时间
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    private void ensureDefaultPersonRoles(Iterable<Long> groupIds, Instant now) {
+        for (Long groupId : groupIds) {
+            if (groupId == null) {
+                continue;
+            }
+            SysPermGroupEntity group = permGroupMapper.selectById(groupId);
+            if (group == null || !PERSONAL_GROUP_NAME.equals(group.getName())) {
+                continue;
+            }
+            String product = normalizeRoleProduct(group.getProduct());
+            SysRoleEntity role = roleMapper.selectByProductAndCode(product, DEFAULT_PERSON);
+            if (role == null) {
+                role = new SysRoleEntity()
+                        .setCode(DEFAULT_PERSON)
+                        .setName("个人默认")
+                        .setDescription("新用户默认角色，绑定「" + group.getName() + "」权限组")
+                        .setProduct(product)
+                        .setDataScope("SELF")
+                        .setIsDefault(true);
+                role.setId(snowflakeIdGenerator.nextId());
+                role.setCreateTime(now);
+                role.setLastModifyTime(now);
+                roleMapper.insert(role);
+            } else {
+                boolean dirty = false;
+                if (!Boolean.TRUE.equals(role.getIsDefault())) {
+                    role.setIsDefault(true);
+                    dirty = true;
+                }
+                if (!StringUtils.hasText(role.getDataScope())) {
+                    role.setDataScope("SELF");
+                    dirty = true;
+                }
+                if (dirty) {
+                    role.setLastModifyTime(now);
+                    roleMapper.updateById(role);
+                }
+            }
+            // 同产品仅一个默认角色
+            List<SysRoleEntity> defaults = roleMapper.selectList(
+                    Wrappers.<SysRoleEntity>lambdaQuery()
+                            .eq(SysRoleEntity::getProduct, product)
+                            .eq(SysRoleEntity::getIsDefault, true));
+            for (SysRoleEntity other : defaults) {
+                if (!Objects.equals(other.getId(), role.getId())) {
+                    other.setIsDefault(false);
+                    other.setLastModifyTime(now);
+                    roleMapper.updateById(other);
+                }
+            }
+            if (rolePermGroupMapper.selectByRoleAndGroup(role.getId(), groupId) == null) {
+                SysRolePermGroupEntity bind = new SysRolePermGroupEntity()
+                        .setRoleId(role.getId())
+                        .setGroupId(groupId);
+                bind.setId(snowflakeIdGenerator.nextId());
+                bind.setCreateTime(now);
+                rolePermGroupMapper.insert(bind);
+            }
+            log.info("Ensured default_person role for product={}, group={}", product, group.getCode());
+        }
+    }
+
+    /**
+     * 将权限组 product 规范为角色产品域：iam → basic，空则 system。
+     */
+    private static String normalizeRoleProduct(String product) {
+        if (!StringUtils.hasText(product)) {
+            return "system";
+        }
+        String p = product.trim().toLowerCase();
+        return switch (p) {
+            case "iam" -> "basic";
+            default -> p;
+        };
+    }
+
     private boolean isController(Class<?> type) {
         return AnnotationUtils.findAnnotation(type, RestController.class) != null
                 || AnnotationUtils.findAnnotation(type, Controller.class) != null;
@@ -766,8 +856,7 @@ public class PermissionBootstrap implements ApplicationRunner {
         return switch (product) {
             case "kitchen" -> "厨房";
             case "health" -> "健康";
-            case "iam" -> "权限";
-            case "system" -> "系统";
+            case "basic", "iam", "system" -> "基础";
             case "platform" -> "平台";
             default -> product;
         };

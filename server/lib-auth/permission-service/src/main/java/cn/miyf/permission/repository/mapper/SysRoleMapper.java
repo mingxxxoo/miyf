@@ -17,13 +17,23 @@ import java.util.List;
 public interface SysRoleMapper extends BaseMapper<SysRoleEntity> {
 
     /**
-     * 按角色码查询。
+     * 按角色码查询（全局唯一角色如 SUPER_ADMIN；同码多产品时取一条）。
      *
      * @param code 角色码
      * @return 角色
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
     SysRoleEntity selectByCode(@Param("code") String code);
+
+    /**
+     * 按产品域 + 角色码查询。
+     *
+     * @param product 产品域
+     * @param code    角色码
+     * @return 角色，不存在则 null
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    SysRoleEntity selectByProductAndCode(@Param("product") String product, @Param("code") String code);
 
     /**
      * 查询用户已绑定角色。

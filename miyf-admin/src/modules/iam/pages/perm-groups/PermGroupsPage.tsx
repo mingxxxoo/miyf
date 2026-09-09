@@ -18,12 +18,27 @@ import {
   type IamPermGroup,
   type IamPermission,
 } from '@/modules/iam/api';
+import PermissionCheckTree from '@/modules/iam/components/PermissionCheckTree';
 import { FormItem, FormModal, PageHeader, EmptyState, SettingSection } from '@/ui';
 import { notifyError } from '@/api/errors';
 import { useSubmitting } from '@/hooks/useSubmitting';
 
+const PRODUCT_OPTIONS = [
+  { value: 'basic', label: '基础' },
+  { value: 'kitchen', label: '厨房业务' },
+  { value: 'health', label: '健康管理' },
+];
+
+const PRODUCT_TITLE: Record<string, string> = {
+  basic: '基础',
+  system: '基础',
+  kitchen: '厨房业务',
+  health: '健康管理',
+  iam: '基础',
+};
+
 /**
- * 权限组：按 product → 组 两级树 + 搜索 + 添加。
+ * 权限组：按 product → 组 两级树 + 搜索 + 添加；编辑时用树勾选权限。
  */
 export default function PermGroupsPage() {
   const [loading, setLoading] = useState(false);
@@ -34,6 +49,7 @@ export default function PermGroupsPage() {
   const [editing, setEditing] = useState<IamPermGroup | null>(null);
   const [form] = Form.useForm();
   const { submitting, run } = useSubmitting();
+  const productWatch = Form.useWatch('product', form);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -54,17 +70,6 @@ export default function PermGroupsPage() {
     void fetchData();
   }, [fetchData]);
 
-  const permOptions = useMemo(
-    () =>
-      permissions
-        .filter((p) => p.nodeType === 'API' || !p.nodeType)
-        .map((p) => ({
-          value: p.id,
-          label: `${p.code} · ${p.name}`,
-        })),
-    [permissions],
-  );
-
   const filtered = useMemo(() => {
     const q = keyword.trim().toLowerCase();
     if (!q) return all;
@@ -76,30 +81,36 @@ export default function PermGroupsPage() {
     );
   }, [all, keyword]);
 
-  const openEdit = useCallback((row: IamPermGroup) => {
-    setEditing(row);
-    form.setFieldsValue({
-      code: row.code,
-      name: row.name,
-      description: row.description,
-      sortOrder: row.sortOrder ?? 0,
-      product: row.product || 'system',
-      permissionIds: row.permissionIds ?? [],
-    });
-    setOpen(true);
-  }, [form]);
+  const openEdit = useCallback(
+    (row: IamPermGroup) => {
+      setEditing(row);
+      form.setFieldsValue({
+        code: row.code,
+        name: row.name,
+        description: row.description,
+        sortOrder: row.sortOrder ?? 0,
+        product: normalizeProduct(row.product),
+        permissionIds: row.permissionIds ?? [],
+      });
+      setOpen(true);
+    },
+    [form],
+  );
 
-  const handleDelete = useCallback(async (id: string) => {
-    await run(async () => {
-      try {
-        await iamPermGroupApi.remove(id);
-        message.success('已删除');
-        void fetchData();
-      } catch (err) {
-        notifyError(err, '删除失败');
-      }
-    });
-  }, [fetchData, run]);
+  const handleDelete = useCallback(
+    async (id: string) => {
+      await run(async () => {
+        try {
+          await iamPermGroupApi.remove(id);
+          message.success('已删除');
+          void fetchData();
+        } catch (err) {
+          notifyError(err, '删除失败');
+        }
+      });
+    },
+    [fetchData, run],
+  );
 
   const treeData = useMemo(() => {
     const byProduct = new Map<string, IamPermGroup[]>();
@@ -109,11 +120,13 @@ export default function PermGroupsPage() {
       byProduct.get(product)!.push(g);
     }
     const roots: DataNode[] = [];
-    for (const [product, groups] of [...byProduct.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    for (const [product, groups] of [...byProduct.entries()].sort((a, b) =>
+      productSortKey(a[0]).localeCompare(productSortKey(b[0])),
+    )) {
       groups.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.code.localeCompare(b.code));
       roots.push({
         key: `product:${product}`,
-        title: `${product} 工作台`,
+        title: PRODUCT_TITLE[product] || `${product} 工作台`,
         children: groups.map((g) => ({
           key: g.id,
           title: (
@@ -145,7 +158,7 @@ export default function PermGroupsPage() {
   const openCreate = () => {
     setEditing(null);
     form.resetFields();
-    form.setFieldsValue({ sortOrder: 0, product: 'system', permissionIds: [] });
+    form.setFieldsValue({ sortOrder: 0, product: 'basic', permissionIds: [] });
     setOpen(true);
   };
 
@@ -214,6 +227,7 @@ export default function PermGroupsPage() {
         confirmLoading={submitting}
         onOk={() => void handleSubmit()}
         onCancel={() => setOpen(false)}
+        width={720}
       >
         <FormItem name="code" label="编码" rules={[{ required: true }]}>
           <Input placeholder="如：iam_user" disabled={!!editing} />
@@ -222,13 +236,7 @@ export default function PermGroupsPage() {
           <Input />
         </FormItem>
         <FormItem name="product" label="产品域" rules={[{ required: true }]}>
-          <Select
-            options={[
-              { value: 'system', label: '系统' },
-              { value: 'kitchen', label: '厨房业务' },
-              { value: 'health', label: '健康管理' },
-            ]}
-          />
+          <Select options={PRODUCT_OPTIONS} />
         </FormItem>
         <FormItem name="sortOrder" label="排序">
           <InputNumber style={{ width: '100%' }} min={0} />
@@ -236,13 +244,16 @@ export default function PermGroupsPage() {
         <FormItem name="description" label="说明" full>
           <Input.TextArea rows={2} />
         </FormItem>
-        <FormItem name="permissionIds" label="包含权限" full>
-          <Select
-            mode="multiple"
-            allowClear
-            optionFilterProp="label"
-            options={permOptions}
-            placeholder="选择权限"
+        <FormItem
+          name="permissionIds"
+          label="包含权限"
+          full
+          extra="按 产品 → 业务模块 → 接口 勾选；仅接口权限会写入权限组"
+        >
+          <PermissionCheckTree
+            permissions={permissions}
+            productFilter={productWatch ? String(productWatch) : undefined}
+            height={380}
           />
         </FormItem>
       </FormModal>
@@ -251,8 +262,18 @@ export default function PermGroupsPage() {
 }
 
 function normalizeProduct(product?: string) {
-  if (!product) return 'system';
+  if (!product) return 'basic';
   const p = product.toLowerCase();
-  if (p === 'iam') return 'system';
+  if (p === 'iam' || p === 'system') return 'basic';
   return p;
+}
+
+function productSortKey(product: string) {
+  const order: Record<string, string> = {
+    basic: '0',
+    system: '1',
+    kitchen: '2',
+    health: '3',
+  };
+  return (order[product] || '9') + product;
 }

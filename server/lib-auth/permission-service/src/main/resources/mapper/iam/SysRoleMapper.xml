@@ -11,6 +11,14 @@
         LIMIT 1
     </select>
 
+    <select id="selectByProductAndCode" resultType="cn.miyf.permission.bean.entity.SysRoleEntity">
+        SELECT id, code, name, description, is_default, product, data_scope, create_time, last_modify_time
+        FROM sys_role
+        WHERE product = #{product}
+          AND code = #{code}
+        LIMIT 1
+    </select>
+
     <select id="findByUserId" resultType="cn.miyf.permission.bean.entity.SysRoleEntity">
         SELECT r.id, r.code, r.name, r.description, r.is_default, r.product, r.data_scope, r.create_time, r.last_modify_time
         FROM sys_role r

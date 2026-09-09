@@ -33,6 +33,7 @@
 ```text
 /miyf/
   app/                 # 部署代码（compose 工作目录：/miyf/app/deploy）
+  config/server/       # 外置 application*.yml（可选，见 1.4）
   data/                # 持久化数据（见 1.4）
   log/
     server/            # 后端：miyf.log + 按日 gzip（Logback）
@@ -87,26 +88,28 @@ docker version
 docker compose version
 ```
 
-### 1.4 宿主机目录（`/miyf/{app,data,log}`）
+### 1.4 宿主机目录（`/miyf/{app,config,data,log}`）
 
-代码、数据、日志均挂在 **`/miyf`** 下；数据与日志用 bind mount 挂入容器（不再使用 Docker named volume）。
+代码、外置配置、数据、日志均挂在 **`/miyf`** 下；数据与日志用 bind mount 挂入容器（不再使用 Docker named volume）。
 
-| 路径 | 用途 | Compose 变量 | 容器内挂载点 |
-|------|------|--------------|--------------|
-| `/miyf/app` | 部署代码（本仓库） | —（compose 在 `deploy/` 下执行） | — |
-| `/miyf/data/db/data` | PostgreSQL 数据文件 | `MIYF_DATA_DB` | `/var/lib/postgresql/data` |
-| `/miyf/data/redis/data` | Redis AOF | `MIYF_DATA_REDIS` | `/data` |
-| `/miyf/data/oss/resource` | MinIO 对象存储 | `MIYF_DATA_OSS` | `/data` |
-| `/miyf/data/nginx/certs` | HTTPS 证书（可选） | `MIYF_DATA_NGINX_CERTS` | `/etc/nginx/certs` |
-| `/miyf/data/backup` | 手工备份落盘（不挂载） | — | — |
-| `/miyf/log/server` | 后端应用日志（按日 + 按大小滚动并 `.gz`） | `MIYF_LOG_SERVER` / `LOG_PATH` | `/miyf/log/server` |
-| `/miyf/log/nginx` | Nginx access/error | `MIYF_LOG_NGINX` | `/var/log/nginx` |
+| 路径                        | 用途                        | Compose 变量                     | 容器内挂载点                     |
+|---------------------------|---------------------------|--------------------------------|----------------------------|
+| `/miyf/app`               | 部署代码（本仓库）                 | —（compose 在 `deploy/` 下执行）     | —                          |
+| `/miyf/config/server`     | 外置 `application*.yml`（可选） | `MIYF_CONFIG_SERVER`           | `/config`（只读）              |
+| `/miyf/data/db/data`      | PostgreSQL 数据文件           | `MIYF_DATA_DB`                 | `/var/lib/postgresql/data` |
+| `/miyf/data/redis/data`   | Redis AOF                 | `MIYF_DATA_REDIS`              | `/data`                    |
+| `/miyf/data/oss/resource` | MinIO 对象存储                | `MIYF_DATA_OSS`                | `/data`                    |
+| `/miyf/data/nginx/certs`  | HTTPS 证书（可选）              | `MIYF_DATA_NGINX_CERTS`        | `/etc/nginx/certs`         |
+| `/miyf/data/backup`       | 手工备份落盘（不挂载）               | —                              | —                          |
+| `/miyf/log/server`        | 后端应用日志（按日 + 按大小滚动并 `.gz`） | `MIYF_LOG_SERVER` / `LOG_PATH` | `/miyf/log/server`         |
+| `/miyf/log/nginx`         | Nginx access/error        | `MIYF_LOG_NGINX`               | `/var/log/nginx`           |
 
 初始化（首次部署必做）：
 
 ```bash
 sudo mkdir -p \
   /miyf/app \
+  /miyf/config/server \
   /miyf/data/db/data \
   /miyf/data/redis/data \
   /miyf/data/oss/resource \
@@ -125,9 +128,20 @@ sudo chmod -R 755 /miyf/data/oss/resource
 sudo chown -R 1000:1000 /miyf/log/server
 sudo chmod -R 755 /miyf/log/nginx
 
-sudo ls -la /miyf /miyf/data /miyf/log
+# 外置配置（可选）：从仓库示例拷贝后按需改
+# sudo cp /miyf/app/deploy/config/application.yml /miyf/config/server/
+# sudo chmod -R 644 /miyf/config/server/*
+
+sudo ls -la /miyf /miyf/config /miyf/data /miyf/log
 ```
 
+外置配置说明：
+
+- compose 已设置 `SPRING_CONFIG_ADDITIONAL_LOCATION=optional:file:/config/`
+- 把 `application.yml` / `application-docker.yml` 放到 `/miyf/config/server/` 即可，**改完后**
+  `docker compose up -d server` 生效（无需重建镜像）
+- 优先级：`.env` 环境变量 > `/config` 外置文件 > jar 内配置
+- 密码、`JWT_SECRET`、MinIO 密钥等继续放 `.env`，不要写进外置 yml
 ### 1.5 安装 Nginx 日志按日压缩（logrotate）
 
 后端日志由容器内 **Logback** 按日/按大小滚动并 gzip（文件形如 `miyf.2026-09-05.0.log.gz`）。  
@@ -281,12 +295,14 @@ NGINX_HTTP_PORT=80
 
 # 宿主机路径（与 1.4 节一致）
 MIYF_APP_ROOT=/miyf/app
+MIYF_CONFIG_SERVER=/miyf/config/server
 MIYF_DATA_DB=/miyf/data/db/data
 MIYF_DATA_REDIS=/miyf/data/redis/data
 MIYF_DATA_OSS=/miyf/data/oss/resource
 MIYF_DATA_NGINX_CERTS=/miyf/data/nginx/certs
 MIYF_LOG_SERVER=/miyf/log/server
 MIYF_LOG_NGINX=/miyf/log/nginx
+LOG_PATH=/miyf/log/server
 LOG_PATH=/miyf/log/server
 
 # 阿里云 ACR（与 .env 中 MIYF_IMAGE_* 一致；版本号自行改）
@@ -454,6 +470,7 @@ docker push registry.cn-shanghai.aliyuncs.com/miyf/miyf_nginx:0.1.0
 /miyf/app/deploy/
 ├── docker-compose.yml      # 必须（仅 image，无 build）
 ├── .env                    # 必须（生产配置，勿提交公钥仓库）
+├── config/application.yml  # 可选示例；实际生效文件在 /miyf/config/server/
 ├── logrotate/miyf          # 建议（安装见 1.5）
 └── （无需 docker-compose.build.yml、无需 server/、miyf-admin/ 源码）
 ```
@@ -463,7 +480,7 @@ docker push registry.cn-shanghai.aliyuncs.com/miyf/miyf_nginx:0.1.0
 ```bash
 # 本机示例
 scp docker-compose.yml .env.example root@47.108.200.201:/miyf/app/deploy/
-scp -r logrotate root@47.108.200.201:/miyf/app/deploy/
+scp -r logrotate config root@47.108.200.201:/miyf/app/deploy/
 ```
 
 #### 逐步操作
@@ -472,6 +489,7 @@ scp -r logrotate root@47.108.200.201:/miyf/app/deploy/
 
 ```bash
 sudo mkdir -p /miyf/app/deploy \
+  /miyf/config/server \
   /miyf/data/db/data /miyf/data/redis/data /miyf/data/oss/resource \
   /miyf/data/nginx/certs /miyf/data/backup \
   /miyf/log/server /miyf/log/nginx
@@ -479,6 +497,8 @@ sudo chown -R 70:70 /miyf/data/db/data
 sudo chown -R 999:999 /miyf/data/redis/data
 sudo chown -R 1000:1000 /miyf/log/server
 sudo chmod -R 755 /miyf/data/oss/resource /miyf/log/nginx
+# 可选：外置 Spring 配置
+# sudo cp /miyf/app/deploy/config/application.yml /miyf/config/server/
 ```
 
 **2）准备 `.env`**
@@ -491,16 +511,15 @@ nano .env              # 或 vim
 
 服务器 `.env` **必核**：
 
-| 变量 | 要求 |
-|------|------|
-| `MIYF_IMAGE_SERVER` / `MIYF_IMAGE_NGINX` | 与本机 push 的业务镜像 tag **完全一致** |
-| `MIYF_IMAGE_POSTGRES` / `REDIS` / `MINIO` | 均指向 ACR，**不要**再用 `docker.io/...` |
-| `POSTGRES_PASSWORD` | 强密码；与首次初始化后勿随意改（改则库连不上） |
-| `JWT_SECRET` | ≥32 位随机串 |
-| `FILE_STORAGE_ACCESS_KEY` / `SECRET_KEY` | MinIO 账号；与 compose 注入一致 |
-| `FILE_STORAGE_BASE_URL` | 公网可访问，如 `http://47.108.200.201/media`（勿写 `:9000`） |
-| `MIYF_DATA_*` / `MIYF_LOG_*` / `LOG_PATH` | 与 **1.4** 目录一致（默认即可） |
-
+| 变量                                                               | 要求                                                |
+|------------------------------------------------------------------|---------------------------------------------------|
+| `MIYF_IMAGE_SERVER` / `MIYF_IMAGE_NGINX`                         | 与本机 push 的业务镜像 tag **完全一致**                       |
+| `MIYF_IMAGE_POSTGRES` / `REDIS` / `MINIO`                        | 均指向 ACR，**不要**再用 `docker.io/...`                  |
+| `POSTGRES_PASSWORD`                                              | 强密码；与首次初始化后勿随意改（改则库连不上）                           |
+| `JWT_SECRET`                                                     | ≥32 位随机串                                          |
+| `FILE_STORAGE_ACCESS_KEY` / `SECRET_KEY`                         | MinIO 账号；与 compose 注入一致                           |
+| `FILE_STORAGE_BASE_URL`                                          | 公网可访问，如 `http://47.108.200.201/media`（勿写 `:9000`） |
+| `MIYF_CONFIG_SERVER` / `MIYF_DATA_*` / `MIYF_LOG_*` / `LOG_PATH` | 与 **1.4** 目录一致（默认即可）                              |
 > `BASE_*_IMAGE` 仅本机构建用，服务器可不改，不影响 `up`。
 
 **3）登录 ACR（私有仓库必须）**

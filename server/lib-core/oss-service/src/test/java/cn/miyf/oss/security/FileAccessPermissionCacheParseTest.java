@@ -19,7 +19,9 @@ class FileAccessPermissionCacheParseTest {
     @Test
     void parseFileId_shouldAcceptUrlAndPlainId() {
         assertEquals(1938L, cache.parseFileId("http://localhost:8080/r/1938").orElseThrow());
+        assertEquals(1938L, cache.parseFileId("http://localhost:8080/r/1938.jpg").orElseThrow());
         assertEquals(1938L, cache.parseFileId("/r/1938").orElseThrow());
+        assertEquals(1938L, cache.parseFileId("/r/1938.webp").orElseThrow());
         assertEquals(1938L, cache.parseFileId("1938").orElseThrow());
         assertTrue(cache.parseFileId("not-a-file").isEmpty());
     }

@@ -25,8 +25,10 @@ import java.util.stream.Collectors;
  * <ul>
  *   <li>匿名：放行（由 HttpSecurity 控制公开路径）</li>
  *   <li>管理员：必须持有对应权限码</li>
- *   <li>普通用户：仅允许访问「个人」权限组接口；token 未挂权限码时登录即可，已挂码则校验</li>
+ *   <li>普通用户：仅允许访问「个人」权限组接口；JWT 未挂 API 权限码时登录即可，已挂码则按码校验</li>
  * </ul>
+ * 注意：{@link AuthPrincipal#getAuthorities()} 始终含 {@code ROLE_USER}/{@code ROLE_ADMIN}，
+ * 判断「是否已挂权限码」必须看 {@link AuthPrincipal#getPermissions()}，不能用 authorities 是否为空。
  *
  * @author XieMingJie
  * @since 2026-09-05
@@ -72,7 +74,8 @@ public class MiyfPermissionAuthorizationManager implements AuthorizationManager<
             if (!isPersonalPopedom(popedom)) {
                 return new AuthorizationDecision(false);
             }
-            if (authorities.isEmpty()) {
+            // 未挂 API 权限码（兼容旧 token / 默认角色尚未就绪）：个人接口登录即可
+            if (principal.getPermissions() == null || principal.getPermissions().isEmpty()) {
                 return new AuthorizationDecision(true);
             }
             return new AuthorizationDecision(authorities.contains(annotation.code()));

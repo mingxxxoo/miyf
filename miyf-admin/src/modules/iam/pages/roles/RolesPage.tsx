@@ -11,6 +11,7 @@ import {
   Table,
   Tabs,
   Tag,
+  TreeSelect,
   Typography,
   message,
 } from 'antd';
@@ -42,7 +43,7 @@ import {
 } from '@/ui';
 
 const FALLBACK_PRODUCTS = [
-  { value: 'system', label: '系统' },
+  { value: 'basic', label: '基础' },
   { value: 'kitchen', label: '厨房业务' },
   { value: 'health', label: '健康管理' },
 ];
@@ -146,6 +147,50 @@ export default function RolesPage() {
         (r.description || '').toLowerCase().includes(q),
     );
   }, [roles, keyword]);
+
+  const labelOfProduct = useCallback(
+    (code?: string) => productOptions.find((p) => p.value === code)?.label ?? code ?? '—',
+    [productOptions],
+  );
+
+  /** 左侧按产品域分组展示角色 */
+  const rolesByProduct = useMemo(() => {
+    const map = new Map<string, IamRole[]>();
+    for (const r of filteredRoles) {
+      const product = r.product || 'system';
+      if (!map.has(product)) map.set(product, []);
+      map.get(product)!.push(r);
+    }
+    return [...map.entries()].sort((a, b) =>
+      labelOfProduct(a[0]).localeCompare(labelOfProduct(b[0]), 'zh'),
+    );
+  }, [filteredRoles, labelOfProduct]);
+
+  const groupTreeOptions = useMemo(() => {
+    const byProduct = new Map<string, IamPermGroup[]>();
+    for (const g of groups) {
+      const product = g.product || 'system';
+      if (!byProduct.has(product)) byProduct.set(product, []);
+      byProduct.get(product)!.push(g);
+    }
+    return [...byProduct.entries()]
+      .sort((a, b) => labelOfProduct(a[0]).localeCompare(labelOfProduct(b[0]), 'zh'))
+      .map(([product, list]) => ({
+        value: `product:${product}`,
+        title: labelOfProduct(product),
+        selectable: false,
+        children: list
+          .slice()
+          .sort(
+            (a, b) =>
+              (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name, 'zh'),
+          )
+          .map((g) => ({
+            value: g.id,
+            title: `${g.name} (${g.code})`,
+          })),
+      }));
+  }, [groups, labelOfProduct]);
 
   const selected = useMemo(
     () => roles.find((r) => r.id === selectedId) ?? null,
@@ -406,21 +451,21 @@ export default function RolesPage() {
         <Input.TextArea rows={2} />
       </FormItem>
       <FormItem name="groupIds" label="权限组" full>
-        <Select
-          mode="multiple"
+        <TreeSelect
+          treeCheckable
+          showCheckedStrategy={TreeSelect.SHOW_CHILD}
           allowClear
-          optionFilterProp="label"
-          options={groups.map((g) => ({
-            value: g.id,
-            label: `${g.name} (${g.code})${g.product ? ` · ${g.product}` : ''}`,
-          }))}
+          treeDefaultExpandAll
+          treeNodeFilterProp="title"
+          placeholder="按产品选择权限组"
+          treeData={groupTreeOptions}
+          style={{ width: '100%' }}
         />
       </FormItem>
     </>
   );
 
-  const productLabel = (code?: string) =>
-    productOptions.find((p) => p.value === code)?.label ?? code ?? '—';
+  const productLabel = labelOfProduct;
 
   const dataScopeLabel = (code?: string) =>
     DATA_SCOPE_OPTIONS.find((p) => p.value === code)?.label ?? code ?? '全部数据';
@@ -466,38 +511,56 @@ export default function RolesPage() {
           leftTitle="角色列表"
           left={
             filteredRoles.length ? (
-              <List
-                size="small"
-                dataSource={filteredRoles}
-                renderItem={(r) => (
-                  <List.Item
-                    key={r.id}
-                    onClick={() => {
-                      setSelectedId(r.id);
-                      setActiveTab('basic');
-                    }}
-                    style={{
-                      cursor: 'pointer',
-                      padding: '10px 16px',
-                      background: r.id === selectedId ? 'rgba(255, 179, 107, 0.12)' : undefined,
-                    }}
-                  >
-                    <List.Item.Meta
-                      title={
-                        <Space size={6} wrap>
-                          <span>{r.name}</span>
-                          {r.isDefault ? <Tag color="red">默认</Tag> : null}
-                        </Space>
-                      }
-                      description={
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                          {r.code} · {productLabel(r.product)} · {r.userCount ?? 0} 人
-                        </Typography.Text>
-                      }
+              <div>
+                {rolesByProduct.map(([product, list]) => (
+                  <div key={product} style={{ marginBottom: 8 }}>
+                    <Typography.Text
+                      type="secondary"
+                      style={{
+                        display: 'block',
+                        padding: '8px 16px 4px',
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {productLabel(product)}
+                    </Typography.Text>
+                    <List
+                      size="small"
+                      dataSource={list}
+                      renderItem={(r) => (
+                        <List.Item
+                          key={r.id}
+                          onClick={() => {
+                            setSelectedId(r.id);
+                            setActiveTab('basic');
+                          }}
+                          style={{
+                            cursor: 'pointer',
+                            padding: '10px 16px',
+                            background:
+                              r.id === selectedId ? 'rgba(255, 179, 107, 0.12)' : undefined,
+                          }}
+                        >
+                          <List.Item.Meta
+                            title={
+                              <Space size={6} wrap>
+                                <span>{r.name}</span>
+                                {r.isDefault ? <Tag color="red">默认</Tag> : null}
+                              </Space>
+                            }
+                            description={
+                              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                {r.code} · {r.userCount ?? 0} 人
+                              </Typography.Text>
+                            }
+                          />
+                        </List.Item>
+                      )}
                     />
-                  </List.Item>
-                )}
-              />
+                  </div>
+                ))}
+              </div>
             ) : (
               <EmptyState description={keyword ? '无匹配角色' : '暂无角色'} />
             )

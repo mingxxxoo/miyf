@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.time.Duration;
 
 /**
- * 文件读取：{@code GET /r/{fileId}}。
+ * 文件读取：{@code GET /r/{fileId}} 或 {@code GET /r/{fileId}.jpg}（后缀仅用于前端识别，不参与查库）。
  * 放行条件：Redis 临时授权 / 上传人 / 公共文件（管理员始终可访问）。
  *
  * @author XieMingJie
@@ -42,8 +42,9 @@ public class FileResourceController {
      * @history 1.00 2026-09-09 XieMingJie Created.
      */
     @Operation(summary = "按文件 ID 读取")
-    @GetMapping("/r/{fileId}")
-    public ResponseEntity<InputStreamResource> read(@PathVariable("fileId") Long fileId) {
+    @GetMapping({"/r/{fileId}", "/r/{fileId}.{ext}"})
+    public ResponseEntity<InputStreamResource> read(@PathVariable("fileId") Long fileId,
+                                                    @PathVariable(value = "ext", required = false) String ignoredExt) {
         fileResourceApplicationService.assertReadable(fileId);
         SysResourceIndexEntity meta = fileResourceApplicationService.requireMeta(fileId);
         InputStream stream = fileResourceApplicationService.open(fileId);

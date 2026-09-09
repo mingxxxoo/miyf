@@ -2,6 +2,7 @@ name: miyf
 
 # 宿主机目录约定（均在 /miyf 下）
 #   /miyf/app              部署代码（本仓库）
+#   /miyf/config/server    外置 Spring 配置（application*.yml）
 #   /miyf/data/{组件}/...  持久化数据
 #   /miyf/log/{组件}/...   日志（server 按日 gzip；nginx 用 logrotate）
 #
@@ -75,6 +76,8 @@ services:
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      # 外置配置目录（宿主机 MIYF_CONFIG_SERVER → 容器 /config）；覆盖 jar 内同名项；密钥仍优先用下方环境变量
+      SPRING_CONFIG_ADDITIONAL_LOCATION: optional:file:/config/
       SERVER_PORT: 8080
       PRIMARY_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-miyf}
       PRIMARY_DB_USERNAME: ${POSTGRES_USER:-postgres}
@@ -106,6 +109,7 @@ services:
       APP_SEARCH_ENABLED: ${APP_SEARCH_ENABLED:-false}
       LOG_PATH: ${LOG_PATH:-/miyf/log/server}
     volumes:
+      - ${MIYF_CONFIG_SERVER:-/miyf/config/server}:/config:ro
       - ${MIYF_LOG_SERVER:-/miyf/log/server}:/miyf/log/server
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health"]

@@ -5,7 +5,9 @@ import cn.miyf.auth.bean.model.AppUserAccount;
 import cn.miyf.auth.bean.vo.LoginVo;
 import cn.miyf.auth.infrastructure.wx.WxAuthClient;
 import cn.miyf.auth.infrastructure.wx.WxSession;
+import cn.miyf.auth.security.AppUserAuthAuthorityLoader;
 import cn.miyf.auth.security.AuthPrincipal;
+import cn.miyf.auth.security.DataScope;
 import cn.miyf.auth.security.JwtService;
 import cn.miyf.auth.security.PrincipalType;
 import cn.miyf.auth.spi.AppUserAccountStore;
@@ -23,6 +25,8 @@ import java.util.Objects;
 
 /**
  * 用户端微信登录编排：换票、账号 upsert、限流、签发 JWT。
+ * <p>
+ * 登录成功后挂载各产品域默认角色（如 kitchen/health 的 {@code default_person}）及其「个人」API 权限码。
  *
  * @author XieMingJie
  * @since 2026-09-09
@@ -32,6 +36,7 @@ import java.util.Objects;
 public class WxAuthApplicationService extends BaseApplicationService implements WxLoginService {
 
     private final AppUserAccountStore appUserAccountStore;
+    private final AppUserAuthAuthorityLoader appUserAuthAuthorityLoader;
     private final JwtService jwtService;
     private final WxAuthClient wxAuthClient;
     private final RedisRateLimiter redisRateLimiter;
@@ -40,11 +45,11 @@ public class WxAuthApplicationService extends BaseApplicationService implements 
      * 微信小程序登录：账号不存在则自动注册。
      * <p>
      * 仅需 wx.login 的 code；用户名 / 手机号 / 微信号可选。失败计数按 openid 维度限流。
+     * 签发 JWT 时写入默认角色对应的个人端权限码（与管理员 createUser 绑定 default_person 对齐）。
      *
      * @param dto 登录请求
      * @return 登录结果
      * @history 1.00 2026-09-09 XieMingJie Created.
-     * @history 1.01 2026-09-09 XieMingJie 改为微信 code 一键登录，资料字段可选.
      */
     @Override
     @Transactional
@@ -63,12 +68,18 @@ public class WxAuthApplicationService extends BaseApplicationService implements 
             String displayName = StringUtils.hasText(user.getNickname())
                     ? user.getNickname()
                     : (StringUtils.hasText(user.getUsername()) ? user.getUsername() : user.getOpenid());
+            // kitchen_user 不落 sys_user_role；每次登录按 is_default 角色解析个人权限写入 JWT
+            List<String> roleCodes = appUserAuthAuthorityLoader.loadDefaultRoleCodes();
+            List<String> permissionCodes = appUserAuthAuthorityLoader.loadDefaultPermissionCodes();
+            DataScope dataScope = DataScope.parse(appUserAuthAuthorityLoader.loadDefaultDataScope());
             AuthPrincipal principal = new AuthPrincipal(
                     user.getId(),
                     displayName,
                     PrincipalType.USER,
-                    List.of(),
-                    true
+                    permissionCodes,
+                    true,
+                    null,
+                    dataScope
             );
             redisRateLimiter.clearLoginFailures(principalKey);
             return new LoginVo()
@@ -79,7 +90,7 @@ public class WxAuthApplicationService extends BaseApplicationService implements 
                     .setUsername(user.getUsername())
                     .setPrincipalType(principal.getType().name())
                     .setPermissions(principal.getPermissions())
-                    .setRoles(List.of());
+                    .setRoles(roleCodes);
         } catch (BusinessException ex) {
             if (principalKey != null && (ex.getCode() == ErrorCode.WX_AUTH_FAILED.getCode()
                     || ex.getCode() == ErrorCode.LOGIN_FAILED.getCode()

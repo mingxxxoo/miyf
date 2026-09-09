@@ -56,20 +56,21 @@ public class MinioFileStorageService implements FileStorageService {
         try {
             byte[] header = FileUploadValidator.readHeader(inputStream, 16);
             String mime = FileUploadValidator.validateAndDetect(properties, contentType, header, size);
+            String storedPath = StoragePathUtils.withContentExtension(path, mime);
             MessageDigest digest = MessageDigest.getInstance("MD5");
             try (InputStream full = FileUploadValidator.concat(header, inputStream);
                  DigestInputStream dig = new DigestInputStream(full, digest)) {
                 minioClient.putObject(PutObjectArgs.builder()
                         .bucket(properties.getBucket())
-                        .object(path)
+                        .object(storedPath)
                         .stream(dig, size, -1)
                         .contentType(mime)
                         .build());
             }
             String md5 = HexFormat.of().formatHex(digest.digest());
             log.info("Stored minio object bucket={} path={} size={} md5={}",
-                    properties.getBucket(), path, size, md5);
-            return new StoredFile(path, mime, size, md5);
+                    properties.getBucket(), storedPath, size, md5);
+            return new StoredFile(storedPath, mime, size, md5);
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {

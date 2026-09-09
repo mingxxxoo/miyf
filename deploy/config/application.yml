@@ -1,0 +1,13 @@
+# 外置 Spring 配置示例（覆盖 jar 内同名项）
+# 部署：拷到服务器 /miyf/config/server/（与 .env 中 MIYF_CONFIG_SERVER 一致）
+# 优先级：环境变量（compose/.env）> 本目录文件 > jar 内 application*.yml
+# 密码、JWT、MinIO 密钥等请继续写在 deploy/.env，不要写进本文件。
+#
+# 激活 profile 仍由 SPRING_PROFILES_ACTIVE（默认 docker）决定；
+# 也可在同目录放 application-docker.yml 做 profile 专用覆盖。
+
+# 示例：调日志级别（按需取消注释）
+# logging:
+#   level:
+#     cn.miyf: DEBUG
+#     org.springframework.web: INFO

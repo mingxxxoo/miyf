@@ -10,6 +10,8 @@ import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.common.id.SnowflakeIdGenerator;
 import cn.miyf.organization.service.DataScopeService;
+import cn.miyf.permission.bean.entity.SysRoleEntity;
+import cn.miyf.permission.repository.mapper.SysRoleMapper;
 import cn.miyf.service.BaseApplicationService;
 import cn.miyf.user.bean.dto.SysUserSaveDto;
 import cn.miyf.user.bean.vo.SysUserVo;
@@ -23,6 +25,7 @@ import org.springframework.util.StringUtils;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,6 +44,7 @@ public class SysUserApplicationService extends BaseApplicationService {
 
     private final SysUserMapper userMapper;
     private final SysUserRoleMapper userRoleMapper;
+    private final SysRoleMapper roleMapper;
     private final SnowflakeIdGenerator snowflakeIdGenerator;
     private final PasswordEncoder passwordEncoder;
     private final DataScopeService dataScopeService;
@@ -80,6 +84,8 @@ public class SysUserApplicationService extends BaseApplicationService {
 
     /**
      * 创建系统用户并绑定角色。
+     * <p>
+     * 未指定角色时自动绑定各产品域的默认角色（如 {@code default_person}）。
      *
      * @param dto 请求
      * @return 用户 VO
@@ -104,7 +110,11 @@ public class SysUserApplicationService extends BaseApplicationService {
         entity.setCreateTime(now);
         entity.setLastModifyTime(now);
         userMapper.insert(entity);
-        bindUserRoles(entity.getId(), parseIds(dto.getRoleIds()));
+        List<Long> roleIds = parseIds(dto.getRoleIds());
+        if (roleIds == null || roleIds.isEmpty()) {
+            roleIds = listDefaultRoleIds();
+        }
+        bindUserRoles(entity.getId(), roleIds);
         return toUserVo(entity);
     }
 
@@ -217,6 +227,24 @@ public class SysUserApplicationService extends BaseApplicationService {
             bind.setCreateTime(now);
             userRoleMapper.insert(bind);
         }
+    }
+
+    /**
+     * 列出各产品域标记为默认的角色 ID（如 kitchen/health 的 default_person）。
+     *
+     * @return 默认角色 ID 列表
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    private List<Long> listDefaultRoleIds() {
+        List<SysRoleEntity> defaults = roleMapper.selectList(
+                Wrappers.<SysRoleEntity>lambdaQuery().eq(SysRoleEntity::getIsDefault, true));
+        Set<Long> ids = new LinkedHashSet<>();
+        for (SysRoleEntity role : defaults) {
+            if (role.getId() != null) {
+                ids.add(role.getId());
+            }
+        }
+        return new ArrayList<>(ids);
     }
 
     private Long parseId(String raw) {

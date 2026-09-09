@@ -38,7 +38,7 @@ public final class StoragePathUtils {
     }
 
     /**
-     * 生成相对存储路径：{@code {namespace}/{appCode}/yyyy/MM/{fileId}}（无后缀）。
+     * 生成相对存储路径：{@code {namespace}/{appCode}/yyyy/MM/{fileId}}（不含后缀，后缀由存储层按 MIME 追加）。
      *
      * @param namespace 命名空间，如 miyf
      * @param appCode   应用编码，如 kitchen / health
@@ -53,7 +53,26 @@ public final class StoragePathUtils {
     }
 
     /**
-     * 公开访问 URL：{@code {baseUrl}/r/{fileId}}。
+     * 按 Content-Type 为路径追加扩展名（如 {@code .jpg}），已含后缀则原样返回。
+     *
+     * @param path        相对路径
+     * @param contentType MIME
+     * @return 带后缀路径
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    public static String withContentExtension(String path, String contentType) {
+        if (path == null || path.isBlank()) {
+            return path;
+        }
+        String ext = FileUploadValidator.extensionOf(contentType);
+        if (path.endsWith(ext)) {
+            return path;
+        }
+        return path + ext;
+    }
+
+    /**
+     * 公开访问 URL：{@code {baseUrl}/r/{fileId}}（无后缀，兼容旧数据）。
      *
      * @param baseUrl 站点前缀（不含 /r）
      * @param fileId  文件 ID
@@ -62,6 +81,23 @@ public final class StoragePathUtils {
      */
     public static String publicResourceUrl(String baseUrl, long fileId) {
         return joinUrl(baseUrl, "r/" + fileId);
+    }
+
+    /**
+     * 公开访问 URL：{@code {baseUrl}/r/{fileId}.jpg}，便于前端 / 小程序识别图片类型。
+     *
+     * @param baseUrl     站点前缀（不含 /r）
+     * @param fileId      文件 ID
+     * @param contentType MIME
+     * @return 完整 URL
+     * @history 1.00 2026-09-09 XieMingJie Created.
+     */
+    public static String publicResourceUrl(String baseUrl, long fileId, String contentType) {
+        String suffix = "";
+        if (contentType != null && !contentType.isBlank()) {
+            suffix = FileUploadValidator.extensionOf(contentType);
+        }
+        return joinUrl(baseUrl, "r/" + fileId + suffix);
     }
 
     /**

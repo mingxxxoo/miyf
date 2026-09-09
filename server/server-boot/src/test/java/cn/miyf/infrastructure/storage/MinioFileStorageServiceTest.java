@@ -60,9 +60,10 @@ class MinioFileStorageServiceTest {
         String path = "miyf/kitchen/2026/09/9";
         StoredFile stored = storage.store(new ByteArrayInputStream(jpeg), jpeg.length, "image/jpeg", path);
         assertEquals("image/jpeg", stored.contentType());
-        assertEquals(path, stored.path());
+        assertEquals(path + ".jpg", stored.path());
         assertEquals(32, stored.md5().length());
-        assertEquals("http://localhost:8080/r/9", StoragePathUtils.publicResourceUrl(properties.getBaseUrl(), 9L));
+        assertEquals("http://localhost:8080/r/9.jpg",
+                StoragePathUtils.publicResourceUrl(properties.getBaseUrl(), 9L, "image/jpeg"));
         ArgumentCaptor<PutObjectArgs> captor = ArgumentCaptor.forClass(PutObjectArgs.class);
         verify(minioClient).putObject(captor.capture());
         assertEquals("miyf", captor.getValue().bucket());

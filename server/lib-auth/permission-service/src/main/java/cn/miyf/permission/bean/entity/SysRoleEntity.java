@@ -51,7 +51,7 @@ public class SysRoleEntity extends BaseEntity {
     private Boolean isDefault;
 
     @TableField("product")
-    @Schema(description = "产品域：kitchen / health / system")
+    @Schema(description = "产品域：kitchen / health / basic / system")
     private String product;
 
     @TableField("data_scope")

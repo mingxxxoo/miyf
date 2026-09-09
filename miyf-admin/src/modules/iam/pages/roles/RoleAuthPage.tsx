@@ -424,10 +424,17 @@ function buildPermTree(list: IamPermission[]): DataNode[] {
     }
     return [...groupMap.entries()].map(([code, perms]) => ({
       key: `group:${code}`,
-      title: code,
+      title: <span style={{ fontWeight: 600 }}>{code}</span>,
       children: perms.map((p) => ({
         key: p.id,
-        title: p.name || p.code,
+        title: (
+          <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 1.35 }}>
+            <span>{p.name || p.code}</span>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {p.code}
+            </Typography.Text>
+          </span>
+        ),
         isLeaf: true,
       })),
     }));
@@ -448,11 +455,27 @@ function buildPermTree(list: IamPermission[]): DataNode[] {
     );
   }
   const walk = (parentKey: string): DataNode[] =>
-    (childrenMap.get(parentKey) || []).map((p) => ({
-      key: p.id,
-      title: p.name || p.code,
-      children: walk(p.id),
-    }));
+    (childrenMap.get(parentKey) || []).map((p) => {
+      const kids = walk(p.id);
+      const isApi = !p.nodeType || p.nodeType === 'API';
+      const title = isApi ? (
+        <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 1.35 }}>
+          <span>{p.name || p.code}</span>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {p.code}
+          </Typography.Text>
+        </span>
+      ) : (
+        <span style={{ fontWeight: p.nodeType === 'PRODUCT' || p.nodeType === 'BIZ' ? 600 : 500 }}>
+          {p.treeName || p.name || p.code}
+        </span>
+      );
+      return {
+        key: p.id,
+        title,
+        children: kids.length ? kids : undefined,
+      };
+    });
   return walk('');
 }
 

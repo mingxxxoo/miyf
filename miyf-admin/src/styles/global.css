@@ -336,6 +336,87 @@ a {
   padding: 2px 0;
 }
 
+/* 权限组编辑：勾选树 */
+.perm-check-tree {
+    width: 100%;
+    border: 1px solid var(--ck-border);
+    border-radius: 8px;
+    background: #fafafa;
+    overflow: hidden;
+}
+
+.perm-check-tree__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--ck-border);
+    background: #fff;
+}
+
+.perm-check-tree__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 12px;
+    border-bottom: 1px solid var(--ck-border);
+    background: #fff;
+    min-height: 32px;
+}
+
+.perm-check-tree__body {
+    padding: 8px 4px 12px 8px;
+    overflow: auto;
+    background: #fff;
+}
+
+.perm-check-tree .ant-tree {
+    background: transparent;
+}
+
+.perm-check-tree .ant-tree-treenode {
+    padding: 3px 0;
+    width: 100%;
+}
+
+.perm-check-tree .ant-tree-node-content-wrapper {
+    min-width: 0;
+    flex: 1;
+}
+
+.perm-check-tree__product {
+    font-weight: 600;
+    color: var(--ck-text);
+}
+
+.perm-check-tree__biz {
+    font-weight: 500;
+    color: var(--ck-text);
+}
+
+.perm-check-tree__root {
+    font-weight: 600;
+    color: var(--ck-muted);
+}
+
+.perm-check-tree__api {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 1px;
+    line-height: 1.35;
+    vertical-align: top;
+    max-width: 100%;
+}
+
+.perm-check-tree__api-name {
+    color: var(--ck-text);
+}
+
+.perm-check-tree__api-code {
+    font-size: 12px !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 .stat-card {
   border-radius: var(--ck-card-radius);
   border: 1px solid var(--ck-border);

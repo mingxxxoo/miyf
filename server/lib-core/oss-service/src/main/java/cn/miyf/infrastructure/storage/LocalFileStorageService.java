@@ -57,7 +57,8 @@ public class LocalFileStorageService implements FileStorageService {
         try {
             byte[] header = FileUploadValidator.readHeader(inputStream, 16);
             String mime = FileUploadValidator.validateAndDetect(properties, contentType, header, size);
-            Path target = resolveSafe(path);
+            String storedPath = StoragePathUtils.withContentExtension(path, mime);
+            Path target = resolveSafe(storedPath);
             Files.createDirectories(target.getParent());
             MessageDigest digest = MessageDigest.getInstance("MD5");
             try (InputStream full = FileUploadValidator.concat(header, inputStream);
@@ -70,8 +71,8 @@ public class LocalFileStorageService implements FileStorageService {
                 throw new BusinessException(ErrorCode.FILE_TOO_LARGE);
             }
             String md5 = HexFormat.of().formatHex(digest.digest());
-            log.info("Stored local file path={} size={} md5={}", path, actual, md5);
-            return new StoredFile(path, mime, actual, md5);
+            log.info("Stored local file path={} size={} md5={}", storedPath, actual, md5);
+            return new StoredFile(storedPath, mime, actual, md5);
         } catch (BusinessException ex) {
             throw ex;
         } catch (NoSuchAlgorithmException | IOException ex) {

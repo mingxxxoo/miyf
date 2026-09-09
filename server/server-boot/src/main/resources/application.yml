@@ -176,4 +176,4 @@ logging:
   file:
     path: ${LOG_PATH:./logs}
   level:
-    cn.miyf: INFO
+    cn.miyf: debug

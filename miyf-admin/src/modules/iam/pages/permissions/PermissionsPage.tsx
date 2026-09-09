@@ -44,10 +44,11 @@ const NODE_TYPE_META: Record<string, { label: string; color: string }> = {
 };
 
 const PRODUCT_FALLBACK: Record<string, string> = {
-  system: '系统',
+  basic: '基础',
+  system: '基础',
   kitchen: '厨房业务',
-  health: '健康数据',
-  iam: '系统',
+  health: '健康管理',
+  iam: '基础',
 };
 
 /**

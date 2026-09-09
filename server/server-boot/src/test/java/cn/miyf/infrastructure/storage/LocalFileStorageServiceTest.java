@@ -17,7 +17,6 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,16 +68,16 @@ class LocalFileStorageServiceTest {
     }
 
     @Test
-    void store_shouldAcceptValidJpegWithoutExtension() throws Exception {
+    void store_shouldAppendExtensionByMime() throws Exception {
         byte[] jpeg = new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x00, 0x01, 0x02};
         String path = StoragePathUtils.buildStoragePath("miyf", "kitchen", 12345L);
         StoredFile stored = storage.store(new ByteArrayInputStream(jpeg), jpeg.length, "image/jpeg", path);
         assertEquals("image/jpeg", stored.contentType());
-        assertEquals(path, stored.path());
-        assertFalse(stored.path().contains("."));
+        assertEquals(path + ".jpg", stored.path());
         assertTrue(Files.exists(storage.resolveSafe(stored.path())));
         assertEquals(32, stored.md5().length());
-        assertEquals("http://localhost:8080/r/12345", StoragePathUtils.publicResourceUrl(properties.getBaseUrl(), 12345L));
+        assertEquals("http://localhost:8080/r/12345.jpg",
+                StoragePathUtils.publicResourceUrl(properties.getBaseUrl(), 12345L, "image/jpeg"));
         assertTrue(path.startsWith("miyf/kitchen/"));
         assertTrue(path.endsWith("/12345"));
     }

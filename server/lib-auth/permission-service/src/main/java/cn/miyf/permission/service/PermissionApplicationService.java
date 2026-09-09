@@ -490,7 +490,8 @@ public class PermissionApplicationService extends BaseApplicationService {
         }
         String p = product.trim().toLowerCase();
         return switch (p) {
-            case "kitchen", "health", "system", "iam" -> "iam".equals(p) ? "system" : p;
+            case "kitchen", "health", "basic", "system" -> p;
+            case "iam" -> "basic";
             default -> p;
         };
     }
