@@ -9,6 +9,7 @@ import {
   DashboardOutlined,
   FileSearchOutlined,
   HeartOutlined,
+  IdcardOutlined,
   MenuOutlined,
   MonitorOutlined,
   SafetyOutlined,
@@ -51,6 +52,7 @@ export const SYSTEM_MENU_GROUPS: SysMenuGroup[] = [
     key: 'iam',
     label: '权限与组织',
     children: [
+      { key: '/system/users', label: '用户管理', icon: <IdcardOutlined />, permission: 'iam:user:list' },
       { key: '/system/role-auth', label: '用户授权', icon: <UserOutlined />, permission: 'iam:role:list' },
       { key: '/system/roles', label: '角色管理', icon: <TeamOutlined />, permission: 'iam:role:list' },
       { key: '/system/org-units', label: '组织架构', icon: <ApartmentOutlined />, permission: 'iam:org:list' },

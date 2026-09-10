@@ -336,6 +336,18 @@ a {
   padding: 2px 0;
 }
 
+.perm-tree__root {
+    letter-spacing: 0.02em;
+}
+
+.perm-tree__biz {
+    color: var(--ck-text);
+}
+
+.perm-tree__api {
+    opacity: 0.95;
+}
+
 /* 权限组编辑：勾选树 */
 .perm-check-tree {
     width: 100%;

@@ -15,7 +15,10 @@ export default function DishCard({ dish, compact = false }: DishCardProps) {
   }
 
   return (
-    <View className={`dish-card ${compact ? 'dish-card--compact' : ''}`} onClick={handleTap}>
+    <View
+      className={`dish-card ck-pressable ${compact ? 'dish-card--compact' : ''}`}
+      onClick={handleTap}
+    >
       <Image className='dish-card__cover' src={dish.coverUrl} mode='aspectFill' />
       <View className='dish-card__body'>
         <Text className='dish-card__name'>{dish.name}</Text>

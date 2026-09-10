@@ -2,6 +2,7 @@ import { get, post } from '@/api/request'
 import type { Order, OrderItem, PageResult } from '@/types'
 import { pageRecords } from '@/types'
 import { asId, asOptionalId } from '@/utils/id'
+import { toResourceUrl } from '@/utils/resourceUrl'
 
 interface OrderItemRaw {
   id?: string
@@ -33,7 +34,7 @@ function mapItem(raw: OrderItemRaw): OrderItem {
     dishName: raw.dishName,
     quantity: raw.quantity,
     unit: raw.unit,
-    coverUrl: raw.coverImage || raw.coverUrl || undefined,
+    coverUrl: toResourceUrl(raw.coverImage || raw.coverUrl || undefined),
     note: raw.remark,
     remark: raw.remark
   }

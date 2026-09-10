@@ -35,4 +35,16 @@ public interface AdminAuthAuthorityLoader {
     default String loadEffectiveDataScope(Long userId) {
         return DataScope.ALL.name();
     }
+
+    /**
+     * 若用户尚无任何角色，则绑定各产品域个人默认角色（{@code is_default=true}）。
+     * <p>
+     * 与创建用户未指定角色、以及权限启动重建后的默认授予对齐；已有角色时不改动。
+     *
+     * @param userId 用户 ID
+     * @return 是否发生了绑定
+     */
+    default boolean ensureDefaultRolesIfAbsent(Long userId) {
+        return false;
+    }
 }

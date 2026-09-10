@@ -154,6 +154,7 @@ export default function SystemOverviewPage() {
 
   const shortcuts = useMemo(() => {
     const all = [
+      { path: '/system/users', label: '用户管理', show: hasPermission('iam:user:list') },
       { path: '/system/role-auth', label: '用户授权', show: hasPermission('iam:role:list') },
       { path: '/system/config', label: '基础设置', show: hasPermission('sys:config:list') },
       { path: '/system/jobs', label: '定时任务', show: hasPermission('sys:job:list') },
@@ -258,7 +259,7 @@ export default function SystemOverviewPage() {
               label="已授权人员"
               value={authSummary.userCount}
               hint={`角色 ${authSummary.roleCount}`}
-              onClick={() => navigate('/system/role-auth')}
+              onClick={() => navigate('/system/users')}
             />
           </Col>
         </Row>

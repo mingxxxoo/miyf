@@ -55,9 +55,9 @@ export default function DishCreatePage() {
 
         description: values.description ? String(values.description) : undefined,
 
-        coverImage: values.coverImage ? String(values.coverImage) : undefined,
+        coverImage: values.coverImage ? String(values.coverImage) : '',
 
-        coverUrl: values.coverImage ? String(values.coverImage) : undefined,
+        coverUrl: values.coverImage ? String(values.coverImage) : '',
 
         stockType: values.stockType as 'LIMITED' | 'UNLIMITED',
 

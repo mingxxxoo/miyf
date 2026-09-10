@@ -1,0 +1,46 @@
+.trend-spark {
+  margin-top: 20px;
+
+  &--empty {
+    padding: 28px 0 8px;
+  }
+
+  &__empty-text {
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+  }
+
+  &__bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    min-height: 100px;
+    padding: 8px 0 4px;
+  }
+
+  &__col {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  &__bar {
+    width: 100%;
+    max-width: 28px;
+    border-radius: 8px 8px 4px 4px;
+    background: linear-gradient(180deg, rgba($ck-health, 0.85), rgba($ck-health, 0.35));
+    transition: height 0.25s ease;
+  }
+
+  &--kitchen &__bar {
+    background: linear-gradient(180deg, rgba($ck-primary, 0.9), rgba($ck-primary, 0.35));
+  }
+
+  &__unit {
+    display: block;
+    margin-top: 8px;
+    font-size: 22px;
+    color: $ck-muted;
+  }
+}

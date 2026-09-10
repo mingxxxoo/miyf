@@ -1,5 +1,6 @@
 ﻿import { get, post, put, del } from '@/api/http';
 import { asPage, sid, toPageParams } from '@/api/page';
+import { toResourceUrl } from '@/api/resourceUrl';
 import type {
   Category,
   Comment,
@@ -31,7 +32,7 @@ function mapCategory(raw: Record<string, unknown>): Category {
 
 function mapDish(raw: Record<string, unknown>): Dish {
   const ratingCount = Number(raw.ratingCount ?? 0);
-  const cover = String(raw.coverImage ?? raw.coverUrl ?? '');
+  const cover = toResourceUrl(String(raw.coverImage ?? raw.coverUrl ?? '')) ?? '';
   const status = String(raw.status ?? 'DRAFT').toUpperCase();
   return {
     id: sid(raw.id),
@@ -51,7 +52,9 @@ function mapDish(raw: Record<string, unknown>): Dish {
     recommended: Boolean(raw.recommend ?? raw.recommended),
     rating: ratingCount > 0 && raw.rating != null ? Number(raw.rating) : undefined,
     ratingCount,
-    images: Array.isArray(raw.images) ? (raw.images as string[]) : undefined,
+    images: Array.isArray(raw.images)
+      ? (raw.images as string[]).map((u) => toResourceUrl(u) ?? u).filter(Boolean)
+      : undefined,
   };
 }
 
@@ -75,7 +78,9 @@ function mapSteps(list: unknown): RecipeStep[] {
       title: o.title ? String(o.title) : undefined,
       content: String(o.content ?? o.description ?? ''),
       description: o.description ? String(o.description) : undefined,
-      imageUrl: o.imageUrl ? String(o.imageUrl) : o.image ? String(o.image) : undefined,
+      imageUrl: toResourceUrl(
+        o.imageUrl ? String(o.imageUrl) : o.image ? String(o.image) : undefined,
+      ),
     };
   });
 }
@@ -100,14 +105,18 @@ function mapRecipe(raw: Record<string, unknown>): DishRecipe {
 }
 
 function mapOrderItem(raw: Record<string, unknown>): OrderItem {
-  const cover = raw.coverImage ?? raw.coverUrl;
+  const cover = toResourceUrl(
+    raw.coverImage != null || raw.coverUrl != null
+      ? String(raw.coverImage ?? raw.coverUrl)
+      : undefined,
+  );
   return {
     id: raw.id ? sid(raw.id) : undefined,
     dishId: sid(raw.dishId),
     dishName: String(raw.dishName ?? ''),
     quantity: Number(raw.quantity ?? 0),
     unit: raw.unit ? String(raw.unit) : undefined,
-    coverUrl: cover ? String(cover) : undefined,
+    coverUrl: cover,
     note: raw.remark ? String(raw.remark) : raw.note ? String(raw.note) : undefined,
     remark: raw.remark ? String(raw.remark) : undefined,
   };
@@ -145,7 +154,9 @@ function mapComment(raw: Record<string, unknown>): Comment {
     userAvatar: raw.userAvatar ? String(raw.userAvatar) : undefined,
     rating: Number(raw.rating ?? 0),
     content: raw.content ? String(raw.content) : undefined,
-    images: Array.isArray(raw.images) ? (raw.images as string[]) : undefined,
+    images: Array.isArray(raw.images)
+      ? (raw.images as string[]).map((u) => toResourceUrl(u) ?? u).filter(Boolean)
+      : undefined,
     status,
     hidden: status === 'HIDDEN',
     createTime: String(raw.createTime ?? ''),
@@ -229,7 +240,11 @@ function toDishSaveBody(data: Partial<Dish>) {
     name: data.name,
     subtitle: data.subtitle,
     description: data.description,
-    coverImage: data.coverImage || data.coverUrl,
+    coverImage:
+      data.coverImage !== undefined
+        ? data.coverImage || ''
+        : data.coverUrl || '',
+
     sortOrder: data.sortOrder,
     recommend: data.recommend ?? data.recommended,
     stockType: data.stockType,

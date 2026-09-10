@@ -28,7 +28,7 @@
     height: 120px;
     border-radius: $ck-radius-sm;
     flex-shrink: 0;
-    background: lighten($ck-border, 4%);
+    background: $ck-border-l4;
   }
 
   &__info {

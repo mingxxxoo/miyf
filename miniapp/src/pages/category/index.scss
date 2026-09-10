@@ -21,14 +21,21 @@
 
     &--active {
       background: rgba($ck-primary, 0.15);
-      color: darken($ck-primary, 12%);
+      color: $ck-primary-d12;
       border-color: rgba($ck-primary, 0.4);
       font-weight: 600;
     }
   }
 
   &__content {
-    padding: 32px;
+    padding: 24px 32px 32px;
+  }
+
+  &__count {
+    display: block;
+    margin-bottom: 16px;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
   }
 
   &__grid {

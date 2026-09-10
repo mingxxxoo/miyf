@@ -9,7 +9,7 @@
     width: 100%;
     height: 280px;
     display: block;
-    background: lighten($ck-border, 4%);
+    background: $ck-border-l4;
   }
 
   &--compact &__cover {
@@ -59,7 +59,7 @@
 
   &__tag {
     font-size: 22px;
-    color: darken($ck-secondary, 18%);
+    color: $ck-secondary-d18;
     background: rgba($ck-secondary, 0.25);
     padding: 6px 16px;
     border-radius: 999px;

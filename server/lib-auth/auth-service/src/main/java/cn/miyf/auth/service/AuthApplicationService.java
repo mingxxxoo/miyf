@@ -22,9 +22,11 @@ import java.util.List;
 
 /**
  * 平台认证应用服务：管理员（sys_user）登录。
+ * 登录时若用户无角色，自动授予各产品域个人默认角色后再签发 JWT。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:06
+ * @history 1.00 2026-09-04 17:06 XieMingJie Created.
  */
 @Service
 @RequiredArgsConstructor
@@ -59,6 +61,7 @@ public class AuthApplicationService extends BaseApplicationService {
 
     /**
      * 管理员登录（sys_user）：校验验证码与阶梯封禁后再鉴权发令牌。
+     * 若用户尚无角色，先自动绑定各产品域个人默认角色再加载权限。
      *
      * @param dto 登录请求
      * @return 登录结果
@@ -78,6 +81,8 @@ public class AuthApplicationService extends BaseApplicationService {
             if (!passwordEncoder.matches(dto.getPassword(), user.getPasswordHash())) {
                 throw loginFailed(principalKey);
             }
+            // 无角色时补齐个人默认角色（与 createUser / PermissionBootstrap 对齐）
+            authorityLoader.ensureDefaultRolesIfAbsent(user.getId());
             List<String> roleCodes = authorityLoader.loadRoleCodes(user.getId());
             List<String> permissionCodes = authorityLoader.loadPermissionCodes(user.getId());
             DataScope dataScope = DataScope.parse(authorityLoader.loadEffectiveDataScope(user.getId()));

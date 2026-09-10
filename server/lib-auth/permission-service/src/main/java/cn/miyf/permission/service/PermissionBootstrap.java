@@ -48,6 +48,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -58,7 +59,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   <li>扫描 {@link PopedomRole}、{@link PopedomGroup}、{@link MiyfPermission}</li>
  *   <li>按顺序重建角色、权限组、权限树（个人|单位|超管 → 接口业务 → 接口名称）并绑定角色</li>
  * </ol>
- * 超管角色绑定全部权限组；种子用户 {@code admin} 重新绑定超管角色。
+ * 超管角色绑定全部权限组；种子用户 {@code admin} 重新绑定超管角色；
+ * 其余系统用户自动授予各产品域 {@link PopedomRoleType#DEFAULT} 个人默认角色（与 createUser 未指定角色时对齐）。
  *
  * @author XieMingJie
  * @since 2026-09-05
@@ -109,6 +111,8 @@ public class PermissionBootstrap implements ApplicationRunner {
         bindRolesToGroups(groupsByCode, roleIdByCode, groupIdByCode, now);
         bindAllGroupsToSuperAdmin(roleIdByCode, groupIdByCode.values(), now);
         rebindSeedAdmin(roleIdByCode, now);
+        // 清空 user_role 后需补齐个人默认角色，否则普通用户登录无权限
+        bindDefaultRolesToUsers(roleDefs, roleIdByCode, now);
 
         log.info("Permission rebuild done: roles={}, groups={}, apis={}",
                 roleIdByCode.size(), groupIdByCode.size(), apiSpecs.size());
@@ -216,7 +220,8 @@ public class PermissionBootstrap implements ApplicationRunner {
                     .setDescription(StringUtils.hasText(def.description()) ? def.description().trim() : null)
                     .setIsDefault(def.type() == PopedomRoleType.DEFAULT)
                     .setProduct(StringUtils.hasText(def.product()) ? def.product().trim() : null)
-                    .setDataScope(def.type() == PopedomRoleType.SUPER ? "ALL" : "ORG");
+                    // DEFAULT=个人默认 → SELF；ORG=单位 → ORG；SUPER → ALL
+                    .setDataScope(resolveDataScope(def.type()));
             role.setId(id);
             role.setCreateTime(now);
             role.setLastModifyTime(now);
@@ -438,6 +443,76 @@ public class PermissionBootstrap implements ApplicationRunner {
         bind.setId(ADMIN_USER_ROLE_ID);
         bind.setCreateTime(now);
         userRoleMapper.insert(bind);
+    }
+
+    /**
+     * 将各产品域个人默认角色授予除种子超管外的全部系统用户。
+     * <p>
+     * 启动流程会清空 {@code sys_user_role}，若不补齐则普通用户登录后角色/权限为空。
+     * 与 {@code SysUserApplicationService#createUser} 未指定角色时绑定 {@code is_default} 角色对齐。
+     *
+     * @param roleDefs     扫描到的角色定义
+     * @param roleIdByCode 角色码 → 角色 ID
+     * @param now          绑定时间
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    private void bindDefaultRolesToUsers(List<PopedomRole> roleDefs,
+                                         Map<String, Long> roleIdByCode,
+                                         Instant now) {
+        List<Long> defaultRoleIds = new ArrayList<>();
+        for (PopedomRole def : roleDefs) {
+            if (def.type() != PopedomRoleType.DEFAULT || !StringUtils.hasText(def.code())) {
+                continue;
+            }
+            Long roleId = roleIdByCode.get(def.code().trim());
+            if (roleId != null) {
+                defaultRoleIds.add(roleId);
+            }
+        }
+        if (defaultRoleIds.isEmpty()) {
+            log.warn("No DEFAULT roles found; skip default role grant to users");
+            return;
+        }
+
+        SysUserEntity admin = userMapper.selectByUsername(ADMIN_USERNAME);
+        Long adminId = admin == null ? null : admin.getId();
+        List<SysUserEntity> users = userMapper.selectList(Wrappers.lambdaQuery());
+        int userCount = 0;
+        int bindCount = 0;
+        for (SysUserEntity user : users) {
+            if (user.getId() == null || Objects.equals(user.getId(), adminId)) {
+                continue;
+            }
+            userCount++;
+            for (Long roleId : defaultRoleIds) {
+                SysUserRoleEntity bind = new SysUserRoleEntity()
+                        .setUserId(user.getId())
+                        .setRoleId(roleId);
+                bind.setId(snowflakeIdGenerator.nextId());
+                bind.setCreateTime(now);
+                userRoleMapper.insert(bind);
+                bindCount++;
+            }
+        }
+        log.info("Bound DEFAULT roles to users: users={}, defaultRoles={}, binds={}",
+                userCount, defaultRoleIds.size(), bindCount);
+    }
+
+    /**
+     * 按角色类型解析数据范围：超管 ALL、个人默认 SELF、单位 ORG。
+     *
+     * @param type 角色类型
+     * @return 数据范围码
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    private static String resolveDataScope(PopedomRoleType type) {
+        if (type == PopedomRoleType.SUPER) {
+            return "ALL";
+        }
+        if (type == PopedomRoleType.DEFAULT) {
+            return "SELF";
+        }
+        return "ORG";
     }
 
     private static String resolveGroupDisplayName(PopedomGroup group) {

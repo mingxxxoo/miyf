@@ -1,3 +1,5 @@
 export default definePageConfig({
-  navigationBarTitleText: '健康'
+  navigationBarTitleText: 'miyf 健康',
+  enablePullDownRefresh: true,
+  backgroundTextStyle: 'dark'
 })

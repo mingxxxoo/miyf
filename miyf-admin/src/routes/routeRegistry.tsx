@@ -17,6 +17,7 @@ import HealthProvidersPage from '@/modules/health/pages/HealthProvidersPage';
 import HealthTrendsPage from '@/modules/health/pages/HealthTrendsPage';
 import RolesPage from '@/modules/iam/pages/roles/RolesPage';
 import RoleAuthPage from '@/modules/iam/pages/roles/RoleAuthPage';
+import IamUsersPage from '@/modules/iam/pages/users/IamUsersPage';
 import PermissionsPage from '@/modules/iam/pages/permissions/PermissionsPage';
 import OrgUnitsPage from '@/modules/iam/pages/org-units/OrgUnitsPage';
 import MenusPage from '@/modules/iam/pages/menus/MenusPage';
@@ -132,6 +133,12 @@ export const systemRouteDefs: RouteDef[] = [
     path: 'overview',
     element: <SystemOverviewPage />,
     fallbackPermissions: ['sys:monitor:view', 'sys:settings:view', 'iam:role:list'],
+    system: true,
+  },
+  {
+    path: 'users',
+    element: <IamUsersPage />,
+    fallbackPermissions: ['iam:user:list'],
     system: true,
   },
   {

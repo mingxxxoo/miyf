@@ -1,10 +1,29 @@
-// miyf kitchen · Design Tokens
+// miyf · Design Tokens（厨房暖色 + 健康青绿）
+// 衍生色使用静态 hex，避免 Dart Sass 对 darken()/lighten() 的弃用警告
 $ck-primary: #FFB36B;
+$ck-primary-d6: #FFA34C;
+$ck-primary-d8: #FF9E42;
+$ck-primary-d10: #FF9938;
+$ck-primary-d12: #FF942E;
+$ck-primary-d18: #FF840F;
+
 $ck-secondary: #9DD9C4;
+$ck-secondary-d18: #5BBF9C;
+$ck-secondary-d22: #4CBA93;
+$ck-secondary-d28: #41A783;
+
+$ck-health: #5BB8A8;
+$ck-health-d6: #4AAB9A;
+$ck-health-d8: #47A393;
+$ck-health-d10: #449C8D;
+$ck-health-d12: #419587;
+
 $ck-bg: #FFFDF8;
 $ck-text: #333333;
 $ck-muted: #888888;
+$ck-muted-l12: #A7A7A7;
 $ck-border: #F0ECE5;
+$ck-border-l4: #F7F5F2;
 
 $ck-radius-sm: 12px;
 $ck-radius-md: 20px;

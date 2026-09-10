@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Upload, message, Image } from 'antd';
 import { PlusOutlined, LoadingOutlined } from '@ant-design/icons';
+import type { UploadFile } from 'antd/es/upload/interface';
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
 import { uploadFile } from '@/api/upload';
+import { toResourceUrl } from '@/api/resourceUrl';
 import { notifyError } from '@/api/errors';
 
 interface ImageUploaderProps {
   value?: string;
-  onChange?: (url: string) => void;
+  /** 清空时传 undefined，便于 Form 写入空值 */
+  onChange?: (url?: string) => void;
   /** 产品应用编码，决定存储分区，如 kitchen / health */
   appCode: string;
   source?: string;
@@ -21,7 +24,7 @@ interface ImageUploaderProps {
 }
 
 /**
- * 图片选择器：上传至 /api/upload，失败明确报错（不再回退 DataURL）。
+ * 图片选择器：上传至 /api/upload；支持预览、替换与删除。
  */
 export default function ImageUploader({
   value,
@@ -34,6 +37,20 @@ export default function ImageUploader({
 }: ImageUploaderProps) {
   const [loading, setLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  const displayUrl = toResourceUrl(value);
+
+  const fileList: UploadFile[] = useMemo(() => {
+    if (!displayUrl) return [];
+    return [
+      {
+        uid: '-1',
+        name: 'image',
+        status: 'done',
+        url: displayUrl,
+      },
+    ];
+  }, [displayUrl]);
 
   const beforeUpload = (file: File) => {
     const isValidType = accept.split(',').some((t) => file.type === t.trim());
@@ -77,35 +94,29 @@ export default function ImageUploader({
       <Upload
         name="file"
         listType="picture-card"
-        showUploadList={false}
         accept={accept}
+        maxCount={1}
+        fileList={fileList}
         beforeUpload={beforeUpload}
         customRequest={customRequest}
+        onPreview={() => setPreviewOpen(true)}
+        onRemove={() => {
+          onChange?.(undefined);
+          return true;
+        }}
       >
-        {value ? (
-          <img
-            src={value}
-            alt="upload"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            onClick={(e) => {
-              e.stopPropagation();
-              setPreviewOpen(true);
-            }}
-          />
-        ) : (
-          uploadButton
-        )}
+        {fileList.length >= 1 ? null : uploadButton}
       </Upload>
-      {value && (
+      {displayUrl ? (
         <Image
           style={{ display: 'none' }}
           preview={{
             visible: previewOpen,
             onVisibleChange: (visible) => setPreviewOpen(visible),
           }}
-          src={value}
+          src={displayUrl}
         />
-      )}
+      ) : null}
     </>
   );
 }

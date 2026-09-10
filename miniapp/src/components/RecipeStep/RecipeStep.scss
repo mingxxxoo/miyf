@@ -15,7 +15,7 @@
     height: 48px;
     border-radius: 50%;
     background: rgba($ck-primary, 0.2);
-    color: darken($ck-primary, 12%);
+    color: $ck-primary-d12;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -59,7 +59,7 @@
   &__duration {
     display: inline-block;
     font-size: 22px;
-    color: darken($ck-secondary, 22%);
+    color: $ck-secondary-d22;
     background: rgba($ck-secondary, 0.25);
     padding: 4px 14px;
     border-radius: 999px;

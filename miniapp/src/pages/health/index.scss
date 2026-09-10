@@ -1,15 +1,33 @@
 .health-page {
-  padding: 32px;
   min-height: 100vh;
+  padding-bottom: 140px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba($ck-health, 0.16), transparent 42%),
+    radial-gradient(circle at 92% 8%, rgba($ck-secondary, 0.14), transparent 36%),
+    $ck-bg;
+
+  &__top {
+    padding: 24px 32px 0;
+  }
 
   &__hero {
-    margin-bottom: 24px;
+    padding: 28px 32px 8px;
+  }
+
+  &__brand {
+    display: block;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: $ck-health-d6;
+    margin-bottom: 8px;
   }
 
   &__title {
     display: block;
-    font-size: $ck-font-title;
-    font-weight: 600;
+    font-size: 44px;
+    font-weight: 700;
+    color: $ck-text;
     margin-bottom: 8px;
   }
 
@@ -20,72 +38,159 @@
     margin-bottom: 24px;
   }
 
-  &__stat {
+  &__stat-row {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
     gap: 16px;
   }
 
+  &__stat-card {
+    flex: 1;
+    padding: 22px 20px;
+    border-radius: $ck-radius-md;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba($ck-health, 0.18);
+    box-shadow: 0 8px 20px rgba($ck-health, 0.08);
+  }
+
   &__stat-label {
-    font-size: $ck-font-body;
+    display: block;
+    font-size: 22px;
     color: $ck-muted;
+    margin-bottom: 8px;
   }
 
   &__stat-value {
-    font-size: 48px;
-    font-weight: 600;
-    color: $ck-text;
+    display: block;
+    font-size: 40px;
+    font-weight: 700;
+    color: $ck-health-d10;
+    line-height: 1.2;
+
+    &--sm {
+      font-size: 32px;
+    }
   }
 
-  &__meta {
-    display: block;
-    margin-top: 12px;
-    font-size: $ck-font-caption;
+  &__metrics {
+    white-space: nowrap;
+    padding: 24px 32px 8px;
+  }
+
+  &__metric {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-width: 140px;
+    padding: 18px 22px;
+    margin-right: 14px;
+    border-radius: $ck-radius-sm;
+    background: #fff;
+    border: 1px solid $ck-border;
+
+    &--active {
+      background: rgba($ck-health, 0.12);
+      border-color: rgba($ck-health, 0.45);
+    }
+  }
+
+  &__metric-label {
+    font-size: 28px;
+    font-weight: 600;
+    color: $ck-text;
+
+    .health-page__metric--active & {
+      color: $ck-health-d10;
+    }
+  }
+
+  &__metric-unit {
+    margin-top: 4px;
+    font-size: 22px;
     color: $ck-muted;
   }
 
-  &__form {
-    margin-bottom: 24px;
+  &__panels {
+    display: flex;
+    gap: 12px;
+    padding: 16px 32px 0;
+  }
+
+  &__panel-tab {
+    padding: 14px 28px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid $ck-border;
+    font-size: 26px;
+    color: $ck-muted;
+
+    &--active {
+      background: rgba($ck-health, 0.16);
+      border-color: rgba($ck-health, 0.4);
+      color: $ck-health-d12;
+      font-weight: 600;
+    }
+  }
+
+  &__card {
+    margin: 20px 32px 0;
+  }
+
+  &__card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
   }
 
   &__section {
     display: block;
     font-size: $ck-font-body;
     font-weight: 600;
-    margin-bottom: 16px;
   }
 
-  &__picker {
+  &__link {
+    font-size: $ck-font-caption;
+    color: $ck-health;
+  }
+
+  &__hint {
+    display: block;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+  }
+
+  &__range {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 20px 0;
-    border-bottom: 1px solid $ck-border;
-    font-size: $ck-font-body;
-  }
-
-  &__picker-value {
+    margin-top: 12px;
+    font-size: 22px;
     color: $ck-muted;
   }
 
   &__input {
-    margin-top: 16px;
-    padding: 20px 0;
+    margin-top: 12px;
+    padding: 22px 24px;
+    border-radius: $ck-radius-sm;
+    background: rgba($ck-health, 0.06);
+    border: 1px solid rgba($ck-health, 0.2);
     font-size: $ck-font-body;
-    border-bottom: 1px solid $ck-border;
+    color: $ck-text;
   }
 
   &__btn {
     margin-top: 24px;
-    background: $ck-primary !important;
-    color: #fff !important;
-    border-radius: $ck-radius-md !important;
-    font-size: $ck-font-body !important;
+    width: 100%;
   }
 
   &__list {
-    margin-bottom: 48px;
+    padding: 32px 32px 0;
+  }
+
+  &__list &__section {
+    margin-bottom: 16px;
   }
 
   &__item {
@@ -113,5 +218,44 @@
     font-size: $ck-font-caption;
     color: $ck-muted;
     flex-shrink: 0;
+  }
+
+  &__dock {
+    position: fixed;
+    left: 24px;
+    right: 24px;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-radius: $ck-radius-lg;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba($ck-health, 0.18);
+    box-shadow: 0 10px 28px rgba($ck-health, 0.16);
+    z-index: 20;
+  }
+
+  &__dock-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 64px;
+    border-radius: $ck-radius-md;
+
+    &--active {
+      background: rgba($ck-health, 0.14);
+    }
+  }
+
+  &__dock-label {
+    font-size: 26px;
+    font-weight: 500;
+    color: $ck-muted;
+
+    .health-page__dock-item--active & {
+      color: $ck-health-d10;
+      font-weight: 600;
+    }
   }
 }

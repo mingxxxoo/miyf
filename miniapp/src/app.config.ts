@@ -13,7 +13,7 @@ export default defineAppConfig({
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#FFFDF8',
-    navigationBarTitleText: 'miyf 厨房',
+    navigationBarTitleText: 'miyf',
     navigationBarTextStyle: 'black',
     backgroundColor: '#FFFDF8'
   },

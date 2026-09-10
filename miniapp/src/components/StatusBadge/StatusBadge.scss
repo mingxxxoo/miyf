@@ -8,12 +8,12 @@
 
   &--warm {
     background: rgba($ck-primary, 0.18);
-    color: darken($ck-primary, 18%);
+    color: $ck-primary-d18;
   }
 
   &--mint {
     background: rgba($ck-secondary, 0.35);
-    color: darken($ck-secondary, 28%);
+    color: $ck-secondary-d28;
   }
 
   &--cooking {

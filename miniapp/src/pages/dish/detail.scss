@@ -5,7 +5,7 @@
     width: 100%;
     height: 480px;
     display: block;
-    background: lighten($ck-border, 4%);
+    background: $ck-border-l4;
   }
 
   &__body {
@@ -48,7 +48,7 @@
 
   &__tag {
     font-size: 24px;
-    color: darken($ck-secondary, 18%);
+    color: $ck-secondary-d18;
     background: rgba($ck-secondary, 0.25);
     padding: 8px 20px;
     border-radius: 999px;
@@ -80,7 +80,7 @@
     height: 56px;
     border-radius: 12px;
     background: rgba($ck-primary, 0.15);
-    color: darken($ck-primary, 10%);
+    color: $ck-primary-d10;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -111,7 +111,7 @@
     padding: 20px 24px;
     margin-bottom: 28px;
     font-size: $ck-font-caption;
-    color: darken($ck-primary, 18%);
+    color: $ck-primary-d18;
     line-height: 1.6;
   }
 

@@ -69,7 +69,9 @@ export default function CategoryPage() {
         {tabs.map((cat) => (
           <View
             key={cat.id}
-            className={`category-page__tab ${activeId === cat.id ? 'category-page__tab--active' : ''}`}
+            className={`category-page__tab ck-pressable ${
+              activeId === cat.id ? 'category-page__tab--active' : ''
+            }`}
             onClick={() => handleSelect(cat.id)}
           >
             <Text>{cat.name}</Text>
@@ -78,6 +80,9 @@ export default function CategoryPage() {
       </ScrollView>
 
       <View className='category-page__content'>
+        {!loading && dishes.length > 0 && (
+          <Text className='category-page__count'>共 {dishes.length} 道</Text>
+        )}
         {dishes.length === 0 ? (
           <EmptyState
             emoji='🥗'
@@ -87,7 +92,7 @@ export default function CategoryPage() {
         ) : (
           <View className='category-page__grid'>
             {dishes.map((dish) => (
-              <View key={dish.id} className='category-page__item'>
+              <View key={dish.id} className='category-page__item ck-pressable'>
                 <DishCard dish={dish} compact />
               </View>
             ))}

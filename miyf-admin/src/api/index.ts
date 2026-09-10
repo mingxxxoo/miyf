@@ -5,6 +5,7 @@ import type { AdminUser, LoginVo } from '@/types';
 export { toPageParams, asPage, slicePage, sid } from './page';
 export { notifyError, getErrorMessage } from './errors';
 export { uploadFile } from './upload';
+export { toResourceUrl, toResourceUrlOrEmpty } from './resourceUrl';
 export { operationLogApi } from '@/modules/system/operationLog';
 export type { OperationLogQuery } from '@/modules/system/operationLog';
 

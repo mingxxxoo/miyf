@@ -2,6 +2,7 @@ import Taro from '@tarojs/taro'
 import { create } from 'zustand'
 import { wxLogin } from '@/api/auth'
 import { getToken, setToken, clearToken } from '@/api/request'
+import { PRODUCT_META, useProductStore } from '@/stores/productStore'
 import type { User } from '@/types'
 
 const USER_KEY = 'miyf_user'
@@ -95,9 +96,16 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   goHome: () => {
+    const product = useProductStore.getState().product
+    const meta = PRODUCT_META[product]
     const route = currentRoute()
-    if (route === 'pages/index/index') return
-    Taro.switchTab({ url: '/pages/index/index' })
+    const target = meta.homeUrl.replace(/^\//, '')
+    if (route === target) return
+    if (meta.homeIsTab) {
+      Taro.switchTab({ url: meta.homeUrl })
+    } else {
+      Taro.reLaunch({ url: meta.homeUrl })
+    }
   },
 
   goLogin: () => {

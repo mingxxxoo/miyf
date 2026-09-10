@@ -1,4 +1,5 @@
 import { getToken, ApiError, clearToken } from '@/api/http';
+import { toResourceUrl } from '@/api/resourceUrl';
 
 export type UploadResult = {
   url: string;
@@ -68,5 +69,8 @@ export async function uploadFile(
   if (!data?.url) {
     throw new ApiError('上传成功但未返回文件地址');
   }
-  return data;
+  return {
+    ...data,
+    url: toResourceUrl(data.url) ?? data.url,
+  };
 }

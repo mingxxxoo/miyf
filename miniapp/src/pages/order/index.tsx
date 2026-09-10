@@ -1,4 +1,4 @@
-import { View, Text, Button, Input, Picker } from '@tarojs/components'
+import { View, Text, Button, Input, Picker, ScrollView } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useEffect, useState } from 'react'
 import OrderCard from '@/components/OrderCard'
@@ -132,17 +132,17 @@ export default function OrderIndexPage() {
         </View>
       )}
 
-      <View className='order-page__tabs'>
+      <ScrollView scrollX className='order-page__tabs' enhanced showScrollbar={false}>
         {TABS.map((t) => (
           <View
             key={t.key}
-            className={`order-page__tab ${tab === t.key ? 'order-page__tab--active' : ''}`}
+            className={`order-page__tab ck-pressable ${tab === t.key ? 'order-page__tab--active' : ''}`}
             onClick={() => setTab(t.key)}
           >
             <Text>{t.label}</Text>
           </View>
         ))}
-      </View>
+      </ScrollView>
 
       <View className='order-page__history'>
         <Text className='order-page__section-title'>预约记录</Text>

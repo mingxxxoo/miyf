@@ -62,14 +62,15 @@
   }
 
   &__tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
+    white-space: nowrap;
     margin-bottom: 28px;
   }
 
   &__tab {
-    padding: 12px 22px;
+    display: inline-flex;
+    align-items: center;
+    padding: 14px 24px;
+    margin-right: 12px;
     border-radius: 999px;
     background: #fff;
     border: 1px solid $ck-border;
@@ -79,7 +80,7 @@
     &--active {
       background: rgba($ck-primary, 0.18);
       border-color: rgba($ck-primary, 0.4);
-      color: darken($ck-primary, 12%);
+      color: $ck-primary-d12;
       font-weight: 600;
     }
   }

@@ -4,7 +4,7 @@
   box-sizing: border-box;
   background:
     radial-gradient(circle at 20% 0%, rgba($ck-primary, 0.22), transparent 42%),
-    radial-gradient(circle at 90% 10%, rgba($ck-secondary, 0.18), transparent 36%),
+    radial-gradient(circle at 90% 10%, rgba($ck-health, 0.16), transparent 36%),
     $ck-bg;
 
   &--loading {
@@ -24,9 +24,10 @@
 
   &__brand {
     display: block;
-    font-size: 44px;
-    font-weight: 700;
+    font-size: 48px;
+    font-weight: 800;
     color: $ck-text;
+    letter-spacing: 0.06em;
     margin-bottom: 12px;
   }
 
@@ -41,7 +42,20 @@
     display: block;
     font-size: $ck-font-caption;
     color: $ck-muted;
-    margin-bottom: 48px;
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+
+  &__switch {
+    margin-bottom: 12px;
+  }
+
+  &__switch-hint {
+    display: block;
+    font-size: 22px;
+    color: $ck-muted;
+    margin-bottom: 36px;
+    text-align: center;
   }
 
   &__btn {

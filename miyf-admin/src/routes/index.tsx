@@ -75,7 +75,7 @@ export default function AppRoutes() {
         <Route path="/admins" element={<Navigate to="/system/role-auth" replace />} />
         <Route path="/roles" element={<Navigate to="/system/roles" replace />} />
         <Route path="/permissions" element={<Navigate to="/system/permissions" replace />} />
-        <Route path="/iam/users" element={<Navigate to="/system/role-auth" replace />} />
+        <Route path="/iam/users" element={<Navigate to="/system/users" replace />} />
         <Route path="/iam/roles" element={<Navigate to="/system/roles" replace />} />
         <Route path="/iam/permissions" element={<Navigate to="/system/permissions" replace />} />
         <Route path="/iam/perm-groups" element={<Navigate to="/system/perm-groups" replace />} />

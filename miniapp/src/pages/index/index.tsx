@@ -1,25 +1,40 @@
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import DishCard from '@/components/DishCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
+import ServiceSwitcher from '@/components/ServiceSwitcher'
 import { fetchCategories } from '@/api/category'
 import { fetchHotDishes, fetchRecommendDishes } from '@/api/dish'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
+import { PRODUCT_META, useProductStore } from '@/stores/productStore'
 import type { Category, Dish } from '@/types'
 import './index.scss'
 
 const CATEGORY_KEY = 'miyf_kitchen_category_id'
 
+function greetingByHour(): string {
+  const h = new Date().getHours()
+  if (h < 11) return '早上好，今天想吃点什么？'
+  if (h < 14) return '中午好，来点热乎的？'
+  if (h < 18) return '下午好，给晚餐找点灵感'
+  return '晚上好，夜晚也值得好好吃一顿'
+}
+
 export default function IndexPage() {
   const { isLoggedIn, bootstrapping } = useAuthGuard()
+  const setProduct = useProductStore((s) => s.setProduct)
   const [loading, setLoading] = useState(true)
   const [recommend, setRecommend] = useState<Dish[]>([])
   const [hotDishes, setHotDishes] = useState<Dish[]>([])
   const [categories, setCategories] = useState<Category[]>([])
 
+  const greeting = useMemo(() => greetingByHour(), [])
+
   useDidShow(() => {
+    setProduct('kitchen')
+    Taro.setNavigationBarTitle({ title: PRODUCT_META.kitchen.brand })
     if (!bootstrapping && isLoggedIn) void loadHome()
   })
 
@@ -59,22 +74,25 @@ export default function IndexPage() {
   return (
     <View className='index-page'>
       <View className='index-page__hero'>
+        <ServiceSwitcher compact className='index-page__switch' />
         <Text className='index-page__brand'>miyf 厨房</Text>
-        <Text className='index-page__greeting'>今天吃点什么呢？</Text>
+        <Text className='index-page__greeting'>{greeting}</Text>
         <Text className='index-page__subtitle'>把心意端上餐桌</Text>
       </View>
 
       <View className='index-page__section'>
         <View className='index-page__section-head'>
           <Text className='index-page__section-title'>今日推荐</Text>
-          <Text className='index-page__section-more' onClick={() => goCategory()}>全部菜品 →</Text>
+          <Text className='index-page__section-more' onClick={() => goCategory()}>
+            全部菜品 →
+          </Text>
         </View>
         {recommend.length === 0 ? (
           <EmptyState emoji='🥄' title='厨房还在备菜中' description='稍后再来看看' />
         ) : (
           <View className='index-page__list'>
             {recommend.slice(0, 3).map((dish) => (
-              <View key={dish.id} className='index-page__item'>
+              <View key={dish.id} className='index-page__item ck-pressable'>
                 <DishCard dish={dish} />
               </View>
             ))}
@@ -88,7 +106,7 @@ export default function IndexPage() {
           {categories.map((cat) => (
             <View
               key={cat.id}
-              className='index-page__cat'
+              className='index-page__cat ck-pressable'
               onClick={() => goCategory(cat.id)}
             >
               <Text>{cat.name}</Text>
@@ -104,7 +122,7 @@ export default function IndexPage() {
         ) : (
           <View className='index-page__list'>
             {hotDishes.slice(0, 4).map((dish) => (
-              <View key={dish.id} className='index-page__item'>
+              <View key={dish.id} className='index-page__item ck-pressable'>
                 <DishCard dish={dish} compact />
               </View>
             ))}

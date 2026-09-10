@@ -2,6 +2,7 @@ import { get } from '@/api/request'
 import type { Comment, Dish, PageResult, Recipe, RecipeStep } from '@/types'
 import { pageRecords } from '@/types'
 import { asId, asOptionalId } from '@/utils/id'
+import { toResourceUrl, toResourceUrlOrEmpty } from '@/utils/resourceUrl'
 
 interface DishRaw {
   id: string
@@ -45,7 +46,7 @@ function mapDish(raw: DishRaw): Dish {
     name: raw.name,
     subtitle: raw.subtitle,
     description: raw.description || raw.subtitle || '',
-    coverUrl: raw.coverImage || raw.coverUrl || raw.images?.[0] || '',
+    coverUrl: toResourceUrlOrEmpty(raw.coverImage || raw.coverUrl || raw.images?.[0] || ''),
     categoryId: asId(raw.categoryId),
     categoryName: raw.categoryName,
     status: raw.status,
@@ -56,7 +57,7 @@ function mapDish(raw: DishRaw): Dish {
     prepMinutes: undefined,
     rating: ratingCount > 0 && raw.rating != null ? Number(raw.rating) : undefined,
     ratingCount,
-    images: raw.images
+    images: raw.images?.map((u) => toResourceUrl(u) ?? u).filter(Boolean)
   }
 }
 

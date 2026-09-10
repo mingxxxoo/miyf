@@ -37,7 +37,7 @@ page {
   justify-content: center;
   height: 88px;
   border-radius: $ck-radius-lg;
-  background: linear-gradient(135deg, $ck-primary 0%, darken($ck-primary, 6%) 100%);
+  background: linear-gradient(135deg, $ck-primary 0%, $ck-primary-d6 100%);
   color: #fff;
   font-size: 30px;
   font-weight: 500;
@@ -63,4 +63,26 @@ page {
   &::after {
     border: none;
   }
+}
+
+.ck-btn-health {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88px;
+  border-radius: $ck-radius-lg;
+  background: linear-gradient(135deg, $ck-health 0%, $ck-health-d8 100%);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 500;
+  border: none;
+
+  &::after {
+    border: none;
+  }
+}
+
+.ck-pressable:active {
+  opacity: 0.86;
+  transform: scale(0.985);
 }

@@ -2,25 +2,30 @@
   padding-bottom: 32px;
 
   &__hero {
-    padding: 48px 32px 32px;
+    padding: 32px 32px 32px;
     background: linear-gradient(160deg, rgba($ck-primary, 0.18), rgba($ck-secondary, 0.12), $ck-bg);
+  }
+
+  &__switch {
+    margin-bottom: 28px;
   }
 
   &__brand {
     display: block;
     font-size: 52px;
     font-weight: 800;
-    color: darken($ck-primary, 8%);
+    color: $ck-primary-d8;
     letter-spacing: 0.04em;
     margin-bottom: 12px;
   }
 
   &__greeting {
     display: block;
-    font-size: 36px;
+    font-size: 34px;
     font-weight: 600;
     color: $ck-text;
     margin-bottom: 12px;
+    line-height: 1.35;
   }
 
   &__subtitle {
@@ -53,7 +58,8 @@
 
   &__section-more {
     font-size: $ck-font-caption;
-    color: $ck-primary;
+    color: $ck-primary-d6;
+    padding: 8px 0 8px 12px;
   }
 
   &__cats {
@@ -72,6 +78,7 @@
     border: 1px solid $ck-border;
     font-size: 26px;
     color: $ck-text;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
   }
 
   &__list {
