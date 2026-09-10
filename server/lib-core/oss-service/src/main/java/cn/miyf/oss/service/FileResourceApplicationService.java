@@ -26,9 +26,11 @@ import java.io.InputStream;
 
 /**
  * 文件资源：资源索引维护 + 按 ID 打开流与访问校验。
+ * 读文件时可结合控制器侧签名校验结果（{@link #assertReadable(Long, boolean)}）放行。
  *
  * @author XieMingJie
  * @since 2026-09-09
+ * @history 1.00 2026-09-09 XieMingJie Created.
  */
 @Service
 @RequiredArgsConstructor
@@ -140,7 +142,7 @@ public class FileResourceApplicationService {
     /**
      * 校验当前主体是否可对资源执行指定操作。
      * <p>
-     * 读取类：Redis 临时授权、上传人、公共文件；管理员放行。
+     * 读取类：签名 URL（控制器校验）/ Redis 临时授权、上传人、公共文件；管理员放行。
      *
      * @param meta      资源
      * @param operation 操作
@@ -188,11 +190,30 @@ public class FileResourceApplicationService {
 
     /**
      * 读取前鉴权：不通过则抛禁止访问。
+     * 委托 {@link #assertReadable(Long, boolean)}，默认不按签名放行。
      *
      * @param fileId 文件 ID
+     * @throws BusinessException 文件不存在或无权访问
      * @history 1.00 2026-09-09 XieMingJie Created.
      */
     public void assertReadable(Long fileId) {
+        assertReadable(fileId, false);
+    }
+
+    /**
+     * 读取前鉴权。
+     * 当控制器已校验通过 URL 上的 exp/sig 时，仅确认资源存在即可放行，不再要求登录主体。
+     *
+     * @param fileId         文件 ID
+     * @param signedAccessOk 请求携带的 exp/sig 是否已校验通过
+     * @throws BusinessException 文件不存在或无权访问
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    public void assertReadable(Long fileId, boolean signedAccessOk) {
+        if (signedAccessOk) {
+            requireMeta(fileId);
+            return;
+        }
         SysResourceIndexEntity meta = requireMeta(fileId);
         if (!canAccess(meta, FileOperationType.READ)) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "无权访问该文件");

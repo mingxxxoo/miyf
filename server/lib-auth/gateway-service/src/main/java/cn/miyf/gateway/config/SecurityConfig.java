@@ -115,7 +115,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 webAppProperties.api("/orders/**"),
                                 webAppProperties.api("/comments/**"),
-                                webAppProperties.api("/user/**")
+                                webAppProperties.api("/user/**"),
+                                webAppProperties.api("/health/**")
                         ).authenticated()
                         .requestMatchers(webAppProperties.api("/**")).authenticated()
                         .anyRequest().permitAll()

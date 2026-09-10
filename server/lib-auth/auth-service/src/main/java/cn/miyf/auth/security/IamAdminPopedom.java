@@ -7,18 +7,21 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * IAM 管理员权限组（{@link PopedomCodes.IamAdmin}）。
+ * IAM 超管权限组（{@link PopedomCodes.IamAdmin}）。
  *
  * @author XieMingJie
  * @since 2026-09-07
+ * @history 1.00 2026-09-07 XieMingJie Created.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @PopedomGroup(
         value = PopedomCodes.IamAdmin.CODE,
-        name = PopedomCodes.IamAdmin.NAME,
+        scope = PopedomScope.SUPER,
+        service = PopedomCodes.IamAdmin.SERVICE,
         product = PopedomCodes.IamAdmin.PRODUCT,
+        roles = {PlatformRoles.SUPER_ADMIN},
         sort = PopedomCodes.IamAdmin.SORT
 )
 public @interface IamAdminPopedom {

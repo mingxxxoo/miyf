@@ -7,9 +7,12 @@ import java.util.List;
 
 /**
  * 文件存储配置：默认 MinIO，可选本地 / S3。
+ * 含对外 baseUrl、分区命名空间，以及签名 URL 专用密钥 accessSignSecret。
+ * 签名有效期见系统配置 file.access.sign.ttl.seconds，不在本 Properties 中。
  *
  * @author XieMingJie
  * @since 2026-09-05 09:19
+ * @history 1.00 2026-09-05 09:19 XieMingJie Created.
  */
 @ConfigurationProperties(prefix = "app.file-storage")
 public class FileStorageProperties {
@@ -69,6 +72,13 @@ public class FileStorageProperties {
      * 桶内对象公开可读（GetObject）。生产/容器环境须为 false，由应用鉴权或预签名访问。
      */
     private boolean publicRead = false;
+
+    /**
+     * 文件访问签名密钥（HMAC-SHA256），用于 {@code /r/{id}?exp=&sig=}。
+     * 与 JWT secret、MinIO secret-key 分离；生产环境须通过 FILE_STORAGE_ACCESS_SIGN_SECRET 注入强随机值。
+     * 签名有效期由系统配置 {@code file.access.sign.ttl.seconds} 热管理，不在此属性中配置。
+     */
+    private String accessSignSecret = "change-me-file-access-sign-secret-32chars";
 
     public String getType() {
         return type;
@@ -172,6 +182,14 @@ public class FileStorageProperties {
 
     public void setPublicRead(boolean publicRead) {
         this.publicRead = publicRead;
+    }
+
+    public String getAccessSignSecret() {
+        return accessSignSecret;
+    }
+
+    public void setAccessSignSecret(String accessSignSecret) {
+        this.accessSignSecret = accessSignSecret;
     }
 }
 

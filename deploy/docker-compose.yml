@@ -27,8 +27,9 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
-    # ports:
-    #   - "5432:5432"
+    ports:
+      # 宿主机端口可用 POSTGRES_PORT 覆盖；公网务必用安全组限制来源 IP
+      - "${POSTGRES_PORT:-5432}:5432"
 
   redis:
     image: ${MIYF_IMAGE_REDIS:-registry.cn-shanghai.aliyuncs.com/miyf/redis:7-alpine}
@@ -94,6 +95,7 @@ services:
       FILE_STORAGE_BASE_URL: ${FILE_STORAGE_BASE_URL:-http://localhost}
       FILE_STORAGE_AUTO_CREATE_BUCKET: ${FILE_STORAGE_AUTO_CREATE_BUCKET:-true}
       FILE_STORAGE_PUBLIC_READ: ${FILE_STORAGE_PUBLIC_READ:-false}
+      FILE_STORAGE_ACCESS_SIGN_SECRET: ${FILE_STORAGE_ACCESS_SIGN_SECRET:?Set FILE_STORAGE_ACCESS_SIGN_SECRET in deploy/.env}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in deploy/.env}
       JWT_EXPIRE_SECONDS: ${JWT_EXPIRE_SECONDS:-604800}
       WX_AUTH_MOCK_ENABLED: ${WX_AUTH_MOCK_ENABLED:-false}

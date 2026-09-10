@@ -140,17 +140,25 @@ cp .env.example .env
 
 按需修改数据库、Redis、JWT、微信、MinIO 等。**真实密钥勿提交 Git。**
 
-本地直连 MinIO 时：
+本地开发时，文件对外前缀与签名密钥示例：
 
 ```text
-FILE_STORAGE_BASE_URL=http://localhost:9000/miyf
+FILE_STORAGE_BASE_URL=http://localhost:8080
+FILE_STORAGE_ACCESS_SIGN_SECRET=change-me-file-access-sign-secret-32chars
 FILE_STORAGE_ENDPOINT=http://localhost:9000
 ```
 
-经 Compose + Nginx 时改为：
+说明：
+
+- 业务图片 URL 形态为 `{FILE_STORAGE_BASE_URL}/r/{fileId}?exp=&sig=`（由 `@FileAccess` 响应改写）。
+- `FILE_STORAGE_ACCESS_SIGN_SECRET` 为签名专用 HMAC 密钥，**不要**与 `JWT_SECRET` 相同；生产须换成强随机值。
+- 签名有效期在管理端「基础设置」配置项 `file.access.sign.ttl.seconds` 中修改（默认 18000 秒），无需重启。
+- `/r/**` 不做 JWT 强制鉴权，由签名或资源权限在应用层校验。
+
+经 Compose + Nginx 时改为站点根（不含 `/r`）：
 
 ```text
-FILE_STORAGE_BASE_URL=http://localhost/media
+FILE_STORAGE_BASE_URL=http://localhost
 FILE_STORAGE_ENDPOINT=http://minio:9000
 ```
 

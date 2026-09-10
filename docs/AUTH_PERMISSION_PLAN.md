@@ -46,53 +46,50 @@
 
 ## 2. 权限组与权限编码（@PopedomGroup）
 
-### 2.1 注解
+### 2.1 注解（配置驱动，禁止用名称字符串判断域）
 
 ```java
-
-@PopedomGroup(value = "11010000", name = "个人")  // 类级，8 位组编码
+@PopedomGroup(
+    value = "11010000",
+    scope = PopedomScope.PERSONAL,   // PERSONAL | ORG | SUPER
+    service = "厨房服务",            // 组名 = scope.label + "-" + service → 个人-厨房服务
+    product = "kitchen",
+    roles = { KitchenRoleCodes.DEFAULT }
+)
 @RestController
 public class XxxController {
-    @MiyfPermission(code = "...", name = "接口名称") // 扫描生成 16 位权限 ID
+    @MiyfPermission(code = "...") // 扫描生成 API 节点
 }
 ```
 
-扫描：类上 `@PopedomGroup` → 权限组；方法上权限注解 → 挂到该组，并生成树形节点。
+- 鉴权：`popedom.scope() == PopedomScope.PERSONAL`，**禁止** `"个人".equals(name)`。
+- 角色：模块内 `@PopedomRole` / `@PopedomRoles` 声明；超管 `PlatformRoles.SUPER_ADMIN` 在公共模块。
+- 启动：`PermissionBootstrap` **清空 → 扫描 → 重建**（角色、权限组、权限树、角色↔组绑定；`admin` 重绑超管）。
 
-### 2.2 编码规则（kitchen-app 示例）
+### 2.2 编码规则（kitchen 示例）
 
-| 角色域 | 8 位组编码     | 说明       |
-|-----|------------|----------|
-| 个人  | `11010000` | C 端/个人能力 |
-| 单位  | `11020000` | 组织/单位能力  |
-| 管理员 | `11030000` | 后台管理     |
+| 权限域 | 8 位组编码 | 展示组名 | 绑定角色 |
+|-----|------------|----------|----------|
+| PERSONAL | `11010000` | 个人-厨房服务 | `KITCHEN_DEFAULT` |
+| ORG | `11020000` | 单位-厨房服务 | `KITCHEN_ORG` |
+| SUPER | `11030000` | 超管-厨房服务 | `SUPER_ADMIN` |
 
-权限 ID（16 位数字字符串，存 `sys_permission.id` 或独立 `perm_id` 字段）：
-
-```
-{8位组编码}{8位序号}
-根节点：1101000000000000
-子权限：1101000000000001、1101000000000002 …
-单位域：1102000000000001 …
-```
-
-展示层级（树）：
+权限树层级（每组一棵，**无产品中间层**）：
 
 ```
-个人
- └─ 厨房(kitchen)
-     └─ 预约管理(OrderController 业务名)
-         └─ 创建预约 / 取消预约 …
+个人                    ← ROOT（scope.label）
+ └─ 预约管理            ← BIZ（@Tag / Controller 业务名）
+     └─ 创建预约        ← API（@Operation.summary / code）
 ```
 
-命名约定：`个人-厨房-预约-创建`（`scope-product-controllerBiz-apiName`）
+`tree_name`：`个人-预约管理-创建预约`（`scopeLabel-biz-apiName`）。
 
 ### 2.3 与现有模型关系
 
 - 保留字符串 `code`（如 `kitchen:order:create`）供 JWT / `@RequirePermission` 使用
-- 新增 `permId`（16 位）与 `parentPermId` 构成树
+- `sys_perm_group.scope` 存 `PERSONAL|ORG|SUPER`
 - `sys_perm_group.code` 对齐 8 位组编码；`@PopedomGroup.value` 为权威来源
-
+- 超管角色绑定**全部**扫描到的权限组
 ---
 
 ## 3. 模块 `lib-auth`

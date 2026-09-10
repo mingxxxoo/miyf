@@ -1,7 +1,16 @@
 package cn.miyf.permission.service;
 
+import cn.miyf.auth.bean.entity.SysUserEntity;
+import cn.miyf.auth.bean.entity.SysUserRoleEntity;
+import cn.miyf.auth.repository.mapper.SysUserMapper;
+import cn.miyf.auth.repository.mapper.SysUserRoleMapper;
 import cn.miyf.auth.security.MiyfPermission;
+import cn.miyf.auth.security.PlatformRoles;
 import cn.miyf.auth.security.PopedomGroup;
+import cn.miyf.auth.security.PopedomRole;
+import cn.miyf.auth.security.PopedomRoleType;
+import cn.miyf.auth.security.PopedomRoles;
+import cn.miyf.auth.security.PopedomScope;
 import cn.miyf.common.id.SnowflakeIdGenerator;
 import cn.miyf.permission.bean.entity.SysPermGroupEntity;
 import cn.miyf.permission.bean.entity.SysPermGroupItemEntity;
@@ -22,6 +31,7 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
@@ -35,37 +45,33 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 启动扫描 {@link PopedomGroup} + {@link MiyfPermission}，写入权限树与权限组。
- * <p>
- * 16 位编号 = 8 位组编码 + 8 位序号；根节点序号 {@code 00000000}。
- * 树层级：域(ROOT) → 产品(PRODUCT) → 业务(BIZ) → 接口(API)。
- * JWT 仅下发 API 节点权限码。
- * <p>
- * 每次启动：清理扫描不到 / 不合规的权限及授权关联，再按标准重建。
- * 同步结束后为各「个人」权限组确保 {@code default_person} 默认角色并绑定权限组。
+ * 权限启动引导：严格按「清空 → 扫描 → 重建」落地。
+ * <ol>
+ *   <li>清空权限组、权限、角色及关联（含用户角色绑定）</li>
+ *   <li>扫描 {@link PopedomRole}、{@link PopedomGroup}、{@link MiyfPermission}</li>
+ *   <li>按顺序重建角色、权限组、权限树（个人|单位|超管 → 接口业务 → 接口名称）并绑定角色</li>
+ * </ol>
+ * 超管角色绑定全部权限组；种子用户 {@code admin} 重新绑定超管角色。
  *
  * @author XieMingJie
  * @since 2026-09-05
+ * @history 1.00 2026-09-05 XieMingJie Created.
  */
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class PermissionBootstrap implements ApplicationRunner {
 
-    private static final String SUPER_ADMIN = "SUPER_ADMIN";
-    private static final String DEFAULT_PERSON = "default_person";
-    private static final String PERSONAL_GROUP_NAME = "个人";
-    private static final String FALLBACK_GROUP = "19990000";
-    private static final String FALLBACK_GROUP_NAME = "未分组";
-    private static final Set<String> NODE_TYPES = Set.of("ROOT", "PRODUCT", "BIZ", "API");
+    private static final String ADMIN_USERNAME = "admin";
+    private static final long SUPER_ADMIN_ROLE_ID = 20001L;
+    private static final long ADMIN_USER_ROLE_ID = 40001L;
 
     private final ApplicationContext applicationContext;
     private final SnowflakeIdGenerator snowflakeIdGenerator;
@@ -74,17 +80,11 @@ public class PermissionBootstrap implements ApplicationRunner {
     private final SysPermGroupItemMapper permGroupItemMapper;
     private final SysRoleMapper roleMapper;
     private final SysRolePermGroupMapper rolePermGroupMapper;
-
-    private final Map<String, AtomicInteger> leafSeqByGroup = new ConcurrentHashMap<>();
-    private final Map<String, Map<String, Integer>> productSeqByGroup = new ConcurrentHashMap<>();
-    private final Map<String, Map<String, Integer>> bizSeqByGroup = new ConcurrentHashMap<>();
-    private final AtomicInteger productCounter = new AtomicInteger(0);
-    private final AtomicInteger bizCounter = new AtomicInteger(0);
-    /** 启动同步前已有条目的权限组：不再 ensure 回填缺失 API（尊重人工裁剪）。 */
-    private final Set<Long> groupsLockedFromRefill = ConcurrentHashMap.newKeySet();
+    private final SysUserMapper userMapper;
+    private final SysUserRoleMapper userRoleMapper;
 
     /**
-     * 扫描并同步权限元数据：启动时先清理孤儿/不合规权限，再按标准 upsert 重建。
+     * 清空后扫描注解并重建权限与角色数据。
      *
      * @param args 启动参数
      * @history 1.00 2026-09-05 XieMingJie Created.
@@ -93,41 +93,68 @@ public class PermissionBootstrap implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         Instant now = Instant.now();
-        List<ApiSpec> specs = scanApiSpecs();
-        Set<String> expectedApiCodes = new HashSet<>();
-        Map<String, String> expectedApiGroup = new HashMap<>();
-        Set<String> expectedTreeCodes = new HashSet<>();
-        for (ApiSpec spec : specs) {
-            String apiCode = spec.meta().code().trim();
-            String groupCode = resolveGroupCode(spec.popedom(), spec.meta());
-            String product = resolveProduct(spec.popedom());
-            expectedApiCodes.add(apiCode);
-            expectedApiGroup.put(apiCode, groupCode);
-            expectedTreeCodes.add(treeCode(groupCode, "root"));
-            expectedTreeCodes.add(treeCode(groupCode, "product:" + product));
-            expectedTreeCodes.add(treeCode(groupCode, "biz:" + spec.bizLabel()));
+
+        // 1) 清空
+        wipePermissionData();
+
+        // 2) 扫描
+        List<PopedomRole> roleDefs = scanRoleDefinitions();
+        List<ApiSpec> apiSpecs = scanApiSpecs();
+        Map<String, PopedomGroup> groupsByCode = collectGroups(apiSpecs);
+
+        // 3) 重建：角色 → 权限组 → 权限 → 绑定
+        Map<String, Long> roleIdByCode = rebuildRoles(roleDefs, now);
+        Map<String, Long> groupIdByCode = rebuildGroups(groupsByCode, now);
+        rebuildPermissions(apiSpecs, groupIdByCode, now);
+        bindRolesToGroups(groupsByCode, roleIdByCode, groupIdByCode, now);
+        bindAllGroupsToSuperAdmin(roleIdByCode, groupIdByCode.values(), now);
+        rebindSeedAdmin(roleIdByCode, now);
+
+        log.info("Permission rebuild done: roles={}, groups={}, apis={}",
+                roleIdByCode.size(), groupIdByCode.size(), apiSpecs.size());
+    }
+
+    /**
+     * 物理清空权限相关表（顺序兼顾外键）。
+     */
+    private void wipePermissionData() {
+        userRoleMapper.delete(Wrappers.lambdaQuery());
+        rolePermGroupMapper.delete(Wrappers.lambdaQuery());
+        permGroupItemMapper.delete(Wrappers.lambdaQuery());
+        permissionMapper.delete(Wrappers.lambdaQuery());
+        permGroupMapper.delete(Wrappers.lambdaQuery());
+        roleMapper.delete(Wrappers.lambdaQuery());
+    }
+
+    private List<PopedomRole> scanRoleDefinitions() {
+        Map<String, PopedomRole> byCode = new LinkedHashMap<>();
+        for (String beanName : applicationContext.getBeanDefinitionNames()) {
+            Object bean;
+            try {
+                bean = applicationContext.getBean(beanName);
+            } catch (Exception ex) {
+                continue;
+            }
+            Class<?> type = ClassUtils.getUserClass(AopUtils.getTargetClass(bean));
+            PopedomRoles multi = AnnotationUtils.findAnnotation(type, PopedomRoles.class);
+            if (multi != null) {
+                for (PopedomRole role : multi.value()) {
+                    putRoleDef(byCode, role);
+                }
+            }
+            PopedomRole single = AnnotationUtils.findAnnotation(type, PopedomRole.class);
+            if (single != null) {
+                putRoleDef(byCode, single);
+            }
         }
+        return new ArrayList<>(byCode.values());
+    }
 
-        int purged = purgeStaleAndNonStandard(expectedApiCodes, expectedApiGroup, expectedTreeCodes);
-        resetSeqState();
-        warmSeqFromDb();
-        warmGroupsWithItems();
-
-        Map<String, Long> groupIdByCode = new HashMap<>();
-        Set<String> liveTreeCodes = new HashSet<>();
-        Set<String> liveGroupCodes = new HashSet<>();
-        for (ApiSpec spec : specs) {
-            syncApiPermission(spec.popedom(), spec.meta(), spec.bizLabel(), spec.apiName(), groupIdByCode,
-                    liveTreeCodes, liveGroupCodes, now);
+    private static void putRoleDef(Map<String, PopedomRole> byCode, PopedomRole role) {
+        if (role == null || !StringUtils.hasText(role.code())) {
+            return;
         }
-
-        int prunedTree = pruneUnusedTreeNodes(liveTreeCodes);
-        int prunedGroups = pruneUnusedGroups(liveGroupCodes);
-        pruneOrphanGroupItems();
-        bindAllGroupsToSuperAdmin(groupIdByCode.values(), now);
-        ensureDefaultPersonRoles(groupIdByCode.values(), now);
-        log.info("Permission tree sync done, apiCount={}, groups={}, purged={}, prunedTree={}, prunedGroups={}",
-                specs.size(), groupIdByCode.size(), purged, prunedTree, prunedGroups);
+        byCode.putIfAbsent(role.code().trim(), role);
     }
 
     private List<ApiSpec> scanApiSpecs() {
@@ -145,23 +172,287 @@ public class PermissionBootstrap implements ApplicationRunner {
                 continue;
             }
             PopedomGroup popedom = AnnotationUtils.findAnnotation(userClass, PopedomGroup.class);
+            if (popedom == null) {
+                continue;
+            }
             Tag tag = AnnotationUtils.findAnnotation(userClass, Tag.class);
             String bizLabel = resolveBizLabel(userClass, tag);
             for (Method method : userClass.getDeclaredMethods()) {
-                MiyfPermission[] annotations = method.getAnnotationsByType(MiyfPermission.class);
-                for (MiyfPermission meta : annotations) {
-                    if (!StringUtils.hasText(meta.code())) {
+                Set<MiyfPermission> permissionSet =
+                        AnnotatedElementUtils.getMergedRepeatableAnnotations(method, MiyfPermission.class);
+                for (MiyfPermission meta : permissionSet) {
+                    if (meta == null || !StringUtils.hasText(meta.code())) {
                         continue;
                     }
                     String code = meta.code().trim();
                     if (!seenCodes.add(code)) {
                         continue;
                     }
-                    specs.add(new ApiSpec(popedom, meta, bizLabel, resolveApiName(meta, method)));
+                    String apiName = resolveApiName(meta, method);
+                    specs.add(new ApiSpec(popedom, meta, bizLabel, apiName));
                 }
             }
         }
         return specs;
+    }
+
+    private static Map<String, PopedomGroup> collectGroups(List<ApiSpec> apiSpecs) {
+        Map<String, PopedomGroup> map = new LinkedHashMap<>();
+        for (ApiSpec spec : apiSpecs) {
+            PopedomGroup group = spec.popedom();
+            map.putIfAbsent(group.value().trim(), group);
+        }
+        return map;
+    }
+
+    private Map<String, Long> rebuildRoles(List<PopedomRole> roleDefs, Instant now) {
+        Map<String, Long> roleIdByCode = new HashMap<>();
+        for (PopedomRole def : roleDefs) {
+            String code = def.code().trim();
+            long id = PlatformRoles.SUPER_ADMIN.equals(code) ? SUPER_ADMIN_ROLE_ID : snowflakeIdGenerator.nextId();
+            SysRoleEntity role = new SysRoleEntity()
+                    .setCode(code)
+                    .setName(def.name().trim())
+                    .setDescription(StringUtils.hasText(def.description()) ? def.description().trim() : null)
+                    .setIsDefault(def.type() == PopedomRoleType.DEFAULT)
+                    .setProduct(StringUtils.hasText(def.product()) ? def.product().trim() : null)
+                    .setDataScope(def.type() == PopedomRoleType.SUPER ? "ALL" : "ORG");
+            role.setId(id);
+            role.setCreateTime(now);
+            role.setLastModifyTime(now);
+            roleMapper.insert(role);
+            roleIdByCode.put(code, id);
+        }
+        // 确保超管角色一定存在（即使未扫到定义）
+        if (!roleIdByCode.containsKey(PlatformRoles.SUPER_ADMIN)) {
+            SysRoleEntity superAdmin = new SysRoleEntity()
+                    .setCode(PlatformRoles.SUPER_ADMIN)
+                    .setName("超级管理员")
+                    .setDescription("全局超管：绑定全部权限组")
+                    .setIsDefault(false)
+                    .setDataScope("ALL");
+            superAdmin.setId(SUPER_ADMIN_ROLE_ID);
+            superAdmin.setCreateTime(now);
+            superAdmin.setLastModifyTime(now);
+            roleMapper.insert(superAdmin);
+            roleIdByCode.put(PlatformRoles.SUPER_ADMIN, SUPER_ADMIN_ROLE_ID);
+        }
+        return roleIdByCode;
+    }
+
+    private Map<String, Long> rebuildGroups(Map<String, PopedomGroup> groupsByCode, Instant now) {
+        Map<String, Long> groupIdByCode = new HashMap<>();
+        for (PopedomGroup group : groupsByCode.values()) {
+            String code = group.value().trim();
+            long id = Long.parseLong(code);
+            SysPermGroupEntity entity = new SysPermGroupEntity()
+                    .setCode(code)
+                    .setName(resolveGroupDisplayName(group))
+                    .setProduct(StringUtils.hasText(group.product()) ? group.product().trim() : null)
+                    .setScope(group.scope().name())
+                    .setSortOrder(group.sort());
+            entity.setId(id);
+            entity.setCreateTime(now);
+            entity.setLastModifyTime(now);
+            permGroupMapper.insert(entity);
+            groupIdByCode.put(code, id);
+        }
+        return groupIdByCode;
+    }
+
+    private void rebuildPermissions(List<ApiSpec> apiSpecs,
+                                    Map<String, Long> groupIdByCode,
+                                    Instant now) {
+        Map<String, AtomicInteger> bizSeqByGroup = new HashMap<>();
+        Map<String, AtomicInteger> apiSeqByGroup = new HashMap<>();
+        Map<String, Long> scopeRootIdByGroup = new HashMap<>();
+        Map<String, Long> bizNodeIdByKey = new HashMap<>();
+
+        for (ApiSpec spec : apiSpecs) {
+            PopedomGroup group = spec.popedom();
+            String groupCode = group.value().trim();
+            Long groupId = groupIdByCode.get(groupCode);
+            if (groupId == null) {
+                continue;
+            }
+            PopedomScope scope = group.scope();
+            String scopeLabel = scope.getLabel();
+
+            Long rootId = scopeRootIdByGroup.computeIfAbsent(groupCode, gc ->
+                    insertTreeNode(gc, 0, "ROOT",
+                            treeCode(gc, "scope"),
+                            scopeLabel,
+                            scopeLabel,
+                            null,
+                            group.product(),
+                            0,
+                            now));
+
+            String bizKey = groupCode + "|" + spec.bizLabel();
+            Long bizId = bizNodeIdByKey.get(bizKey);
+            if (bizId == null) {
+                int bizSeq = bizSeqByGroup.computeIfAbsent(groupCode, k -> new AtomicInteger(100)).getAndIncrement();
+                String bizTreeName = scopeLabel + "-" + spec.bizLabel();
+                bizId = insertTreeNode(groupCode, bizSeq, "BIZ",
+                        treeCode(groupCode, "biz:" + spec.bizLabel()),
+                        spec.bizLabel(),
+                        bizTreeName,
+                        rootId,
+                        group.product(),
+                        bizSeq,
+                        now);
+                bizNodeIdByKey.put(bizKey, bizId);
+            }
+
+            int apiSeq = apiSeqByGroup.computeIfAbsent(groupCode, k -> new AtomicInteger(10000)).getAndIncrement();
+            String apiTreeName = scopeLabel + "-" + spec.bizLabel() + "-" + spec.apiName();
+            long apiId = insertApiLeaf(groupCode, apiSeq, spec.meta().code().trim(), spec.apiName(),
+                    apiTreeName, bizId, group.product(), now);
+
+            SysPermGroupItemEntity item = new SysPermGroupItemEntity()
+                    .setGroupId(groupId)
+                    .setPermissionId(apiId);
+            item.setId(snowflakeIdGenerator.nextId());
+            item.setCreateTime(now);
+            permGroupItemMapper.insert(item);
+        }
+    }
+
+    private long insertTreeNode(String groupCode,
+                                int seq,
+                                String nodeType,
+                                String code,
+                                String name,
+                                String treeName,
+                                Long parentId,
+                                String product,
+                                int sortOrder,
+                                Instant now) {
+        String permNo = formatPermNo(groupCode, seq);
+        long id = parsePermId(permNo);
+        SysPermissionEntity node = new SysPermissionEntity()
+                .setCode(code)
+                .setName(name)
+                .setGroupCode(groupCode)
+                .setPermNo(permNo)
+                .setParentId(parentId)
+                .setProduct(product)
+                .setTreeName(treeName)
+                .setNodeType(nodeType)
+                .setSortOrder(sortOrder);
+        node.setId(id);
+        node.setCreateTime(now);
+        node.setLastModifyTime(now);
+        permissionMapper.insert(node);
+        return id;
+    }
+
+    private long insertApiLeaf(String groupCode,
+                               int seq,
+                               String code,
+                               String name,
+                               String treeName,
+                               Long parentId,
+                               String product,
+                               Instant now) {
+        String permNo = formatPermNo(groupCode, seq);
+        long id = parsePermId(permNo);
+        SysPermissionEntity api = new SysPermissionEntity()
+                .setCode(code)
+                .setName(name)
+                .setGroupCode(groupCode)
+                .setPermNo(permNo)
+                .setParentId(parentId)
+                .setProduct(product)
+                .setTreeName(treeName)
+                .setNodeType("API")
+                .setSortOrder(seq);
+        api.setId(id);
+        api.setCreateTime(now);
+        api.setLastModifyTime(now);
+        permissionMapper.insert(api);
+        return id;
+    }
+
+    private void bindRolesToGroups(Map<String, PopedomGroup> groupsByCode,
+                                   Map<String, Long> roleIdByCode,
+                                   Map<String, Long> groupIdByCode,
+                                   Instant now) {
+        for (Map.Entry<String, PopedomGroup> entry : groupsByCode.entrySet()) {
+            Long groupId = groupIdByCode.get(entry.getKey());
+            if (groupId == null) {
+                continue;
+            }
+            for (String roleCode : entry.getValue().roles()) {
+                if (!StringUtils.hasText(roleCode)) {
+                    continue;
+                }
+                Long roleId = roleIdByCode.get(roleCode.trim());
+                if (roleId == null) {
+                    log.warn("Role code {} declared on group {} not found in role definitions", roleCode, entry.getKey());
+                    continue;
+                }
+                insertRoleGroupBind(roleId, groupId, now);
+            }
+        }
+    }
+
+    /**
+     * 超管角色绑定当前全部权限组（配置类型 SUPER，而非名称字符串）。
+     */
+    private void bindAllGroupsToSuperAdmin(Map<String, Long> roleIdByCode,
+                                           Iterable<Long> groupIds,
+                                           Instant now) {
+        Long superRoleId = roleIdByCode.get(PlatformRoles.SUPER_ADMIN);
+        if (superRoleId == null) {
+            log.warn("SUPER_ADMIN role missing after rebuild");
+            return;
+        }
+        for (Long groupId : groupIds) {
+            insertRoleGroupBind(superRoleId, groupId, now);
+        }
+    }
+
+    private void insertRoleGroupBind(Long roleId, Long groupId, Instant now) {
+        if (rolePermGroupMapper.selectByRoleAndGroup(roleId, groupId) != null) {
+            return;
+        }
+        SysRolePermGroupEntity bind = new SysRolePermGroupEntity()
+                .setRoleId(roleId)
+                .setGroupId(groupId);
+        bind.setId(snowflakeIdGenerator.nextId());
+        bind.setCreateTime(now);
+        rolePermGroupMapper.insert(bind);
+    }
+
+    private void rebindSeedAdmin(Map<String, Long> roleIdByCode, Instant now) {
+        SysUserEntity admin = userMapper.selectByUsername(ADMIN_USERNAME);
+        Long superRoleId = roleIdByCode.get(PlatformRoles.SUPER_ADMIN);
+        if (admin == null || superRoleId == null) {
+            log.warn("Skip admin rebind: adminUser={}, superRoleId={}", admin != null, superRoleId);
+            return;
+        }
+        SysUserRoleEntity bind = new SysUserRoleEntity()
+                .setUserId(admin.getId())
+                .setRoleId(superRoleId);
+        bind.setId(ADMIN_USER_ROLE_ID);
+        bind.setCreateTime(now);
+        userRoleMapper.insert(bind);
+    }
+
+    private static String resolveGroupDisplayName(PopedomGroup group) {
+        if (StringUtils.hasText(group.name())) {
+            return group.name().trim();
+        }
+        return group.scope().getLabel() + "-" + group.service().trim();
+    }
+
+    private static String resolveBizLabel(Class<?> userClass, Tag tag) {
+        if (tag != null && StringUtils.hasText(tag.name())) {
+            return tag.name().trim();
+        }
+        String simple = userClass.getSimpleName();
+        return simple.replace("Controller", "").replace("Admin", "");
     }
 
     private static String resolveApiName(MiyfPermission meta, Method method) {
@@ -175,669 +466,13 @@ public class PermissionBootstrap implements ApplicationRunner {
         return meta.code().trim();
     }
 
-    /**
-     * 删除：扫描不到的 API、不合标准的权限节点（授权条目随 FK / 显式删除清理）。
-     */
-    private int purgeStaleAndNonStandard(Set<String> expectedApiCodes,
-                                         Map<String, String> expectedApiGroup,
-                                         Set<String> expectedTreeCodes) {
-        List<SysPermissionEntity> all = permissionMapper.selectList(null);
-        if (all == null || all.isEmpty()) {
-            return 0;
-        }
-        int removed = 0;
-        for (SysPermissionEntity p : all) {
-            boolean remove = false;
-            String nodeType = p.getNodeType();
-            if (!StringUtils.hasText(nodeType) || !NODE_TYPES.contains(nodeType)) {
-                remove = true;
-            } else if ("API".equals(nodeType)) {
-                if (!StringUtils.hasText(p.getCode()) || p.getCode().startsWith("tree:")) {
-                    remove = true;
-                } else if (!expectedApiCodes.contains(p.getCode())) {
-                    remove = true;
-                } else if (!isStandardApi(p)) {
-                    remove = true;
-                } else {
-                    String expectGroup = expectedApiGroup.get(p.getCode());
-                    if (expectGroup != null && !expectGroup.equals(p.getGroupCode())) {
-                        remove = true;
-                    }
-                }
-            } else {
-                // ROOT / PRODUCT / BIZ
-                if (!expectedTreeCodes.contains(p.getCode()) || !isStandardTreeNode(p)) {
-                    remove = true;
-                }
-            }
-            if (remove) {
-                deletePermissionCascade(p.getId());
-                removed++;
-            }
-        }
-        if (removed > 0) {
-            log.info("Purged stale/non-standard permissions: {}", removed);
-        }
-        return removed;
-    }
-
-    private void deletePermissionCascade(Long permissionId) {
-        if (permissionId == null) {
-            return;
-        }
-        permGroupItemMapper.deleteByPermissionId(permissionId);
-        permissionMapper.deleteById(permissionId);
-    }
-
-    private int pruneUnusedTreeNodes(Set<String> liveTreeCodes) {
-        List<SysPermissionEntity> all = permissionMapper.selectList(Wrappers.<SysPermissionEntity>lambdaQuery()
-                .in(SysPermissionEntity::getNodeType, List.of("ROOT", "PRODUCT", "BIZ")));
-        int removed = 0;
-        for (SysPermissionEntity p : all) {
-            if (!liveTreeCodes.contains(p.getCode())) {
-                deletePermissionCascade(p.getId());
-                removed++;
-            }
-        }
-        return removed;
-    }
-
-    private int pruneUnusedGroups(Set<String> liveGroupCodes) {
-        List<SysPermGroupEntity> groups = permGroupMapper.selectList(null);
-        if (groups == null || groups.isEmpty()) {
-            return 0;
-        }
-        int removed = 0;
-        for (SysPermGroupEntity g : groups) {
-            if (liveGroupCodes.contains(g.getCode())) {
-                continue;
-            }
-            // 组下若已无 API 条目则可删；仍有条目则保留（防御）
-            Long itemCount = permGroupItemMapper.selectCount(Wrappers.<SysPermGroupItemEntity>lambdaQuery()
-                    .eq(SysPermGroupItemEntity::getGroupId, g.getId()));
-            if (itemCount != null && itemCount > 0) {
-                continue;
-            }
-            rolePermGroupMapper.delete(Wrappers.<SysRolePermGroupEntity>lambdaQuery()
-                    .eq(SysRolePermGroupEntity::getGroupId, g.getId()));
-            permGroupItemMapper.deleteByGroupId(g.getId());
-            permGroupMapper.deleteById(g.getId());
-            removed++;
-        }
-        return removed;
-    }
-
-    private void warmGroupsWithItems() {
-        groupsLockedFromRefill.clear();
-        List<SysPermGroupItemEntity> items = permGroupItemMapper.selectList(null);
-        if (items == null || items.isEmpty()) {
-            return;
-        }
-        for (SysPermGroupItemEntity item : items) {
-            if (item.getGroupId() != null) {
-                groupsLockedFromRefill.add(item.getGroupId());
-            }
-        }
-    }
-
-    private void pruneOrphanGroupItems() {
-        List<SysPermGroupItemEntity> items = permGroupItemMapper.selectList(null);
-        if (items == null || items.isEmpty()) {
-            return;
-        }
-        for (SysPermGroupItemEntity item : items) {
-            if (item.getPermissionId() == null || permissionMapper.selectById(item.getPermissionId()) == null) {
-                permGroupItemMapper.deleteById(item.getId());
-            }
-        }
-    }
-
-    private void resetSeqState() {
-        leafSeqByGroup.clear();
-        productSeqByGroup.clear();
-        bizSeqByGroup.clear();
-        productCounter.set(0);
-        bizCounter.set(0);
-    }
-
-    private void warmSeqFromDb() {
-        List<SysPermissionEntity> all = permissionMapper.selectList(null);
-        if (all == null || all.isEmpty()) {
-            return;
-        }
-        int maxProduct = 0;
-        int maxBiz = 0;
-        for (SysPermissionEntity p : all) {
-            String permNo = p.getPermNo();
-            if (!isDigits(permNo, 16)) {
-                continue;
-            }
-            String groupCode = permNo.substring(0, 8);
-            int seq = Integer.parseInt(permNo.substring(8));
-            String nodeType = p.getNodeType();
-            if ("PRODUCT".equals(nodeType) && seq >= 1 && seq <= 99) {
-                String product = StringUtils.hasText(p.getProduct()) ? p.getProduct() : "platform";
-                productSeqByGroup
-                        .computeIfAbsent(groupCode, k -> new ConcurrentHashMap<>())
-                        .putIfAbsent(product, seq);
-                maxProduct = Math.max(maxProduct, seq);
-            } else if ("BIZ".equals(nodeType) && seq >= 100 && seq <= 9999) {
-                String bizLabel = bizLabelFromTreeCode(p.getCode());
-                if (StringUtils.hasText(bizLabel)) {
-                    bizSeqByGroup
-                            .computeIfAbsent(groupCode, k -> new ConcurrentHashMap<>())
-                            .putIfAbsent(bizLabel, seq);
-                }
-                maxBiz = Math.max(maxBiz, seq - 100);
-            } else if (("API".equals(nodeType) || nodeType == null) && seq >= 10000) {
-                AtomicInteger counter = leafSeqByGroup.computeIfAbsent(groupCode, k -> new AtomicInteger(9999));
-                counter.updateAndGet(cur -> Math.max(cur, seq));
-            }
-        }
-        if (maxProduct > 0) {
-            productCounter.set(maxProduct);
-        }
-        if (maxBiz > 0) {
-            bizCounter.set(maxBiz);
-        }
-    }
-
-    /** API：16 位编号、主键=编号、组码一致、名称/树名齐全。 */
-    private static boolean isStandardApi(SysPermissionEntity p) {
-        if (!"API".equals(p.getNodeType())) {
-            return false;
-        }
-        if (!StringUtils.hasText(p.getCode()) || p.getCode().startsWith("tree:")) {
-            return false;
-        }
-        if (!StringUtils.hasText(p.getName()) || !StringUtils.hasText(p.getTreeName())) {
-            return false;
-        }
-        if (!StringUtils.hasText(p.getProduct())) {
-            return false;
-        }
-        String groupCode = p.getGroupCode();
-        if (!isDigits(groupCode, 8)) {
-            return false;
-        }
-        String permNo = p.getPermNo();
-        if (!isDigits(permNo, 16) || !permNo.startsWith(groupCode)) {
-            return false;
-        }
-        int seq = Integer.parseInt(permNo.substring(8));
-        if (seq < 10000) {
-            return false;
-        }
-        try {
-            return Objects.equals(p.getId(), Long.parseLong(permNo));
-        } catch (NumberFormatException ex) {
-            return false;
-        }
-    }
-
-    /** 树节点：code/perm_no/id/node_type 符合规划。 */
-    private static boolean isStandardTreeNode(SysPermissionEntity p) {
-        String nodeType = p.getNodeType();
-        String code = p.getCode();
-        String groupCode = p.getGroupCode();
-        String permNo = p.getPermNo();
-        if (!StringUtils.hasText(code) || !code.startsWith("tree:")) {
-            return false;
-        }
-        if (!isDigits(groupCode, 8) || !isDigits(permNo, 16) || !permNo.startsWith(groupCode)) {
-            return false;
-        }
-        if (!StringUtils.hasText(p.getName()) || !StringUtils.hasText(p.getTreeName())) {
-            return false;
-        }
-        int seq = Integer.parseInt(permNo.substring(8));
-        try {
-            if (!Objects.equals(p.getId(), Long.parseLong(permNo))) {
-                return false;
-            }
-        } catch (NumberFormatException ex) {
-            return false;
-        }
-        return switch (nodeType) {
-            case "ROOT" -> seq == 0 && code.equals(treeCode(groupCode, "root"));
-            case "PRODUCT" -> seq >= 1 && seq <= 99 && code.contains(":product:");
-            case "BIZ" -> seq >= 100 && seq <= 9999 && code.contains(":biz:");
-            default -> false;
-        };
-    }
-
-    private static boolean isDigits(String raw, int len) {
-        return StringUtils.hasText(raw) && raw.length() == len && raw.chars().allMatch(Character::isDigit);
-    }
-
-    private static String bizLabelFromTreeCode(String code) {
-        if (!StringUtils.hasText(code)) {
-            return null;
-        }
-        int bizIdx = code.indexOf(":biz:");
-        if (bizIdx < 0) {
-            return null;
-        }
-        return code.substring(bizIdx + ":biz:".length());
-    }
-
-    private void syncApiPermission(PopedomGroup popedom,
-                                   MiyfPermission meta,
-                                   String bizLabel,
-                                   String apiName,
-                                   Map<String, Long> groupIdByCode,
-                                   Set<String> liveTreeCodes,
-                                   Set<String> liveGroupCodes,
-                                   Instant now) {
-        String groupCode = resolveGroupCode(popedom, meta);
-        String groupName = resolveGroupName(popedom, meta, groupCode);
-        String product = resolveProduct(popedom);
-        liveGroupCodes.add(groupCode);
-        Long groupId = upsertGroup(groupCode, groupName, product, popedom == null ? 0 : popedom.sort(),
-                groupIdByCode, now);
-
-        String rootCode = treeCode(groupCode, "root");
-        String productCode = treeCode(groupCode, "product:" + product);
-        String bizCode = treeCode(groupCode, "biz:" + bizLabel);
-        liveTreeCodes.add(rootCode);
-        liveTreeCodes.add(productCode);
-        liveTreeCodes.add(bizCode);
-
-        SysPermissionEntity root = ensureTreeNode(
-                groupCode, 0, "ROOT",
-                rootCode,
-                groupName,
-                groupName,
-                null,
-                product,
-                0,
-                now);
-
-        int pSeq = productSeq(groupCode, product);
-        SysPermissionEntity productNode = ensureTreeNode(
-                groupCode,
-                pSeq,
-                "PRODUCT",
-                productCode,
-                productDisplay(product),
-                groupName + "-" + productDisplay(product),
-                root.getId(),
-                product,
-                pSeq,
-                now);
-
-        int bSeq = bizSeq(groupCode, bizLabel);
-        SysPermissionEntity bizNode = ensureTreeNode(
-                groupCode,
-                bSeq,
-                "BIZ",
-                bizCode,
-                bizLabel,
-                groupName + "-" + productDisplay(product) + "-" + bizLabel,
-                productNode.getId(),
-                product,
-                bSeq,
-                now);
-
-        String displayName = StringUtils.hasText(apiName) ? apiName : meta.code().trim();
-        String treeName = groupName + "-" + productDisplay(product) + "-" + bizLabel + "-" + displayName;
-        SysPermissionEntity api = upsertApiLeaf(
-                meta.code().trim(),
-                displayName,
-                groupCode,
-                product,
-                treeName,
-                bizNode.getId(),
-                now);
-        // 权限可能换组：先清旧组条目再绑定当前组
-        permGroupItemMapper.deleteByPermissionId(api.getId());
-        ensureGroupItem(groupId, api.getId(), now);
-    }
-
-    private SysPermissionEntity ensureTreeNode(String groupCode,
-                                               int seq,
-                                               String nodeType,
-                                               String code,
-                                               String name,
-                                               String treeName,
-                                               Long parentId,
-                                               String product,
-                                               int sortOrder,
-                                               Instant now) {
-        String permNo = formatPermNo(groupCode, seq);
-        long expectedId = parsePermId(permNo);
-        SysPermissionEntity existing = permissionMapper.selectByCode(code);
-        if (existing == null) {
-            existing = permissionMapper.selectByPermNo(permNo);
-        }
-        if (existing != null) {
-            boolean standard = Objects.equals(existing.getId(), expectedId)
-                    && permNo.equals(existing.getPermNo())
-                    && groupCode.equals(existing.getGroupCode())
-                    && nodeType.equals(existing.getNodeType());
-            if (!standard) {
-                deletePermissionCascade(existing.getId());
-                existing = null;
-            }
-        }
-        if (existing == null) {
-            clearOccupant(expectedId, permNo);
-            SysPermissionEntity created = new SysPermissionEntity()
-                    .setCode(code)
-                    .setName(name)
-                    .setGroupCode(groupCode)
-                    .setPermNo(permNo)
-                    .setParentId(parentId)
-                    .setProduct(product)
-                    .setTreeName(treeName)
-                    .setNodeType(nodeType)
-                    .setSortOrder(sortOrder);
-            created.setId(expectedId);
-            created.setCreateTime(now);
-            created.setLastModifyTime(now);
-            permissionMapper.insert(created);
-            return created;
-        }
-        existing.setCode(code);
-        existing.setName(name);
-        existing.setGroupCode(groupCode);
-        existing.setPermNo(permNo);
-        existing.setParentId(parentId);
-        existing.setProduct(product);
-        existing.setTreeName(treeName);
-        existing.setNodeType(nodeType);
-        existing.setSortOrder(sortOrder);
-        existing.setLastModifyTime(now);
-        permissionMapper.updateById(existing);
-        return existing;
-    }
-
-    private void clearOccupant(long expectedId, String permNo) {
-        SysPermissionEntity byPermNo = permissionMapper.selectByPermNo(permNo);
-        if (byPermNo != null) {
-            deletePermissionCascade(byPermNo.getId());
-        }
-        SysPermissionEntity byId = permissionMapper.selectById(expectedId);
-        if (byId != null) {
-            deletePermissionCascade(byId.getId());
-        }
-    }
-
-    private SysPermissionEntity upsertApiLeaf(String code,
-                                              String name,
-                                              String groupCode,
-                                              String product,
-                                              String treeName,
-                                              Long parentId,
-                                              Instant now) {
-        SysPermissionEntity existing = permissionMapper.selectByCode(code);
-        if (existing != null && (!isStandardApi(existing) || !groupCode.equals(existing.getGroupCode()))) {
-            deletePermissionCascade(existing.getId());
-            existing = null;
-        }
-        if (existing == null) {
-            int leafSeq = nextLeafSeq(groupCode);
-            String permNo = formatPermNo(groupCode, leafSeq);
-            long id = parsePermId(permNo);
-            int guard = 0;
-            while ((permissionMapper.selectByPermNo(permNo) != null || permissionMapper.selectById(id) != null)
-                    && guard++ < 100000) {
-                leafSeq = nextLeafSeq(groupCode);
-                permNo = formatPermNo(groupCode, leafSeq);
-                id = parsePermId(permNo);
-            }
-            SysPermissionEntity created = new SysPermissionEntity()
-                    .setCode(code)
-                    .setName(name)
-                    .setGroupCode(groupCode)
-                    .setPermNo(permNo)
-                    .setParentId(parentId)
-                    .setProduct(product)
-                    .setTreeName(treeName)
-                    .setNodeType("API")
-                    .setSortOrder(leafSeq);
-            created.setId(id);
-            created.setCreateTime(now);
-            created.setLastModifyTime(now);
-            permissionMapper.insert(created);
-            return created;
-        }
-        existing.setName(name);
-        existing.setGroupCode(groupCode);
-        existing.setParentId(parentId);
-        existing.setProduct(product);
-        existing.setTreeName(treeName);
-        existing.setNodeType("API");
-        if (StringUtils.hasText(existing.getPermNo()) && existing.getPermNo().length() == 16) {
-            try {
-                existing.setSortOrder(Integer.parseInt(existing.getPermNo().substring(8)));
-            } catch (Exception ignored) {
-                // keep previous sort if perm_no malformed mid-update
-            }
-        }
-        existing.setLastModifyTime(now);
-        permissionMapper.updateById(existing);
-        return existing;
-    }
-
-    private Long upsertGroup(String groupCode,
-                             String groupName,
-                             String product,
-                             int sort,
-                             Map<String, Long> groupIdByCode,
-                             Instant now) {
-        if (groupIdByCode.containsKey(groupCode)) {
-            return groupIdByCode.get(groupCode);
-        }
-        SysPermGroupEntity existing = permGroupMapper.selectByCode(groupCode);
-        if (existing == null) {
-            SysPermGroupEntity created = new SysPermGroupEntity()
-                    .setCode(groupCode)
-                    .setName(groupName)
-                    .setProduct(product)
-                    .setSortOrder(sort);
-            long id;
-            try {
-                id = Long.parseLong(groupCode);
-            } catch (NumberFormatException ex) {
-                id = snowflakeIdGenerator.nextId();
-            }
-            created.setId(id);
-            created.setCreateTime(now);
-            created.setLastModifyTime(now);
-            permGroupMapper.insert(created);
-            groupIdByCode.put(groupCode, created.getId());
-            return created.getId();
-        }
-        existing.setName(groupName);
-        existing.setProduct(product);
-        existing.setSortOrder(sort);
-        existing.setLastModifyTime(now);
-        permGroupMapper.updateById(existing);
-        groupIdByCode.put(groupCode, existing.getId());
-        return existing.getId();
-    }
-
-    private void ensureGroupItem(Long groupId, Long permissionId, Instant now) {
-        SysPermGroupItemEntity existing = permGroupItemMapper.selectByGroupAndPermission(groupId, permissionId);
-        if (existing != null) {
-            return;
-        }
-        // 同步开始前已有条目的组：视为已人工维护，不再回填扫描到的缺失 API
-        if (groupsLockedFromRefill.contains(groupId)) {
-            return;
-        }
-        SysPermGroupItemEntity item = new SysPermGroupItemEntity()
-                .setGroupId(groupId)
-                .setPermissionId(permissionId);
-        item.setId(snowflakeIdGenerator.nextId());
-        item.setCreateTime(now);
-        permGroupItemMapper.insert(item);
-    }
-
-    private void bindAllGroupsToSuperAdmin(Iterable<Long> groupIds, Instant now) {
-        SysRoleEntity superAdmin = roleMapper.selectByCode(SUPER_ADMIN);
-        if (superAdmin == null) {
-            log.warn("SUPER_ADMIN role not found, skip perm-group binding");
-            return;
-        }
-        Set<Long> allGroupIds = new HashSet<>();
-        for (Long id : groupIds) {
-            allGroupIds.add(id);
-        }
-        for (Long groupId : allGroupIds) {
-            if (rolePermGroupMapper.selectByRoleAndGroup(superAdmin.getId(), groupId) != null) {
-                continue;
-            }
-            SysRolePermGroupEntity bind = new SysRolePermGroupEntity()
-                    .setRoleId(superAdmin.getId())
-                    .setGroupId(groupId);
-            bind.setId(snowflakeIdGenerator.nextId());
-            bind.setCreateTime(now);
-            rolePermGroupMapper.insert(bind);
-        }
-    }
-
-    /**
-     * 为名称「个人」的权限组确保各产品域的 {@code default_person} 默认角色并绑定该组。
-     * <p>
-     * 厨房对应 {@code KitchenPersonalPopedom}，健康对应 {@code HealthPersonalPopedom}。
-     * 同产品仅保留一个默认角色。
-     *
-     * @param groupIds 本次同步的权限组 ID
-     * @param now      当前时间
-     * @history 1.00 2026-09-09 XieMingJie Created.
-     */
-    private void ensureDefaultPersonRoles(Iterable<Long> groupIds, Instant now) {
-        for (Long groupId : groupIds) {
-            if (groupId == null) {
-                continue;
-            }
-            SysPermGroupEntity group = permGroupMapper.selectById(groupId);
-            if (group == null || !PERSONAL_GROUP_NAME.equals(group.getName())) {
-                continue;
-            }
-            String product = normalizeRoleProduct(group.getProduct());
-            SysRoleEntity role = roleMapper.selectByProductAndCode(product, DEFAULT_PERSON);
-            if (role == null) {
-                role = new SysRoleEntity()
-                        .setCode(DEFAULT_PERSON)
-                        .setName("个人默认")
-                        .setDescription("新用户默认角色，绑定「" + group.getName() + "」权限组")
-                        .setProduct(product)
-                        .setDataScope("SELF")
-                        .setIsDefault(true);
-                role.setId(snowflakeIdGenerator.nextId());
-                role.setCreateTime(now);
-                role.setLastModifyTime(now);
-                roleMapper.insert(role);
-            } else {
-                boolean dirty = false;
-                if (!Boolean.TRUE.equals(role.getIsDefault())) {
-                    role.setIsDefault(true);
-                    dirty = true;
-                }
-                if (!StringUtils.hasText(role.getDataScope())) {
-                    role.setDataScope("SELF");
-                    dirty = true;
-                }
-                if (dirty) {
-                    role.setLastModifyTime(now);
-                    roleMapper.updateById(role);
-                }
-            }
-            // 同产品仅一个默认角色
-            List<SysRoleEntity> defaults = roleMapper.selectList(
-                    Wrappers.<SysRoleEntity>lambdaQuery()
-                            .eq(SysRoleEntity::getProduct, product)
-                            .eq(SysRoleEntity::getIsDefault, true));
-            for (SysRoleEntity other : defaults) {
-                if (!Objects.equals(other.getId(), role.getId())) {
-                    other.setIsDefault(false);
-                    other.setLastModifyTime(now);
-                    roleMapper.updateById(other);
-                }
-            }
-            if (rolePermGroupMapper.selectByRoleAndGroup(role.getId(), groupId) == null) {
-                SysRolePermGroupEntity bind = new SysRolePermGroupEntity()
-                        .setRoleId(role.getId())
-                        .setGroupId(groupId);
-                bind.setId(snowflakeIdGenerator.nextId());
-                bind.setCreateTime(now);
-                rolePermGroupMapper.insert(bind);
-            }
-            log.info("Ensured default_person role for product={}, group={}", product, group.getCode());
-        }
-    }
-
-    /**
-     * 将权限组 product 规范为角色产品域：iam → basic，空则 system。
-     */
-    private static String normalizeRoleProduct(String product) {
-        if (!StringUtils.hasText(product)) {
-            return "system";
-        }
-        String p = product.trim().toLowerCase();
-        return switch (p) {
-            case "iam" -> "basic";
-            default -> p;
-        };
-    }
-
-    private boolean isController(Class<?> type) {
+    private static boolean isController(Class<?> type) {
         return AnnotationUtils.findAnnotation(type, RestController.class) != null
                 || AnnotationUtils.findAnnotation(type, Controller.class) != null;
     }
 
-    private static String resolveGroupCode(PopedomGroup popedom, MiyfPermission meta) {
-        if (popedom != null && StringUtils.hasText(popedom.value())) {
-            return normalizeGroupCode(popedom.value().trim());
-        }
-        if (StringUtils.hasText(meta.groupCode()) && meta.groupCode().trim().matches("\\d{8}")) {
-            return meta.groupCode().trim();
-        }
-        return FALLBACK_GROUP;
-    }
-
-    private static String resolveGroupName(PopedomGroup popedom, MiyfPermission meta, String groupCode) {
-        if (popedom != null && StringUtils.hasText(popedom.name())) {
-            return popedom.name().trim();
-        }
-        if (StringUtils.hasText(meta.groupName())) {
-            return meta.groupName().trim();
-        }
-        if (FALLBACK_GROUP.equals(groupCode)) {
-            return FALLBACK_GROUP_NAME;
-        }
-        return groupCode;
-    }
-
-    private static String resolveProduct(PopedomGroup popedom) {
-        if (popedom != null && StringUtils.hasText(popedom.product())) {
-            return popedom.product().trim();
-        }
-        return "platform";
-    }
-
-    private static String resolveBizLabel(Class<?> userClass, Tag tag) {
-        if (tag != null && StringUtils.hasText(tag.name())) {
-            return tag.name().trim();
-        }
-        String simple = userClass.getSimpleName();
-        if (simple.endsWith("Controller")) {
-            simple = simple.substring(0, simple.length() - "Controller".length());
-        }
-        if (simple.startsWith("Admin")) {
-            simple = simple.substring("Admin".length());
-        }
-        return simple.isEmpty() ? userClass.getSimpleName() : simple;
-    }
-
-    private static String normalizeGroupCode(String raw) {
-        if (raw.matches("\\d{8}")) {
-            return raw;
-        }
-        return FALLBACK_GROUP;
+    private static String treeCode(String groupCode, String suffix) {
+        return "tree:" + groupCode + ":" + suffix;
     }
 
     private static String formatPermNo(String groupCode, int seq) {
@@ -846,35 +481,6 @@ public class PermissionBootstrap implements ApplicationRunner {
 
     private static long parsePermId(String permNo) {
         return Long.parseLong(permNo);
-    }
-
-    private static String treeCode(String groupCode, String suffix) {
-        return "tree:" + groupCode + ":" + suffix;
-    }
-
-    private static String productDisplay(String product) {
-        return switch (product) {
-            case "kitchen" -> "厨房";
-            case "health" -> "健康";
-            case "basic", "iam", "system" -> "基础";
-            case "platform" -> "平台";
-            default -> product;
-        };
-    }
-
-    private int productSeq(String groupCode, String product) {
-        Map<String, Integer> map = productSeqByGroup.computeIfAbsent(groupCode, k -> new ConcurrentHashMap<>());
-        return map.computeIfAbsent(product, k -> Math.min(productCounter.incrementAndGet(), 99));
-    }
-
-    private int bizSeq(String groupCode, String bizLabel) {
-        Map<String, Integer> map = bizSeqByGroup.computeIfAbsent(groupCode, k -> new ConcurrentHashMap<>());
-        return map.computeIfAbsent(bizLabel, k -> 100 + Math.min(bizCounter.incrementAndGet(), 9899));
-    }
-
-    private int nextLeafSeq(String groupCode) {
-        AtomicInteger counter = leafSeqByGroup.computeIfAbsent(groupCode, k -> new AtomicInteger(9999));
-        return counter.incrementAndGet();
     }
 
     private record ApiSpec(PopedomGroup popedom, MiyfPermission meta, String bizLabel, String apiName) {

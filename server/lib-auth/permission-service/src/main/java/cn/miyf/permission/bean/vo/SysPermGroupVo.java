@@ -54,6 +54,9 @@ public class SysPermGroupVo {
     @Schema(description = "产品域")
     private String product;
 
+    @Schema(description = "权限域：PERSONAL / ORG / SUPER")
+    private String scope;
+
     @Schema(description = "权限 ID 列表", type = "array")
     private List<String> permissionIds = new ArrayList<>();
 

@@ -12,10 +12,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 系统配置只读门面：带本地缓存，供业务开关（如搜索召回）热读取。
+ * 系统配置只读门面：带本地缓存，供业务开关与参数热读取（如搜索召回、文件签名 TTL）。
  *
  * @author XieMingJie
  * @since 2026-09-08
+ * @history 1.00 2026-09-08 XieMingJie Created.
  */
 @Service
 @RequiredArgsConstructor
@@ -45,6 +46,26 @@ public class SystemConfigReader {
             return false;
         }
         return defaultValue;
+    }
+
+    /**
+     * 读取长整型数字配置；键不存在、非 ENABLED 或无法解析时返回默认值。
+     *
+     * @param configKey    配置键
+     * @param defaultValue 默认值
+     * @return 数值
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    public long getLong(String configKey, long defaultValue) {
+        String raw = getRaw(configKey);
+        if (!StringUtils.hasText(raw)) {
+            return defaultValue;
+        }
+        try {
+            return Long.parseLong(raw.trim());
+        } catch (NumberFormatException ex) {
+            return defaultValue;
+        }
     }
 
     /**

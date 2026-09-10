@@ -19,4 +19,11 @@ class OssCacheKeysTest {
         assertEquals("ck:perm:file:access:admin:1:99", key);
         assertTrue(key.startsWith(OssCacheKeys.fileAccessPrefix()));
     }
+
+    @Test
+    void fileAccessTicket_shouldFollowPermDomain() {
+        String key = OssCacheKeys.fileAccessTicket(99L);
+        assertEquals("ck:perm:file:ticket:99", key);
+        assertTrue(key.startsWith(OssCacheKeys.fileAccessTicketPrefix()));
+    }
 }

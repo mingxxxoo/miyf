@@ -15,6 +15,7 @@ app:
     path: ${java.io.tmpdir}/miyf-it-uploads
     base-url: http://localhost:8080
     public-read: false
+    access-sign-secret: unit-test-file-access-sign-secret-32!
   redis:
     enabled: true
     rate-limit:

@@ -134,7 +134,7 @@ token，不落 clientSecret。
 | organization | `cn.miyf.organization.*` |
 | user | `cn.miyf.user.*` |
 | gateway（过滤链，非独立网关） | `cn.miyf.gateway.*` |
-| oss 上传 | `cn.miyf.oss.*`（权限码 `file:upload`） |
+| oss 上传 / 签名读文件 | `cn.miyf.oss.*`（上传权限码 `file:upload`；`GET /r/{id}` 签名 URL） |
 | kitchen / health | `cn.miyf.kitchen.*` / `cn.miyf.health.*` |
 
 历史提示词与过时 `clumsy_kitchen` 计划见 [`archive/`](archive/)。

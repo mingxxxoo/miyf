@@ -116,6 +116,9 @@ app:
     region: ${FILE_STORAGE_REGION:}
     auto-create-bucket: ${FILE_STORAGE_AUTO_CREATE_BUCKET:true}
     public-read: ${FILE_STORAGE_PUBLIC_READ:false}
+    # 文件签名 URL 专用 HMAC 密钥（与 JWT_SECRET / MinIO secret-key 分离）
+    # 签名有效期见系统配置 file.access.sign.ttl.seconds（管理端可热改）
+    access-sign-secret: ${FILE_STORAGE_ACCESS_SIGN_SECRET:change-me-file-access-sign-secret-32chars}
   security:
     # 是否放行 Swagger；生产 profile 关闭
     expose-docs: ${APP_SECURITY_EXPOSE_DOCS:true}
