@@ -629,6 +629,7 @@ public class PermissionApplicationService extends BaseApplicationService {
                 .setDescription(entity.getDescription())
                 .setSortOrder(entity.getSortOrder())
                 .setProduct(entity.getProduct())
+                .setScope(entity.getScope())
                 .setPermissionIds(permissionIds == null ? new ArrayList<>() : new ArrayList<>(permissionIds))
                 .setCreateTime(entity.getCreateTime())
                 .setLastModifyTime(entity.getLastModifyTime());

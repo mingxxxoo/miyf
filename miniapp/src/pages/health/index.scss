@@ -1,0 +1,117 @@
+.health-page {
+  padding: 32px;
+  min-height: 100vh;
+
+  &__hero {
+    margin-bottom: 24px;
+  }
+
+  &__title {
+    display: block;
+    font-size: $ck-font-title;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  &__sub {
+    display: block;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+    margin-bottom: 24px;
+  }
+
+  &__stat {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  &__stat-label {
+    font-size: $ck-font-body;
+    color: $ck-muted;
+  }
+
+  &__stat-value {
+    font-size: 48px;
+    font-weight: 600;
+    color: $ck-text;
+  }
+
+  &__meta {
+    display: block;
+    margin-top: 12px;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+  }
+
+  &__form {
+    margin-bottom: 24px;
+  }
+
+  &__section {
+    display: block;
+    font-size: $ck-font-body;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  &__picker {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    border-bottom: 1px solid $ck-border;
+    font-size: $ck-font-body;
+  }
+
+  &__picker-value {
+    color: $ck-muted;
+  }
+
+  &__input {
+    margin-top: 16px;
+    padding: 20px 0;
+    font-size: $ck-font-body;
+    border-bottom: 1px solid $ck-border;
+  }
+
+  &__btn {
+    margin-top: 24px;
+    background: $ck-primary !important;
+    color: #fff !important;
+    border-radius: $ck-radius-md !important;
+    font-size: $ck-font-body !important;
+  }
+
+  &__list {
+    margin-bottom: 48px;
+  }
+
+  &__item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  &__item-title {
+    display: block;
+    font-size: $ck-font-body;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  &__item-meta {
+    display: block;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+  }
+
+  &__item-tip {
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+    flex-shrink: 0;
+  }
+}

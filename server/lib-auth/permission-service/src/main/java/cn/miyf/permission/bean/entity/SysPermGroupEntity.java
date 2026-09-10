@@ -53,4 +53,8 @@ public class SysPermGroupEntity extends BaseEntity {
     @TableField("product")
     @Schema(description = "默认产品域")
     private String product;
+
+    @TableField("scope")
+    @Schema(description = "权限域：PERSONAL / ORG / SUPER")
+    private String scope;
 }

@@ -20,10 +20,12 @@ import java.util.Set;
 
 /**
  * 生产/容器环境启动安全门禁：拒绝危险默认密钥与 Mock/公开桶配置。
+ * 校验范围含 JWT、数据源密码、MinIO 账号，以及文件签名密钥 access-sign-secret。
  * 仅在 {@code prod}、{@code docker} profile 生效，本地 {@code dev} 不受影响。
  *
  * @author XieMingJie
  * @since 2026-09-09
+ * @history 1.00 2026-09-09 XieMingJie Created.
  */
 @Slf4j
 @Component
@@ -35,6 +37,7 @@ public class ProductionSecurityGuard implements ApplicationRunner {
     private static final Set<String> FORBIDDEN_EXACT = Set.of(
             "change-me",
             "change-me-to-a-long-random-secret-at-least-32-chars",
+            "change-me-file-access-sign-secret-32chars",
             "minioadmin"
     );
 
@@ -46,6 +49,7 @@ public class ProductionSecurityGuard implements ApplicationRunner {
 
     /**
      * 校验密钥、Mock 与公开读开关；不通过则拒绝启动。
+     * 包含 FILE_STORAGE_ACCESS_SIGN_SECRET（文件签名 URL HMAC 密钥）强度检查。
      *
      * @param args 启动参数
      * @history 1.00 2026-09-09 XieMingJie Created.
@@ -61,6 +65,8 @@ public class ProductionSecurityGuard implements ApplicationRunner {
                 environment.getProperty("app.datasource.primary.password"), 8, errors);
         rejectInsecure("FILE_STORAGE_ACCESS_KEY", fileStorageProperties.getAccessKey(), 8, errors);
         rejectInsecure("FILE_STORAGE_SECRET_KEY", fileStorageProperties.getSecretKey(), 8, errors);
+        rejectInsecure("FILE_STORAGE_ACCESS_SIGN_SECRET / app.file-storage.access-sign-secret",
+                fileStorageProperties.getAccessSignSecret(), 32, errors);
 
         if (wxAuthProperties.isMockEnabled()) {
             errors.add("wx.auth.mock-enabled 在生产/容器环境必须为 false（设置 WX_AUTH_MOCK_ENABLED=false）");

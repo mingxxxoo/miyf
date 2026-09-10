@@ -187,6 +187,22 @@ public class HealthSyncApplicationService {
     }
 
     /**
+     * 个人端同步：强制主体为当前用户自己的健康主体。
+     *
+     * @param providerCode 数据源
+     * @param dto          可选时间窗（subjectId 忽略）
+     * @return 同步运行 VO
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    @Transactional
+    public HealthSyncRunVo syncMineAsVo(String providerCode, HealthSyncRequestDto dto) {
+        Long subjectId = healthCrudApplicationService.getOrCreateMySubjectEntity().getId();
+        HealthSyncRequestDto request = dto == null ? new HealthSyncRequestDto() : dto;
+        request.setSubjectId(String.valueOf(subjectId));
+        return toSyncRunVo(sync(providerCode, request));
+    }
+
+    /**
      * 幂等入库草稿。
      * 草稿若携带 subjectId，必须与本次同步请求主体一致，否则拒绝，防止 Provider 覆盖目标主体。
      *

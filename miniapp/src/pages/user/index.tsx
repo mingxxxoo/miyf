@@ -50,6 +50,13 @@ export default function UserPage() {
         </View>
         <View
           className='user-page__menu-item'
+          onClick={() => Taro.navigateTo({ url: '/pages/health/index' })}
+        >
+          <Text className='user-page__menu-label'>健康管理</Text>
+          <Text className='user-page__menu-arrow'>→</Text>
+        </View>
+        <View
+          className='user-page__menu-item'
           onClick={() => Taro.switchTab({ url: '/pages/category/index' })}
         >
           <Text className='user-page__menu-label'>浏览菜品</Text>

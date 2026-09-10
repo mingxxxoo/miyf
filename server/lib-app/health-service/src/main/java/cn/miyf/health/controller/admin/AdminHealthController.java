@@ -1,4 +1,4 @@
-package cn.miyf.health.controller;
+package cn.miyf.health.controller.admin;
 
 import cn.miyf.auth.security.MiyfPermission;
 import cn.miyf.common.ApiResult;
@@ -13,7 +13,7 @@ import cn.miyf.health.bean.vo.HealthSampleVo;
 import cn.miyf.health.bean.vo.HealthSubjectVo;
 import cn.miyf.health.bean.vo.HealthSyncRunVo;
 import cn.miyf.health.bean.vo.HealthTrendVo;
-import cn.miyf.health.security.HealthPersonalPopedom;
+import cn.miyf.health.security.HealthAdminPopedom;
 import cn.miyf.health.service.HealthCrudApplicationService;
 import cn.miyf.health.service.HealthSyncApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,14 +34,13 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * 健康管理 API：主体、采样、数据源绑定与同步编排入口。
- * 返回统一使用 VO；主体相关读写受 DataScope 约束。
+ * 健康管理端 API：按 DataScope 查询/管理全部可见主体、采样、数据源与同步。
  *
  * @author XieMingJie
  * @since 2026-09-06
  */
-@Tag(name = "健康管理")
-@HealthPersonalPopedom
+@Tag(name = "管理端-健康")
+@HealthAdminPopedom
 @RestController
 @RequestMapping("/admin/health")
 @RequiredArgsConstructor

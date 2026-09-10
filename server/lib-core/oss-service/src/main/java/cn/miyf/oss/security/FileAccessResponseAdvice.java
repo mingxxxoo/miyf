@@ -14,23 +14,29 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * 扫描响应体中标注 {@link FileAccess} 的字段，将文件 ID 写入 Redis 临时访问权。
+ * 扫描响应体中标注 {@link FileAccess} 的字段。
+ * 将可解析的文件引用改写为短期签名 URL（供 img / 小程序 Image 直开），
+ * 并在存在登录主体时写入 Redis 临时访问权（兼容带 JWT 的下载）。
  *
  * @author XieMingJie
  * @since 2026-09-09
+ * @history 1.00 2026-09-09 XieMingJie Created.
  */
 @RestControllerAdvice
 @RequiredArgsConstructor
 public class FileAccessResponseAdvice implements ResponseBodyAdvice<Object> {
 
     private final FileAccessPermissionCache fileAccessPermissionCache;
+    private final FileAccessSigner fileAccessSigner;
 
     /**
      * {@inheritDoc}
@@ -43,7 +49,7 @@ public class FileAccessResponseAdvice implements ResponseBodyAdvice<Object> {
     }
 
     /**
-     * {@inheritDoc}
+     * 写出前扫描 {@link FileAccess} 字段：改写签名 URL，并批量授予 Redis 临时访问权。
      *
      * @history 1.00 2026-09-09 XieMingJie Created.
      */
@@ -58,14 +64,14 @@ public class FileAccessResponseAdvice implements ResponseBodyAdvice<Object> {
             return null;
         }
         Set<Long> fileIds = new HashSet<>();
-        collect(body, fileIds, new IdentityHashMap<>());
+        walk(body, fileIds, new IdentityHashMap<>());
         if (!fileIds.isEmpty()) {
             fileAccessPermissionCache.grantAll(fileIds);
         }
         return body;
     }
 
-    private void collect(Object node, Set<Long> out, IdentityHashMap<Object, Boolean> visited) {
+    private void walk(Object node, Set<Long> out, IdentityHashMap<Object, Boolean> visited) {
         if (node == null || visited.containsKey(node)) {
             return;
         }
@@ -81,24 +87,24 @@ public class FileAccessResponseAdvice implements ResponseBodyAdvice<Object> {
         visited.put(node, Boolean.TRUE);
 
         if (node instanceof ApiResult<?> apiResult) {
-            collect(apiResult.data(), out, visited);
+            walk(apiResult.data(), out, visited);
             return;
         }
         if (node instanceof PageResult<?> pageResult) {
-            collect(pageResult.records(), out, visited);
+            walk(pageResult.records(), out, visited);
             return;
         }
         if (node instanceof Collection<?> collection) {
             for (Object item : collection) {
                 collectFileValue(item, out);
-                collect(item, out, visited);
+                walk(item, out, visited);
             }
             return;
         }
         if (node instanceof Map<?, ?> map) {
             for (Object value : map.values()) {
                 collectFileValue(value, out);
-                collect(value, out, visited);
+                walk(value, out, visited);
             }
             return;
         }
@@ -107,7 +113,7 @@ public class FileAccessResponseAdvice implements ResponseBodyAdvice<Object> {
             for (int i = 0; i < len; i++) {
                 Object item = Array.get(node, i);
                 collectFileValue(item, out);
-                collect(item, out, visited);
+                walk(item, out, visited);
             }
             return;
         }
@@ -129,30 +135,64 @@ public class FileAccessResponseAdvice implements ResponseBodyAdvice<Object> {
                 continue;
             }
             if (field.isAnnotationPresent(FileAccess.class)) {
-                collectAnnotatedValue(value, out, visited);
+                Object rewritten = rewriteAnnotatedValue(value, out, visited);
+                if (rewritten != value) {
+                    try {
+                        field.set(node, rewritten);
+                    } catch (IllegalAccessException ignored) {
+                        // 不可写则仅依赖 Redis grant
+                    }
+                }
             } else {
-                collect(value, out, visited);
+                walk(value, out, visited);
             }
         }
     }
 
-    private void collectAnnotatedValue(Object value, Set<Long> out, IdentityHashMap<Object, Boolean> visited) {
+    private Object rewriteAnnotatedValue(Object value, Set<Long> out, IdentityHashMap<Object, Boolean> visited) {
+        if (value instanceof List<?> list) {
+            List<Object> next = new ArrayList<>(list.size());
+            boolean changed = false;
+            for (Object item : list) {
+                Object rewritten = rewriteOne(item, out);
+                changed |= rewritten != item;
+                next.add(rewritten);
+            }
+            return changed ? next : value;
+        }
         if (value instanceof Collection<?> collection) {
             for (Object item : collection) {
                 collectFileValue(item, out);
             }
-            return;
+            return value;
         }
-        if (value != null && value.getClass().isArray()) {
+        if (value.getClass().isArray()) {
             int len = Array.getLength(value);
+            boolean changed = false;
             for (int i = 0; i < len; i++) {
-                collectFileValue(Array.get(value, i), out);
+                Object item = Array.get(value, i);
+                Object rewritten = rewriteOne(item, out);
+                if (rewritten != item) {
+                    Array.set(value, i, rewritten);
+                    changed = true;
+                }
             }
-            return;
+            return value;
         }
+        Object rewritten = rewriteOne(value, out);
+        if (rewritten == value) {
+            walk(value, out, visited);
+        }
+        return rewritten;
+    }
+
+    private Object rewriteOne(Object value, Set<Long> out) {
         collectFileValue(value, out);
-        // 若注解在嵌套对象上，继续下钻
-        collect(value, out, visited);
+        Object signed = fileAccessSigner.signValue(value);
+        if (signed instanceof String text) {
+            collectFileValue(text, out);
+        }
+        return signed;
     }
 
     private void collectFileValue(Object value, Set<Long> out) {

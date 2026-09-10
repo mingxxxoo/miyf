@@ -11,6 +11,11 @@ interface ImageUploaderProps {
   /** 产品应用编码，决定存储分区，如 kitchen / health */
   appCode: string;
   source?: string;
+  /**
+   * 访问权限。默认可不传（OWNER）。
+   * 列表/详情展示依赖后端 `@FileAccess` 改写的签名 URL；仅当资源需永久匿名直链时再传 PUBLIC。
+   */
+  accessPermission?: 'PUBLIC' | 'AUTHENTICATED' | 'OWNER' | 'ADMIN' | 'DENY';
   maxSizeMB?: number;
   accept?: string;
 }
@@ -23,6 +28,7 @@ export default function ImageUploader({
   onChange,
   appCode,
   source,
+  accessPermission,
   maxSizeMB = 5,
   accept = 'image/jpeg,image/png,image/webp',
 }: ImageUploaderProps) {
@@ -47,7 +53,7 @@ export default function ImageUploader({
     const file = options.file as File;
     setLoading(true);
     try {
-      const data = await uploadFile(file, { appCode, source });
+      const data = await uploadFile(file, { appCode, source, accessPermission });
       onChange?.(data.url);
       options.onSuccess?.(data);
       message.success('图片上传成功');

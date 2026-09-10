@@ -7,6 +7,7 @@ import cn.miyf.auth.security.SecurityUtils;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.common.id.SnowflakeIdGenerator;
+import cn.miyf.health.bean.dto.HealthMySampleSaveDto;
 import cn.miyf.health.bean.dto.HealthProviderBindingSaveDto;
 import cn.miyf.health.bean.dto.HealthSampleSaveDto;
 import cn.miyf.health.bean.dto.HealthSubjectSaveDto;
@@ -47,7 +48,10 @@ import java.util.Set;
 
 /**
  * 健康 CRUD 应用服务：主体 / 采样 / 绑定 / 概览与趋势。
- * 管理端读写按当前管理员 DataScope 裁剪（主体绑定 orgUnitId / createdBy）。
+ * <ul>
+ *   <li>管理端：按管理员 DataScope 裁剪（orgUnitId / createdBy）</li>
+ *   <li>个人端：仅 {@code externalUserId = 当前 USER} 的自己的主体</li>
+ * </ul>
  * Repository 为纯 Mapper；条件查询通过 MyBatis-Plus Wrapper 在本服务组装。
  *
  * @author XieMingJie
@@ -420,14 +424,22 @@ public class HealthCrudApplicationService {
     }
 
     /**
-     * 校验主体存在且在当前管理员数据范围内。
+     * 校验主体可被当前登录者访问：管理员走 DataScope，用户仅能访问自己的主体。
      *
      * @param id 主体 ID
      * @return 实体
      * @history 1.00 2026-09-09 XieMingJie Created.
+     * @history 1.01 2026-09-10 XieMingJie 支持 USER 访问自己的主体.
      */
     public HealthSubjectEntity requireAccessibleSubject(Long id) {
-        return requireAccessibleSubject(id, dataScopeService.requireAdmin());
+        AuthPrincipal principal = SecurityUtils.requirePrincipal();
+        if (principal.getType() == PrincipalType.ADMIN) {
+            return requireAccessibleSubject(id, principal);
+        }
+        if (principal.getType() == PrincipalType.USER) {
+            return requireOwnSubject(id, principal.getId());
+        }
+        throw new BusinessException(ErrorCode.FORBIDDEN, "无权访问该健康主体");
     }
 
     /**
@@ -447,18 +459,186 @@ public class HealthCrudApplicationService {
     }
 
     /**
-     * 若当前为管理员登录则校验数据范围，否则仅校验主体存在（定时任务无登录上下文）。
+     * 管理员走 DataScope；用户校验归属；定时任务无登录上下文时仅校验主体存在。
      *
      * @param id 主体 ID
      * @return 实体
      * @history 1.00 2026-09-09 XieMingJie Created.
+     * @history 1.01 2026-09-10 XieMingJie 支持 USER 同步自己的主体.
      */
     public HealthSubjectEntity requireSubjectForSync(Long id) {
         Optional<AuthPrincipal> opt = SecurityUtils.currentPrincipal();
-        if (opt.isPresent() && opt.get().getType() == PrincipalType.ADMIN) {
-            return requireAccessibleSubject(id, opt.get());
+        if (opt.isEmpty()) {
+            return requireSubject(id);
+        }
+        AuthPrincipal principal = opt.get();
+        if (principal.getType() == PrincipalType.ADMIN) {
+            return requireAccessibleSubject(id, principal);
+        }
+        if (principal.getType() == PrincipalType.USER) {
+            return requireOwnSubject(id, principal.getId());
         }
         return requireSubject(id);
+    }
+
+    /**
+     * 获取或自动创建当前用户的健康主体。
+     *
+     * @return 主体 VO
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    @Transactional
+    public HealthSubjectVo getOrCreateMySubject() {
+        return toSubjectVo(getOrCreateMySubjectEntity());
+    }
+
+    /**
+     * 获取或自动创建当前用户的健康主体实体。
+     *
+     * @return 实体
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    @Transactional
+    public HealthSubjectEntity getOrCreateMySubjectEntity() {
+        AuthPrincipal user = SecurityUtils.requireUser();
+        HealthSubjectEntity existing = findSubjectByExternalUserId(user.getId());
+        if (existing != null) {
+            return existing;
+        }
+        Instant now = Instant.now();
+        String displayName = StringUtils.hasText(user.getUsername()) ? user.getUsername().trim() : "我";
+        HealthSubjectEntity entity = new HealthSubjectEntity()
+                .setDisplayName(displayName)
+                .setGender("UNKNOWN")
+                .setExternalUserId(user.getId())
+                .setOrgUnitId(user.getOrgUnitId())
+                .setCreatedBy(user.getId())
+                .setStatus("ENABLED");
+        entity.setId(snowflakeIdGenerator.nextId());
+        entity.setCreateTime(now);
+        entity.setLastModifyTime(now);
+        subjectRepository.insert(entity);
+        return entity;
+    }
+
+    /**
+     * 更新当前用户自己的健康主体资料（不可改 externalUserId / orgUnitId）。
+     *
+     * @param dto 请求
+     * @return 主体 VO
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    @Transactional
+    public HealthSubjectVo updateMySubject(HealthSubjectSaveDto dto) {
+        HealthSubjectEntity entity = getOrCreateMySubjectEntity();
+        entity.setDisplayName(dto.getDisplayName().trim())
+                .setGender(normalizeGender(dto.getGender()))
+                .setBirthDate(dto.getBirthDate())
+                .setHeightCm(dto.getHeightCm())
+                .setStatus(normalizeStatus(dto.getStatus()))
+                .setRemark(dto.getRemark())
+                .setLastModifyTime(Instant.now());
+        subjectRepository.updateById(entity);
+        return toSubjectVo(entity);
+    }
+
+    /**
+     * 当前用户的采样列表。
+     *
+     * @param metricCode 指标
+     * @param limit      条数
+     * @return 采样 VO
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    public List<HealthSampleVo> listMySamples(String metricCode, Integer limit) {
+        Long subjectId = getOrCreateMySubjectEntity().getId();
+        int rows = limit == null || limit < 1 ? 100 : Math.min(limit, 500);
+        return sampleRepository.selectList(Wrappers.<HealthSampleEntity>lambdaQuery()
+                        .eq(HealthSampleEntity::getSubjectId, subjectId)
+                        .eq(StringUtils.hasText(metricCode), HealthSampleEntity::getMetricCode, metricCode)
+                        .orderByDesc(HealthSampleEntity::getMeasuredTime)
+                        .last("LIMIT " + rows))
+                .stream()
+                .map(this::toSampleVo)
+                .toList();
+    }
+
+    /**
+     * 当前用户手动录入采样。
+     *
+     * @param dto 请求
+     * @return 采样 VO
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    @Transactional
+    public HealthSampleVo createMyManualSample(HealthMySampleSaveDto dto) {
+        Long subjectId = getOrCreateMySubjectEntity().getId();
+        HealthSampleSaveDto adminDto = new HealthSampleSaveDto()
+                .setSubjectId(String.valueOf(subjectId))
+                .setMetricCode(dto.getMetricCode())
+                .setValueNum(dto.getValueNum())
+                .setUnit(dto.getUnit())
+                .setMeasuredTime(dto.getMeasuredTime())
+                .setQuality(dto.getQuality())
+                .setMetaJson(dto.getMetaJson());
+        return createManualSample(adminDto);
+    }
+
+    /**
+     * 删除当前用户自己的采样。
+     *
+     * @param id 采样 ID
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    @Transactional
+    public void deleteMySample(Long id) {
+        HealthSampleEntity entity = Optional.ofNullable(sampleRepository.selectById(id))
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "采样不存在"));
+        requireOwnSubject(entity.getSubjectId(), SecurityUtils.currentUserId());
+        sampleRepository.deleteById(entity.getId());
+    }
+
+    /**
+     * 当前用户指标趋势。
+     *
+     * @param metricCode 指标
+     * @param from       起始
+     * @param to         结束
+     * @param limit      点数
+     * @return 趋势
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    public HealthTrendVo myTrend(String metricCode, Instant from, Instant to, Integer limit) {
+        Long subjectId = getOrCreateMySubjectEntity().getId();
+        return trend(subjectId, metricCode, from, to, limit);
+    }
+
+    /**
+     * 当前用户的数据源绑定。
+     *
+     * @return 绑定列表
+     * @history 1.00 2026-09-10 XieMingJie Created.
+     */
+    public List<HealthProviderBindingVo> listMyBindings() {
+        return listBindings(getOrCreateMySubjectEntity().getId());
+    }
+
+    private HealthSubjectEntity requireOwnSubject(Long id, Long userId) {
+        HealthSubjectEntity entity = requireSubject(id);
+        if (!Objects.equals(userId, entity.getExternalUserId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权访问该健康主体");
+        }
+        return entity;
+    }
+
+    private HealthSubjectEntity findSubjectByExternalUserId(Long externalUserId) {
+        if (externalUserId == null) {
+            return null;
+        }
+        return subjectRepository.selectOne(Wrappers.<HealthSubjectEntity>lambdaQuery()
+                .eq(HealthSubjectEntity::getExternalUserId, externalUserId)
+                .orderByAsc(HealthSubjectEntity::getId)
+                .last("LIMIT 1"));
     }
 
     private boolean canAccessSubject(AuthPrincipal principal, HealthSubjectEntity subject) {

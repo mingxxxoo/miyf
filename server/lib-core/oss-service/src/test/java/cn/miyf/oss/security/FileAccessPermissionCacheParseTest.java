@@ -4,6 +4,7 @@ import cn.miyf.infrastructure.cache.NoopCacheClient;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -28,5 +29,13 @@ class FileAccessPermissionCacheParseTest {
     void randomTtl_shouldAroundFiveHours() {
         long seconds = cache.randomTtl().getSeconds();
         assertTrue(seconds >= 5 * 3600 && seconds < 5 * 3600 + 300);
+    }
+
+    @Test
+    void grantTicket_shouldWorkWithoutRedis() {
+        assertFalse(cache.hasTicket(42L));
+        cache.grantTicket(42L);
+        assertTrue(cache.hasTicket(42L));
+        assertTrue(cache.hasAccess(42L));
     }
 }

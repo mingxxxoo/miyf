@@ -3,6 +3,7 @@ package cn.miyf.gateway.security;
 import cn.miyf.auth.security.AuthPrincipal;
 import cn.miyf.auth.security.MiyfPermission;
 import cn.miyf.auth.security.PopedomGroup;
+import cn.miyf.auth.security.PopedomScope;
 import cn.miyf.auth.security.PrincipalType;
 import cn.miyf.auth.security.RequirePermission;
 import org.aopalliance.intercept.MethodInvocation;
@@ -25,11 +26,12 @@ import java.util.stream.Collectors;
  * <ul>
  *   <li>匿名：放行（由 HttpSecurity 控制公开路径）</li>
  *   <li>管理员：必须持有对应权限码</li>
- *   <li>普通用户：仅允许访问「个人」权限组接口；token 未挂权限码时登录即可，已挂码则校验</li>
+ *   <li>普通用户：仅允许访问 {@link PopedomScope#PERSONAL} 权限组接口；token 未挂权限码时登录即可，已挂码则校验</li>
  * </ul>
  *
  * @author XieMingJie
  * @since 2026-09-05
+ * @history 1.00 2026-09-05 XieMingJie Created.
  */
 @Component
 public class MiyfPermissionAuthorizationManager implements AuthorizationManager<MethodInvocation> {
@@ -69,7 +71,8 @@ public class MiyfPermissionAuthorizationManager implements AuthorizationManager<
 
         if (principal.getType() == PrincipalType.USER) {
             PopedomGroup popedom = resolvePopedomGroup(invocation);
-            if (!isPersonalPopedom(popedom)) {
+            // 按枚举配置判断个人域，禁止用展示名字符串比对
+            if (popedom == null || popedom.scope() != PopedomScope.PERSONAL) {
                 return new AuthorizationDecision(false);
             }
             if (authorities.isEmpty()) {
@@ -90,9 +93,5 @@ public class MiyfPermissionAuthorizationManager implements AuthorizationManager<
             }
         }
         return AnnotationUtils.findAnnotation(invocation.getMethod().getDeclaringClass(), PopedomGroup.class);
-    }
-
-    private static boolean isPersonalPopedom(PopedomGroup popedom) {
-        return popedom != null && "个人".equals(popedom.name());
     }
 }

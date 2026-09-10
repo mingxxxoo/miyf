@@ -1,4 +1,4 @@
-package cn.miyf.health.controller;
+package cn.miyf.health.controller.admin;
 
 import cn.miyf.auth.security.MiyfPermission;
 import cn.miyf.common.ApiResult;
@@ -6,7 +6,7 @@ import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.health.bean.dto.HuaweiOAuthCallbackDto;
 import cn.miyf.health.provider.huawei.HuaweiHealthAuthFacade;
-import cn.miyf.health.security.HealthPersonalPopedom;
+import cn.miyf.health.security.HealthAdminPopedom;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -23,14 +23,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * 华为 Health Kit OAuth 授权接口。
- * 按健康主体独立绑定，主体之间不共用 Token。
+ * 管理端华为 Health Kit OAuth：按健康主体独立绑定。
  *
  * @author XieMingJie
  * @since 2026-09-06
  */
-@Tag(name = "健康-华为授权")
-@HealthPersonalPopedom
+@Tag(name = "管理端-健康-华为授权")
+@HealthAdminPopedom
 @RestController
 @RequestMapping("/admin/health/providers/huawei")
 @RequiredArgsConstructor

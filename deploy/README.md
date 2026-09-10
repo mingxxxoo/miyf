@@ -1,4 +1,4 @@
-﻿# Docker Compose 部署指南
+# Docker Compose 部署指南
 
 面向 **miyf** 的一键编排部署文档。  
 当前公网示例服务器：`47.108.200.201`（无域名时用 IP；有域名后替换文中所有 IP 即可）。
@@ -193,7 +193,8 @@ nano .env   # 或 vim
 | `POSTGRES_PASSWORD` | 数据库密码，勿用默认 |
 | `JWT_SECRET` | ≥ 32 位随机串 |
 | `FILE_STORAGE_ACCESS_KEY` / `FILE_STORAGE_SECRET_KEY` | MinIO 账号，勿用 `minioadmin` |
-| `FILE_STORAGE_BASE_URL` | 对外可访问的媒体前缀 |
+| `FILE_STORAGE_ACCESS_SIGN_SECRET` | 文件签名 URL HMAC 密钥（≥32 位，勿与 JWT 相同，禁止 change-me） |
+| `FILE_STORAGE_BASE_URL` | 对外可访问站点前缀（不含 `/r`，实际 URL 为 `{BASE}/r/{fileId}`） |
 
 当前 IP 部署示例：
 
@@ -498,7 +499,8 @@ nano .env              # 或 vim
 | `POSTGRES_PASSWORD` | 强密码；与首次初始化后勿随意改（改则库连不上） |
 | `JWT_SECRET` | ≥32 位随机串 |
 | `FILE_STORAGE_ACCESS_KEY` / `SECRET_KEY` | MinIO 账号；与 compose 注入一致 |
-| `FILE_STORAGE_BASE_URL` | 公网可访问，如 `http://47.108.200.201/media`（勿写 `:9000`） |
+| `FILE_STORAGE_ACCESS_SIGN_SECRET` | 文件签名 URL HMAC 密钥（≥32 位，勿与 JWT 相同） |
+| `FILE_STORAGE_BASE_URL` | 公网站点前缀（不含 `/r`），如 `https://www.miyf.cn`；实际读文件为 `/r/{fileId}?exp=&sig=` |
 | `MIYF_DATA_*` / `MIYF_LOG_*` / `LOG_PATH` | 与 **1.4** 目录一致（默认即可） |
 
 > `BASE_*_IMAGE` 仅本机构建用，服务器可不改，不影响 `up`。
