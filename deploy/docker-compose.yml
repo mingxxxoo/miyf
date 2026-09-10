@@ -26,8 +26,9 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
-    # ports:
-    #   - "5432:5432"
+    ports:
+      # 宿主机端口可用 POSTGRES_PORT 覆盖；公网务必用安全组限制来源 IP
+      - "${POSTGRES_PORT:-5432}:5432"
 
   redis:
     image: ${MIYF_IMAGE_REDIS:-registry.cn-shanghai.aliyuncs.com/miyf/redis:7-alpine}
