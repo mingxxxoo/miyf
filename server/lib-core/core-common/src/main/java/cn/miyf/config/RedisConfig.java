@@ -64,11 +64,10 @@ public class RedisConfig {
     }
 
     /**
-     * 关闭 Redis，或启用路径未贡献 CacheClient 时的 Noop 门面。
+     * 关闭 Redis，或启用路径未贡献 CacheClient 时的 Noop 门面（MissingBean 兜底）。
      *
      * @return CacheClient
      * @history 1.00 2026-09-08 XieMingJie Created.
-     * @history 1.01 2026-09-09 XieMingJie 去掉同配置内 ConditionalOnBean，改用 MissingBean 兜底.
      */
     @Bean
     @ConditionalOnMissingBean(CacheClient.class)

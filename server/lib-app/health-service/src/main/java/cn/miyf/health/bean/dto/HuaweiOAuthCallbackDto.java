@@ -15,6 +15,7 @@ import lombok.experimental.Accessors;
  *
  * @author XieMingJie
  * @since 2026-09-09
+ * @history 1.00 2026-09-09 XieMingJie Created.
  */
 @Getter
 @Setter

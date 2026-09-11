@@ -51,11 +51,13 @@ import java.util.Set;
  * <ul>
  *   <li>管理端：按管理员 DataScope 裁剪（orgUnitId / createdBy）</li>
  *   <li>个人端：仅 {@code externalUserId = 当前 USER} 的自己的主体</li>
+ *   <li>OAuth 浏览器回跳：{@link #upsertBindingAfterOAuthRedirect} 仅校验主体存在</li>
  * </ul>
  * Repository 为纯 Mapper；条件查询通过 MyBatis-Plus Wrapper 在本服务组装。
  *
  * @author XieMingJie
  * @since 2026-09-08
+ * @history 1.00 2026-09-08 XieMingJie Created.
  */
 @Service
 @RequiredArgsConstructor
@@ -359,6 +361,7 @@ public class HealthCrudApplicationService {
 
     /**
      * 创建或更新数据源绑定；响应为脱敏 VO，不回传 credentialRef。
+     * 需当前登录可访问该主体。
      *
      * @param subjectId 主体
      * @param dto       请求
@@ -368,6 +371,31 @@ public class HealthCrudApplicationService {
     @Transactional
     public HealthProviderBindingVo upsertBinding(Long subjectId, HealthProviderBindingSaveDto dto) {
         requireAccessibleSubject(subjectId);
+        return doUpsertBinding(subjectId, dto);
+    }
+
+    /**
+     * OAuth 浏览器回跳落库绑定：仅校验主体存在（无登录会话，依赖已消费的一次性 state）。
+     *
+     * @param subjectId 主体
+     * @param dto       请求
+     * @return 绑定 VO
+     * @history 1.00 2026-09-11 XieMingJie Created.
+     */
+    @Transactional
+    public HealthProviderBindingVo upsertBindingAfterOAuthRedirect(Long subjectId, HealthProviderBindingSaveDto dto) {
+        requireSubject(subjectId);
+        return doUpsertBinding(subjectId, dto);
+    }
+
+    /**
+     * 绑定落库核心逻辑（调用方负责访问控制）。
+     *
+     * @param subjectId 主体
+     * @param dto       请求
+     * @return 脱敏绑定 VO
+     */
+    private HealthProviderBindingVo doUpsertBinding(Long subjectId, HealthProviderBindingSaveDto dto) {
         String providerCode = dto.getProviderCode().trim();
         providerRegistry.find(providerCode)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "健康数据源不存在: " + providerCode));
@@ -429,7 +457,6 @@ public class HealthCrudApplicationService {
      * @param id 主体 ID
      * @return 实体
      * @history 1.00 2026-09-09 XieMingJie Created.
-     * @history 1.01 2026-09-10 XieMingJie 支持 USER 访问自己的主体.
      */
     public HealthSubjectEntity requireAccessibleSubject(Long id) {
         AuthPrincipal principal = SecurityUtils.requirePrincipal();
@@ -464,7 +491,6 @@ public class HealthCrudApplicationService {
      * @param id 主体 ID
      * @return 实体
      * @history 1.00 2026-09-09 XieMingJie Created.
-     * @history 1.01 2026-09-10 XieMingJie 支持 USER 同步自己的主体.
      */
     public HealthSubjectEntity requireSubjectForSync(Long id) {
         Optional<AuthPrincipal> opt = SecurityUtils.currentPrincipal();

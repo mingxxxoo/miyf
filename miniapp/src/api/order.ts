@@ -13,6 +13,7 @@ interface OrderItemRaw {
   remark?: string
   coverImage?: string
   coverUrl?: string
+  commented?: boolean
 }
 
 interface OrderRaw {
@@ -36,7 +37,8 @@ function mapItem(raw: OrderItemRaw): OrderItem {
     unit: raw.unit,
     coverUrl: toResourceUrl(raw.coverImage || raw.coverUrl || undefined),
     note: raw.remark,
-    remark: raw.remark
+    remark: raw.remark,
+    commented: raw.commented === true
   }
 }
 

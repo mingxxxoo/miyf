@@ -1,6 +1,24 @@
 .category-page {
   min-height: 100vh;
 
+  &__top {
+    padding: 20px 32px 8px;
+    background: $ck-bg;
+  }
+
+  &__switch {
+    margin-bottom: 16px;
+  }
+
+  &__search {
+    padding: 18px 24px;
+    border-radius: $ck-radius-sm;
+    background: #fff;
+    border: 1px solid $ck-border;
+    font-size: 28px;
+    color: $ck-text;
+  }
+
   &__tabs {
     white-space: nowrap;
     padding: 24px 32px;
@@ -42,5 +60,15 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+  }
+
+  &__more {
+    margin-top: 24px;
+    padding: 24px;
+    text-align: center;
+    font-size: 26px;
+    color: $ck-primary-d12;
+    background: rgba($ck-primary, 0.08);
+    border-radius: $ck-radius-sm;
   }
 }

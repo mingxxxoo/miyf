@@ -28,9 +28,11 @@ import java.util.List;
  * <p>
  * 业务 API（{@code app.web.api-prefix}，默认 {@code /api/**}）采用显式白名单：
  * 公开浏览与登录放行，写操作与管理端需认证，其余 API 需认证。
+ * 路径统一经 {@code app.web.api-prefix} 组装；含华为个人端 OAuth 浏览器回跳放行。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:06
+ * @history 1.00 2026-09-04 17:06 XieMingJie Created.
  */
 @Configuration
 public class SecurityConfig {
@@ -42,18 +44,18 @@ public class SecurityConfig {
 
     /**
      * 构造安全配置。
+     * 路径改读 {@code app.web.api-prefix}。
      *
      * @param jwtAuthFilter    JWT 过滤器
      * @param objectMapper     JSON 工具
      * @param webAppProperties Web 配置（API 前缀）
-     * @param exposeDocs       是否放行 Swagger（生产应关闭）
+     * @param exposeDocs       是否放行 Swagger（默认关闭）
      * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     * @history 1.01 2026-09-09 XieMingJie 路径改读 app.web.api-prefix。
      */
     public SecurityConfig(JwtAuthFilter jwtAuthFilter,
                           ObjectMapper objectMapper,
                           WebAppProperties webAppProperties,
-                          @Value("${app.security.expose-docs:true}") boolean exposeDocs) {
+                          @Value("${app.security.expose-docs:false}") boolean exposeDocs) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.objectMapper = objectMapper;
         this.webAppProperties = webAppProperties;
@@ -75,12 +77,12 @@ public class SecurityConfig {
 
     /**
      * 安全过滤链。
+     * 公开路径含登录、健康检查、浏览 API 及华为个人端 OAuth 浏览器回跳；路径经 api-prefix 组装。
      *
      * @param http HttpSecurity
      * @return 过滤链
      * @throws Exception 配置异常
      * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     * @history 1.01 2026-09-09 XieMingJie 路径改读 app.web.api-prefix。
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -89,8 +91,11 @@ public class SecurityConfig {
                 webAppProperties.api("/admin/auth/login"),
                 webAppProperties.api("/admin/auth/login-status"),
                 webAppProperties.api("/admin/auth/captcha"),
+                // 华为个人端 OAuth 浏览器回跳（无会话，凭一次性 state 换票）
+                webAppProperties.api("/health/providers/huawei/oauth/redirect"),
                 "/actuator/health",
                 "/actuator/info",
+                "/error",
                 "/r/**",
                 webAppProperties.api("/categories/**"),
                 webAppProperties.api("/dishes/**")
@@ -119,7 +124,8 @@ public class SecurityConfig {
                                 webAppProperties.api("/health/**")
                         ).authenticated()
                         .requestMatchers(webAppProperties.api("/**")).authenticated()
-                        .anyRequest().permitAll()
+                        // 未显式放行的路径一律拒绝，避免非 /api 路径默认可访问
+                        .anyRequest().denyAll()
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) ->

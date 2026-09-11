@@ -37,6 +37,17 @@
     background: linear-gradient(180deg, rgba($ck-primary, 0.9), rgba($ck-primary, 0.35));
   }
 
+  &__dates {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+
+  &__date {
+    font-size: 20px;
+    color: $ck-muted;
+  }
+
   &__unit {
     display: block;
     margin-top: 8px;

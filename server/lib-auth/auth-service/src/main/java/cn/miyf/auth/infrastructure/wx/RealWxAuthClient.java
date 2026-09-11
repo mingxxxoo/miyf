@@ -4,8 +4,8 @@ import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -21,8 +21,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @since 2026-09-04 17:06
  */
 @Component
-@ConditionalOnProperty(prefix = "wx.auth", name = "mock-enabled", havingValue = "false")
-@RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "wx.auth", name = "mock-enabled", havingValue = "false", matchIfMissing = true)
 @Slf4j
 public class RealWxAuthClient implements WxAuthClient {
 
@@ -33,10 +32,24 @@ public class RealWxAuthClient implements WxAuthClient {
     private final ObjectMapper objectMapper;
 
     /**
+     * @param properties 微信配置
+     * @param restClient 微信专用 RestClient（{@code wxRestClient}）
+     * @param objectMapper JSON
+     * @history 1.00 2026-09-04 17:06 XieMingJie Created.
+     */
+    public RealWxAuthClient(WxAuthProperties properties,
+                            @Qualifier("wxRestClient") RestClient restClient,
+                            ObjectMapper objectMapper) {
+        this.properties = properties;
+        this.restClient = restClient;
+        this.objectMapper = objectMapper;
+    }
+
+    /**
      * {@inheritDoc}
+     * 兼容微信 text/plain 响应体。
      *
      * @history 1.00 2026-09-04 17:06 XieMingJie Created.
-     * @history 1.01 2026-09-09 XieMingJie 兼容微信 text/plain 响应体.
      */
     @Override
     public WxSession code2Session(String code) {

@@ -1,4 +1,5 @@
 import { View, Text } from '@tarojs/components'
+import { useProductStore } from '@/stores/productStore'
 import './EmptyState.scss'
 
 interface EmptyStateProps {
@@ -10,15 +11,18 @@ interface EmptyStateProps {
 }
 
 export default function EmptyState({
-  emoji = '🍳',
+  emoji,
   title,
   description,
   actionText,
   onAction
 }: EmptyStateProps) {
+  const product = useProductStore((s) => s.product)
+  const displayEmoji = emoji ?? (product === 'health' ? '💚' : '🍳')
+
   return (
     <View className='empty-state'>
-      <Text className='empty-state__emoji'>{emoji}</Text>
+      <Text className='empty-state__emoji'>{displayEmoji}</Text>
       <Text className='empty-state__title'>{title}</Text>
       {description && <Text className='empty-state__desc'>{description}</Text>}
       {actionText && onAction && (

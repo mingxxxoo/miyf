@@ -1,6 +1,12 @@
 import Taro from '@tarojs/taro'
 import { create } from 'zustand'
-import { wxLogin } from '@/api/auth'
+import {
+  fetchMyProfile,
+  updateMyProfile,
+  uploadMyAvatar,
+  wxLogin,
+  type WxLoginProfile
+} from '@/api/auth'
 import { getToken, setToken, clearToken } from '@/api/request'
 import { PRODUCT_META, useProductStore } from '@/stores/productStore'
 import type { User } from '@/types'
@@ -17,7 +23,10 @@ interface UserState {
   isLoggedIn: boolean
   hydrate: () => void
   bootstrap: () => Promise<boolean>
-  login: () => Promise<boolean>
+  login: (profile?: WxLoginProfile) => Promise<boolean>
+  refreshProfile: () => Promise<User | null>
+  updateProfile: (payload: { nickname?: string; avatarUrl?: string }) => Promise<User | null>
+  uploadAvatar: (filePath: string) => Promise<User | null>
   requireLogin: () => Promise<boolean>
   setUser: (user: User | null) => void
   logout: () => void
@@ -62,13 +71,13 @@ function currentRoute(): string {
   return cur?.route || ''
 }
 
-async function exchangeWxCode(): Promise<{ user: User; token: string }> {
+async function exchangeWxCode(profile?: WxLoginProfile): Promise<{ user: User; token: string; expireSeconds?: number }> {
   const { code } = await Taro.login()
   if (!code) {
     throw new Error('empty wx login code')
   }
-  const { login, user } = await wxLogin(code)
-  return { user, token: login.token }
+  const { login, user } = await wxLogin(code, profile)
+  return { user, token: login.token, expireSeconds: login.expireSeconds }
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -80,7 +89,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   hydrate: () => {
     const token = getToken()
     let cached = Taro.getStorageSync(USER_KEY) as User | ''
-    if ((!cached || typeof cached !== 'object')) {
+    if (!cached || typeof cached !== 'object') {
       cached = Taro.getStorageSync(LEGACY_USER_KEY) as User | ''
       if (cached && typeof cached === 'object') {
         persistUser(cached)
@@ -88,6 +97,9 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
     if (token && cached && typeof cached === 'object') {
       set({ user: cached, isLoggedIn: true })
+    } else if (token) {
+      // 有 token 无缓存：保留 token，标记已登录，由 bootstrap/refresh 补资料
+      set({ user: null, isLoggedIn: true })
     } else {
       clearToken()
       persistUser(null)
@@ -115,45 +127,49 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   /**
-   * 进入应用时恢复登录态；无 token 时尝试微信静默登录。
+   * 仅恢复本地登录态；无 token 时以游客进入厨房首页，不再自动跳登录。
    */
   bootstrap: async () => {
     set({ bootstrapping: true })
     get().hydrate()
     if (get().isLoggedIn) {
       set({ bootstrapping: false })
+      // 后台刷新资料（含头像签名 URL），失败不打断
+      void get().refreshProfile()
       get().goHome()
       return true
     }
-
-    set({ loading: true })
-    try {
-      const { user, token } = await exchangeWxCode()
-      setToken(token)
-      persistUser(user)
-      clearLegacyProfileCache()
-      set({ user, isLoggedIn: true, loading: false, bootstrapping: false })
-      get().goHome()
-      return true
-    } catch {
-      clearToken()
-      persistUser(null)
-      set({ user: null, isLoggedIn: false, loading: false, bootstrapping: false })
-      get().goLogin()
-      return false
-    }
+    set({ loading: false, bootstrapping: false })
+    useProductStore.getState().setProduct('kitchen')
+    Taro.switchTab({ url: '/pages/index/index' })
+    return false
   },
 
-  login: async () => {
+  login: async (profile) => {
     set({ loading: true })
     try {
-      const { user, token } = await exchangeWxCode()
-      setToken(token)
+      const { user, token, expireSeconds } = await exchangeWxCode(profile)
+      setToken(token, expireSeconds)
       persistUser(user)
       clearLegacyProfileCache()
       set({ user, isLoggedIn: true, loading: false })
+
+      // 本地临时头像：登录后再上传落库
+      const localAvatar = profile?.avatarUrl
+      if (localAvatar && !/^https?:\/\//i.test(localAvatar) && !localAvatar.startsWith('/r/')) {
+        try {
+          const updated = await uploadMyAvatar(localAvatar)
+          persistUser(updated)
+          set({ user: updated })
+        } catch {
+          // 昵称登录已成功，头像可稍后再改
+        }
+      } else {
+        void get().refreshProfile()
+      }
+
       setTimeout(() => {
-        Taro.showToast({ title: '欢迎回来', icon: 'success' })
+        Taro.showToast({ title: '登录成功', icon: 'success' })
       }, 80)
       get().goHome()
       return true
@@ -161,6 +177,42 @@ export const useUserStore = create<UserState>((set, get) => ({
       set({ loading: false })
       Taro.showToast({ title: '微信登录失败，请重试', icon: 'none' })
       return false
+    }
+  },
+
+  refreshProfile: async () => {
+    if (!get().isLoggedIn) return null
+    try {
+      const user = await fetchMyProfile()
+      persistUser(user)
+      set({ user, isLoggedIn: true })
+      return user
+    } catch {
+      return get().user
+    }
+  },
+
+  updateProfile: async (payload) => {
+    try {
+      const user = await updateMyProfile(payload)
+      persistUser(user)
+      set({ user })
+      return user
+    } catch {
+      Taro.showToast({ title: '更新失败', icon: 'none' })
+      return null
+    }
+  },
+
+  uploadAvatar: async (filePath) => {
+    try {
+      const user = await uploadMyAvatar(filePath)
+      persistUser(user)
+      set({ user })
+      return user
+    } catch {
+      Taro.showToast({ title: '头像上传失败', icon: 'none' })
+      return null
     }
   },
 
@@ -173,7 +225,8 @@ export const useUserStore = create<UserState>((set, get) => ({
     clearToken()
     persistUser(null)
     set({ user: null, isLoggedIn: false })
-    get().goLogin()
+    useProductStore.getState().setProduct('kitchen')
+    get().goHome()
   },
 
   requireLogin: async () => {

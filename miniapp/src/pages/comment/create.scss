@@ -46,6 +46,63 @@
     margin-top: 12px;
   }
 
+  &__images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  &__thumb-wrap {
+    position: relative;
+    width: 160px;
+    height: 160px;
+  }
+
+  &__thumb {
+    width: 160px;
+    height: 160px;
+    border-radius: $ck-radius-sm;
+    background: $ck-bg;
+  }
+
+  &__thumb-del {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 40px;
+    height: 40px;
+    line-height: 36px;
+    text-align: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 28px;
+  }
+
+  &__add {
+    width: 160px;
+    height: 160px;
+    border-radius: $ck-radius-sm;
+    border: 1px dashed $ck-border;
+    background: $ck-bg;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__add-icon {
+    font-size: 40px;
+    color: $ck-muted;
+    line-height: 1;
+  }
+
+  &__add-text {
+    margin-top: 6px;
+    font-size: 22px;
+    color: $ck-muted;
+  }
+
   &__submit {
     margin-top: 16px;
     width: 100%;

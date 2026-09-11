@@ -88,6 +88,7 @@ public class WxAuthApplicationService extends BaseApplicationService implements 
                     .setUserId(principal.getId())
                     .setDisplayName(displayName)
                     .setUsername(user.getUsername())
+                    .setAvatarUrl(user.getAvatarUrl())
                     .setPrincipalType(principal.getType().name())
                     .setPermissions(principal.getPermissions())
                     .setRoles(roleCodes);
@@ -112,7 +113,8 @@ public class WxAuthApplicationService extends BaseApplicationService implements 
                 .setNickname(nickname)
                 .setPhone(trimToNull(dto.getPhone()))
                 .setWechatId(trimToNull(dto.getWechatId()))
-                .setAvatarUrl(trimToNull(dto.getAvatarUrl()))
+                .setAvatarUrl(StringUtils.hasText(dto.getAvatarUrl())
+                        ? normalizeLoginAvatarUrl(dto.getAvatarUrl().trim()) : null)
                 .setStatus("ENABLED"));
     }
 
@@ -134,11 +136,39 @@ public class WxAuthApplicationService extends BaseApplicationService implements 
             user.setWechatId(dto.getWechatId().trim());
             profileChanged = true;
         }
-        if (StringUtils.hasText(dto.getAvatarUrl()) && !Objects.equals(dto.getAvatarUrl(), user.getAvatarUrl())) {
-            user.setAvatarUrl(dto.getAvatarUrl());
-            profileChanged = true;
+        if (StringUtils.hasText(dto.getAvatarUrl())) {
+            String normalized = normalizeLoginAvatarUrl(dto.getAvatarUrl().trim());
+            if (normalized != null && !Objects.equals(normalized, user.getAvatarUrl())) {
+                user.setAvatarUrl(normalized);
+                profileChanged = true;
+            }
         }
         return profileChanged ? appUserAccountStore.save(user) : user;
+    }
+
+    /**
+     * 登录资料头像：仅允许相对本站 /r/、/api/r/；绝对 URL 与危险协议一律忽略或拒绝。
+     * 微信临时路径 / 外站 CDN 不落库，由客户端登录后走上传接口。
+     */
+    private static String normalizeLoginAvatarUrl(String raw) {
+        String lower = raw.toLowerCase(java.util.Locale.ROOT);
+        if (lower.startsWith("javascript:") || lower.startsWith("data:") || lower.startsWith("vbscript:")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "不支持的头像地址协议");
+        }
+        // 不接受任意 host 的绝对 URL（避免 evil.com/r/xx 被抽 path 入库）
+        if (lower.startsWith("http://") || lower.startsWith("https://")) {
+            return null;
+        }
+        String path = raw.trim();
+        int q = path.indexOf('?');
+        if (q >= 0) {
+            path = path.substring(0, q);
+        }
+        if (path.startsWith("/r/") || path.startsWith("/api/r/")) {
+            return path;
+        }
+        // 微信 chooseAvatar 本地临时路径：忽略
+        return null;
     }
 
     private static String defaultDisplayName(String openid) {

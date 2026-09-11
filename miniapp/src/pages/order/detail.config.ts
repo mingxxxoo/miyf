@@ -1,3 +1,4 @@
 export default definePageConfig({
-  navigationBarTitleText: '预约详情'
+  navigationBarTitleText: '预约详情',
+  enablePullDownRefresh: true
 })

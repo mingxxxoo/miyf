@@ -15,9 +15,11 @@ import java.util.List;
 
 /**
  * 登录成功响应。
+ * 含 token、展示信息、头像 URL、权限与角色等。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:06
+ * @history 1.00 2026-09-04 17:06 XieMingJie Created.
  */
 @Getter
 @Setter
@@ -46,6 +48,9 @@ public class LoginVo extends BaseVo {
 
     @Schema(description = "登录名")
     private String username;
+
+    @Schema(description = "头像 URL")
+    private String avatarUrl;
 
     @Schema(description = "主体类型：USER/ADMIN")
     private String principalType;

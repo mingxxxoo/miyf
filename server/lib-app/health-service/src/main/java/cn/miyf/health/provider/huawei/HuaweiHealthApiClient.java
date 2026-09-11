@@ -58,10 +58,12 @@ public class HuaweiHealthApiClient {
      * @param objectMapper     JSON
      * @history 1.00 2026-09-08 XieMingJie Created.
      */
-    public HuaweiHealthApiClient(HealthProperties healthProperties, ObjectMapper objectMapper) {
+    public HuaweiHealthApiClient(HealthProperties healthProperties,
+                                 ObjectMapper objectMapper,
+                                 @org.springframework.beans.factory.annotation.Qualifier("huaweiRestClient") RestClient huaweiRestClient) {
         this.healthProperties = healthProperties;
         this.objectMapper = objectMapper;
-        this.restClient = RestClient.create();
+        this.restClient = huaweiRestClient;
     }
 
     /**

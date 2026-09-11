@@ -20,6 +20,7 @@ import cn.miyf.kitchen.bean.qo.OrderPageQo;
 import cn.miyf.kitchen.bean.vo.OrderItemVo;
 import cn.miyf.kitchen.bean.vo.OrderVo;
 import cn.miyf.kitchen.helper.EntityConverters;
+import cn.miyf.kitchen.repository.CommentRepository;
 import cn.miyf.kitchen.repository.DishRepository;
 import cn.miyf.kitchen.repository.OrderItemRepository;
 import cn.miyf.kitchen.repository.OrderRepository;
@@ -55,6 +56,7 @@ public class OrderApplicationService extends BaseApplicationService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final DishRepository dishRepository;
+    private final CommentRepository commentRepository;
 
     /**
      * 用户创建预约：校验上架 → 原子扣库存 → 写单头与明细。
@@ -367,7 +369,8 @@ public class OrderApplicationService extends BaseApplicationService {
                         .setCoverImage(coverByDishId.get(item.getDishId()))
                         .setQuantity(item.getQuantity())
                         .setUnit(item.getUnit())
-                        .setRemark(item.getRemark()))
+                        .setRemark(item.getRemark())
+                        .setCommented(resolveCommented(order, item.getDishId())))
                 .toList();
         return new OrderVo()
                 .setId(order.getId())
@@ -378,6 +381,21 @@ public class OrderApplicationService extends BaseApplicationService {
                 .setCreateTime(order.getCreateTime())
                 .setLastModifyTime(order.getLastModifyTime())
                 .setItems(items);
+    }
+
+    /**
+     * 判断预约明细是否已评价（按预约+菜品+下单用户）。
+     *
+     * @param order  预约
+     * @param dishId 菜品 ID
+     * @return 已评价为 true；缺关键信息不判为已评
+     * @history 1.00 2026-09-11 XieMingJie Created.
+     */
+    private Boolean resolveCommented(Order order, Long dishId) {
+        if (order == null || order.getId() == null || dishId == null || order.getUserId() == null) {
+            return Boolean.FALSE;
+        }
+        return commentRepository.countExists(order.getId(), dishId, order.getUserId()) > 0;
     }
 
     /**

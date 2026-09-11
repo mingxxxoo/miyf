@@ -9,11 +9,11 @@ import java.util.Map;
 
 /**
  * 健康管理模块配置（设备/数据源接入可扩展）。
- * <p>
- * 华为作为其中一个 {@code providers.huawei} 实现，不改变模块通用定位。
+ * 华为作为其中一个 {@code providers.huawei} 实现；含管理端与个人端两套 OAuth redirect。
  *
  * @author XieMingJie
  * @since 2026-09-06
+ * @history 1.00 2026-09-06 XieMingJie Created.
  */
 @ConfigurationProperties(prefix = "app.health")
 public class HealthProperties {
@@ -75,7 +75,26 @@ public class HealthProperties {
         private boolean mockEnabled = false;
         private String clientId = "";
         private String clientSecret = "";
+        /** 管理端 SPA 回调（与华为控制台登记的管理端 URL 一致） */
         private String redirectUri = "http://localhost:5173/health/providers";
+        /**
+         * 个人端服务端回调（华为浏览器回跳）；须与控制台登记一致。
+         * 默认指向本服务公开换票入口。
+         */
+        private String userRedirectUri = "http://localhost:8080/api/health/providers/huawei/oauth/redirect";
+        /**
+         * 个人端换票成功后的可选跳转（空则返回内置成功页 HTML）。
+         */
+        private String userSuccessRedirectUri = "";
+        /**
+         * 成功跳转允许的主机名白名单（空则仅允许与 userSuccessRedirectUri 同 host，或禁止外跳）。
+         * 例：localhost、www.miyf.cn
+         */
+        private List<String> userSuccessRedirectHosts = new ArrayList<>();
+        /**
+         * Redis Token 加密密钥材料；空则回落到 clientSecret。
+         */
+        private String tokenEncryptSecret = "";
         private String authorizeUrl = "https://oauth-login.cloud.huawei.com/oauth2/v3/authorize";
         private String tokenUrl = "https://oauth-login.cloud.huawei.com/oauth2/v3/token";
         private String healthApiBase = "https://health-api.cloud.huawei.com/healthkit/v1";
@@ -119,6 +138,39 @@ public class HealthProperties {
 
         public void setRedirectUri(String redirectUri) {
             this.redirectUri = redirectUri;
+        }
+
+        public String getUserRedirectUri() {
+            return userRedirectUri;
+        }
+
+        public void setUserRedirectUri(String userRedirectUri) {
+            this.userRedirectUri = userRedirectUri;
+        }
+
+        public String getUserSuccessRedirectUri() {
+            return userSuccessRedirectUri;
+        }
+
+        public void setUserSuccessRedirectUri(String userSuccessRedirectUri) {
+            this.userSuccessRedirectUri = userSuccessRedirectUri;
+        }
+
+        public List<String> getUserSuccessRedirectHosts() {
+            return userSuccessRedirectHosts;
+        }
+
+        public void setUserSuccessRedirectHosts(List<String> userSuccessRedirectHosts) {
+            this.userSuccessRedirectHosts = userSuccessRedirectHosts != null
+                    ? userSuccessRedirectHosts : new ArrayList<>();
+        }
+
+        public String getTokenEncryptSecret() {
+            return tokenEncryptSecret;
+        }
+
+        public void setTokenEncryptSecret(String tokenEncryptSecret) {
+            this.tokenEncryptSecret = tokenEncryptSecret;
         }
 
         public String getAuthorizeUrl() {

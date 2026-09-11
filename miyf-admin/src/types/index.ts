@@ -324,7 +324,7 @@ export interface User {
 
   openId?: string;
 
-  status?: 'ACTIVE' | 'DISABLED' | string;
+  status?: 'ENABLED' | 'DISABLED' | 'ACTIVE' | string;
 
   createTime?: string;
 

@@ -2,6 +2,33 @@
   padding: 32px;
   min-height: 100vh;
 
+  &__switch {
+    margin-bottom: 24px;
+  }
+
+  &__cta {
+    margin-bottom: 40px;
+    text-align: center;
+  }
+
+  &__cta-title {
+    display: block;
+    font-size: 30px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  &__cta-desc {
+    display: block;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+    margin-bottom: 24px;
+  }
+
+  &__cta-btn {
+    width: 100%;
+  }
+
   &__draft {
     margin-bottom: 40px;
   }
@@ -15,19 +42,57 @@
 
   &__draft-item {
     display: flex;
+    align-items: center;
     justify-content: space-between;
+    gap: 16px;
     padding: 16px 0;
     border-bottom: 1px solid $ck-border;
   }
 
   &__draft-name {
+    flex: 1;
+    min-width: 0;
     font-size: 28px;
     color: $ck-text;
   }
 
-  &__draft-qty {
+  &__draft-ops {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  &__qty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__qty-btn {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: $ck-radius-sm;
+    background: $ck-bg;
+    border: 1px solid $ck-border;
     font-size: 28px;
+    color: $ck-text;
+  }
+
+  &__qty-num {
+    min-width: 40px;
+    text-align: center;
+    font-size: 28px;
+    color: $ck-text;
+  }
+
+  &__draft-del {
+    font-size: 24px;
     color: $ck-muted;
+    padding: 8px 4px;
   }
 
   &__field {

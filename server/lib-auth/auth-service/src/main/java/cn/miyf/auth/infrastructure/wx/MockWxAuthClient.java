@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * @since 2026-09-04 17:06
  */
 @Component
-@ConditionalOnProperty(prefix = "wx.auth", name = "mock-enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "wx.auth", name = "mock-enabled", havingValue = "true", matchIfMissing = false)
 public class MockWxAuthClient implements WxAuthClient {
 
     /**

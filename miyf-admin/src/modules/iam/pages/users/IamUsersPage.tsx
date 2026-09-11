@@ -21,11 +21,15 @@ import { useClientPager } from '@/hooks/useClientPager';
 import { useSubmitting } from '@/hooks/useSubmitting';
 import { USER_STATUS } from '@/constants/status';
 import { notifyError } from '@/api/errors';
+import { usePermissionStore } from '@/stores/permissionStore';
 
 /**
  * 系统用户：维护登录账号、组织、角色与状态（客户端分页）。
  */
 export default function IamUsersPage() {
+  const canUpdate = usePermissionStore((s) => s.hasPermission('iam:user:update'));
+  const canCreate = usePermissionStore((s) => s.hasPermission('iam:user:create'));
+  const canDelete = usePermissionStore((s) => s.hasPermission('iam:user:delete'));
   const [loading, setLoading] = useState(false);
   const [all, setAll] = useState<IamUser[]>([]);
   const [orgs, setOrgs] = useState<IamOrgUnit[]>([]);
@@ -153,9 +157,22 @@ export default function IamUsersPage() {
       }
     });
 
+  const toggleStatus = (row: IamUser) =>
+    void run(async () => {
+      if (!canUpdate) return;
+      const next = row.status === 'DISABLED' ? 'ENABLED' : 'DISABLED';
+      try {
+        await iamUserApi.updateStatus(row.id, next);
+        message.success(next === 'DISABLED' ? '已禁用登录' : '已恢复登录');
+        void fetchData();
+      } catch (err) {
+        notifyError(err, '更新状态失败');
+      }
+    });
+
   return (
     <div className="ck-page">
-      <PageHeader title="用户管理" description="维护系统登录账号、所属组织、角色与状态" />
+      <PageHeader title="用户管理" description="维护系统登录账号、所属组织、角色与状态；可删除账号" />
       <PageToolbar
         left={
           <Input.Search
@@ -175,9 +192,11 @@ export default function IamUsersPage() {
           />
         }
         right={
-          <Button type="primary" onClick={openCreate}>
-            新增用户
-          </Button>
+          canCreate ? (
+            <Button type="primary" onClick={openCreate}>
+              新增用户
+            </Button>
+          ) : null
         }
       />
 
@@ -212,23 +231,45 @@ export default function IamUsersPage() {
             title: '状态',
             dataIndex: 'status',
             width: 90,
-            render: (v?: string) => <StatusBadge code={v} map={USER_STATUS} />,
+            render: (v?: string) => <StatusBadge code={v || 'ENABLED'} map={USER_STATUS} />,
           },
           {
             title: '操作',
-            width: 160,
-            render: (_, row) => (
-              <Space>
-                <Button type="link" size="small" onClick={() => openEdit(row)}>
-                  编辑
-                </Button>
-                <Popconfirm title="确认删除该用户？" onConfirm={() => handleDelete(row.id)}>
-                  <Button type="link" size="small" danger>
-                    删除
-                  </Button>
-                </Popconfirm>
-              </Space>
-            ),
+            width: 240,
+            render: (_, row) => {
+              const disabled = row.status === 'DISABLED';
+              return (
+                <Space>
+                  {canUpdate ? (
+                    <Button type="link" size="small" onClick={() => openEdit(row)}>
+                      编辑
+                    </Button>
+                  ) : null}
+                  {canUpdate ? (
+                    <Popconfirm
+                      title={disabled ? '确认恢复该账号登录？' : '确认禁用该账号登录？'}
+                      description={
+                        disabled
+                          ? '解禁后可再次登录管理端'
+                          : '禁用后无法登录，已发令牌立即失效'
+                      }
+                      onConfirm={() => toggleStatus(row)}
+                    >
+                      <Button type="link" size="small" danger={!disabled}>
+                        {disabled ? '解禁' : '禁用'}
+                      </Button>
+                    </Popconfirm>
+                  ) : null}
+                  {canDelete ? (
+                    <Popconfirm title="确认删除该用户？删除后不可恢复" onConfirm={() => handleDelete(row.id)}>
+                      <Button type="link" size="small" danger>
+                        删除
+                      </Button>
+                    </Popconfirm>
+                  ) : null}
+                </Space>
+              );
+            },
           },
         ]}
         dataSource={data}

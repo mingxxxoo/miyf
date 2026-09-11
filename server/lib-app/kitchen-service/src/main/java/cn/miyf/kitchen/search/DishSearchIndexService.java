@@ -3,9 +3,11 @@ package cn.miyf.kitchen.search;
 import cn.miyf.infrastructure.search.SearchClient;
 import cn.miyf.infrastructure.search.SearchIdPage;
 import cn.miyf.infrastructure.search.SearchQueries;
+import cn.miyf.infrastructure.search.SearchQuery;
 import cn.miyf.kitchen.bean.document.DishSearchDocument;
 import cn.miyf.kitchen.bean.model.Dish;
 import cn.miyf.kitchen.bean.qo.DishPageQo;
+import cn.miyf.service.SystemConfigReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,35 +18,81 @@ import java.util.List;
  * 菜品搜索：索引维护 + 基于 {@link DishPageQo}/{@link cn.miyf.common.query.AbstractCondition} 的召回。
  * 仅 ON_SALE 入索引；业务不直接接触 Elasticsearch Java API。
  * <p>
- * 当前暂时强制 SQL 召回（{@link #isRecallEnabled()} 恒 false）；索引同步在 ES 客户端关闭时为 no-op。
+ * 召回开关：ES 客户端启用、系统配置 {@code search.enabled=true}、集群 ping 成功且索引内已有文档。
+ * 未 reindex 或集群不可达时回落 SQL，避免空列表。
  *
  * @author XieMingJie
  * @since 2026-09-08
+ * @history 1.00 2026-09-08 XieMingJie Created.
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class DishSearchIndexService {
 
-    /** 与系统配置键一致；恢复 ES 召回时与 {@code searchClient.isEnabled()} 联用。 */
+    /** 与系统配置键一致。 */
     public static final String CONFIG_SEARCH_ENABLED = "search.enabled";
 
+    /** 索引文档探针缓存 TTL，避免每次列表都 count。 */
+    private static final long RECALL_PROBE_TTL_MS = 60_000L;
+
     private final SearchClient searchClient;
+    private final SystemConfigReader systemConfigReader;
 
     private volatile boolean indexReady;
+    private volatile long recallProbeAtMillis;
+    private volatile boolean recallProbeOk;
 
     /**
-     * 是否可走 ES 召回。
-     * <p>
-     * 暂时强制关闭，用户端列表/热门/推荐一律走 SQL；恢复 ES 时改回：
-     * {@code searchClient.isEnabled() && systemConfigReader.getBoolean(CONFIG_SEARCH_ENABLED, false)}。
+     * 是否可走 ES 召回：客户端启用、配置打开、集群可达且索引已有文档。
      *
-     * @return 当前恒为 false（SQL）
+     * @return true 可 ES 召回
      * @history 1.00 2026-09-08 XieMingJie Created.
-     * @history 1.01 2026-09-09 XieMingJie 暂时强制 SQL，不走 ES 召回.
      */
     public boolean isRecallEnabled() {
-        return false;
+        if (!searchClient.isEnabled()
+                || !systemConfigReader.getBoolean(CONFIG_SEARCH_ENABLED, false)) {
+            return false;
+        }
+        return probeRecallReady();
+    }
+
+    /**
+     * 探活 + 索引文档数；结果短时缓存。无文档时回落 SQL。
+     */
+    private boolean probeRecallReady() {
+        long now = System.currentTimeMillis();
+        if (now - recallProbeAtMillis < RECALL_PROBE_TTL_MS) {
+            return recallProbeOk;
+        }
+        synchronized (this) {
+            now = System.currentTimeMillis();
+            if (now - recallProbeAtMillis < RECALL_PROBE_TTL_MS) {
+                return recallProbeOk;
+            }
+            boolean ok = false;
+            try {
+                if (!searchClient.ping()) {
+                    log.debug("ES recall skipped: ping failed");
+                } else {
+                    ensureIndexReady();
+                    long docs = searchClient.count(new SearchQuery()
+                            .setIndex(DishSearchDocument.INDEX)
+                            .setFrom(0)
+                            .setSize(0));
+                    ok = docs > 0;
+                    if (!ok) {
+                        log.debug("ES recall skipped: index empty, fallback SQL");
+                    }
+                }
+            } catch (RuntimeException ex) {
+                log.warn("ES recall probe failed: {}", ex.getMessage());
+                ok = false;
+            }
+            recallProbeOk = ok;
+            recallProbeAtMillis = System.currentTimeMillis();
+            return ok;
+        }
     }
 
     /**
@@ -80,6 +128,8 @@ public class DishSearchIndexService {
         ensureIndexReady();
         try {
             searchClient.index(DishSearchDocument.INDEX, String.valueOf(dish.getId()), DishSearchDocument.from(dish));
+            // 写入后允许下次探针重新评估文档数
+            recallProbeAtMillis = 0L;
         } catch (RuntimeException ex) {
             log.warn("写入菜品 ES 失败 dishId={}: {}", dish.getId(), ex.getMessage());
         }
@@ -98,8 +148,11 @@ public class DishSearchIndexService {
         ensureIndexReady();
         try {
             searchClient.delete(DishSearchDocument.INDEX, String.valueOf(dishId));
+            // 删除后重新探针，避免索引已空仍走 ES 召回
+            recallProbeAtMillis = 0L;
         } catch (RuntimeException ex) {
             log.warn("删除菜品 ES 失败 dishId={}: {}", dishId, ex.getMessage());
+            recallProbeAtMillis = 0L;
         }
     }
 

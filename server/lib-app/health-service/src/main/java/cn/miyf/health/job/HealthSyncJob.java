@@ -5,6 +5,7 @@ import cn.miyf.health.bean.entity.HealthProviderBindingEntity;
 import cn.miyf.health.bean.entity.HealthSyncRunEntity;
 import cn.miyf.health.config.HealthProperties;
 import cn.miyf.health.service.HealthSyncApplicationService;
+import cn.miyf.infrastructure.redis.RedisDistributedLock;
 import cn.miyf.job.JobRegistry;
 import cn.miyf.job.MiyfJob;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +22,11 @@ import java.util.List;
  * 健康数据源定时同步：遍历 ACTIVE 且支持远程拉取的绑定，按 lastSyncTime 增量拉取。
  * <p>
  * 可在系统任务控制台启停 / 手动触发；默认每小时整点后 15 分执行。
+ * 多实例用 Redis 可降级锁防重入。
  *
  * @author XieMingJie
  * @since 2026-09-06
+ * @history 1.00 2026-09-06 XieMingJie Created.
  */
 @Component
 @RequiredArgsConstructor
@@ -31,12 +34,13 @@ import java.util.List;
 public class HealthSyncJob {
 
     public static final String CODE = "health.provider.sync";
+    private static final String LOCK_KEY = "miyf:lock:health.provider.sync";
 
     private final JobRegistry jobRegistry;
     private final HealthSyncApplicationService healthSyncApplicationService;
     private final HealthProperties healthProperties;
+    private final RedisDistributedLock redisDistributedLock;
 
-    
     /**
      * 定时同步全部可远程拉取的 ACTIVE 绑定；按 lastSyncTime 重叠 1h 增量拉取。
      *
@@ -48,6 +52,13 @@ public class HealthSyncJob {
         if (!jobRegistry.shouldRun(CODE)) {
             return;
         }
+        redisDistributedLock.executeWithDegradableLock(LOCK_KEY, () -> {
+            doSyncAll();
+            return null;
+        });
+    }
+
+    private void doSyncAll() {
         jobRegistry.markStart(CODE);
         if (!healthProperties.isEnabled()) {
             log.debug("job {} skipped: health module disabled", CODE);

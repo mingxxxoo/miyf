@@ -5,6 +5,7 @@ import {
   Form,
   Input,
   Modal,
+  Popconfirm,
   Select,
   Space,
   Table,
@@ -23,6 +24,13 @@ import {
   type HealthSubject,
   type HealthSyncRun,
 } from '@/modules/health/api';
+import { usePermissionStore } from '@/stores/permissionStore';
+
+/** 同一 OAuth code 只换票一次；StrictMode 双挂载共享 Promise，避免丢成功态或重复换票。 */
+const huaweiOAuthExchanges = new Map<
+  string,
+  Promise<{ subjectId?: string; authorized: boolean; openId?: string; expiresTime?: string }>
+>();
 
 /**
  * 健康数据源：列表、主体绑定、华为 OAuth、触发同步、运行记录。
@@ -30,6 +38,7 @@ import {
  */
 export default function HealthProvidersPage({ embedded = false }: { embedded?: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const canHuaweiOAuth = usePermissionStore((s) => s.hasPermission('health:huawei:oauth'));
   const [loading, setLoading] = useState(false);
   const [providers, setProviders] = useState<HealthProvider[]>([]);
   const [subjects, setSubjects] = useState<HealthSubject[]>([]);
@@ -74,13 +83,18 @@ export default function HealthProvidersPage({ embedded = false }: { embedded?: b
       setHuaweiAuth(false);
       return;
     }
+    if (!canHuaweiOAuth) {
+      setHuaweiAuth(false);
+      return;
+    }
     try {
       const st = await healthApi.huaweiOAuthStatus(subjectId);
       setHuaweiAuth(st.authorized);
-    } catch {
+    } catch (err) {
       setHuaweiAuth(false);
+      notifyError(err, '查询华为授权状态失败');
     }
-  }, [subjectId]);
+  }, [subjectId, canHuaweiOAuth]);
 
   const bootstrap = useCallback(async () => {
     setLoading(true);
@@ -125,31 +139,36 @@ export default function HealthProvidersPage({ embedded = false }: { embedded?: b
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     if (!code) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const result = await healthApi.huaweiOAuthCallback({
-          subjectId: subjectId || undefined,
-          code,
-          state: state || undefined,
-        });
-        if (cancelled) return;
+    let alive = true;
+    let exchange = huaweiOAuthExchanges.get(code);
+    if (!exchange) {
+      exchange = healthApi.huaweiOAuthCallback({
+        subjectId: subjectId || undefined,
+        code,
+        state: state || undefined,
+      });
+      huaweiOAuthExchanges.set(code, exchange);
+    }
+    exchange
+      .then(async (result) => {
+        if (!alive) return;
         message.success('华为授权成功');
-        if (result.subjectId) setSubjectId(result.subjectId);
         setSearchParams({}, { replace: true });
+        if (result.subjectId) setSubjectId(result.subjectId);
         await refreshBindings();
         await refreshHuaweiStatus();
-      } catch (err) {
-        if (!cancelled) {
-          notifyError(err, '华为授权失败');
-          setSearchParams({}, { replace: true });
-        }
-      }
-    })();
+      })
+      .catch((err) => {
+        if (!alive) return;
+        notifyError(err, '华为授权失败');
+        setSearchParams({}, { replace: true });
+      });
     return () => {
-      cancelled = true;
+      alive = false;
     };
-  }, [searchParams, setSearchParams, subjectId, refreshBindings, refreshHuaweiStatus]);
+    // 刻意不依赖 subjectId，避免 setSubjectId 触发重复换票
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, setSearchParams, refreshBindings, refreshHuaweiStatus]);
 
   const onBind = async () => {
     if (!subjectId) {
@@ -189,6 +208,10 @@ export default function HealthProvidersPage({ embedded = false }: { embedded?: b
   };
 
   const onHuaweiAuthorize = async () => {
+    if (!canHuaweiOAuth) {
+      message.warning('缺少 health:huawei:oauth 权限');
+      return;
+    }
     if (!subjectId) {
       message.warning('请先选择主体');
       return;
@@ -208,7 +231,7 @@ export default function HealthProvidersPage({ embedded = false }: { embedded?: b
   };
 
   const onHuaweiRevoke = async () => {
-    if (!subjectId) return;
+    if (!canHuaweiOAuth || !subjectId) return;
     await run(async () => {
       try {
         await healthApi.huaweiRevoke(subjectId);
@@ -290,18 +313,23 @@ export default function HealthProvidersPage({ embedded = false }: { embedded?: b
               options={subjects.map((s) => ({ value: s.id, label: s.displayName }))}
             />
             <Tag color={huaweiAuth ? 'green' : 'default'}>
-              {huaweiAuth ? '已授权' : '未授权'}
+              {!canHuaweiOAuth ? '无权限' : huaweiAuth ? '已授权' : '未授权'}
             </Tag>
             <Button
               type="primary"
-              disabled={!subjectId || !huaweiEnabled}
+              disabled={!subjectId || !huaweiEnabled || !canHuaweiOAuth}
               onClick={() => void onHuaweiAuthorize()}
             >
               OAuth 授权
             </Button>
-            <Button disabled={!subjectId || !huaweiAuth} onClick={() => void onHuaweiRevoke()}>
-              撤销
-            </Button>
+            <Popconfirm
+              title="确认撤销该主体的华为授权？"
+              description="撤销后需重新授权才能同步"
+              disabled={!subjectId || !huaweiAuth || !canHuaweiOAuth}
+              onConfirm={() => void onHuaweiRevoke()}
+            >
+              <Button disabled={!subjectId || !huaweiAuth || !canHuaweiOAuth}>撤销</Button>
+            </Popconfirm>
           </Space>
         }
       >
@@ -309,6 +337,7 @@ export default function HealthProvidersPage({ embedded = false }: { embedded?: b
           选择健康主体后跳转华为账号登录授权；每个主体独立授权，同步只拉该主体数据。
           需配置 app.health.providers.huawei.enabled 与 client-id / client-secret / redirect-uri。
           {!huaweiEnabled ? ' 当前华为 Provider 未启用。' : ''}
+          {!canHuaweiOAuth ? ' 当前账号缺少 health:huawei:oauth 权限。' : ''}
         </Typography.Paragraph>
       </Card>
 

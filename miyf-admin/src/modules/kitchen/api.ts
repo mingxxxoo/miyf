@@ -180,11 +180,13 @@ export const dashboardApi = {
 };
 
 export const userApi = {
-  page: (params: PageQuery) =>
+  page: (params: PageQuery & { status?: string }) =>
     get<PageResult<User>>('/admin/users', toPageParams(params)).then((r) =>
       asPage(r, params.page, params.pageSize),
     ),
   detail: (id: string) => get<User>(`/admin/users/${id}`),
+  updateStatus: (id: string, status: 'ENABLED' | 'DISABLED') =>
+    put<User>(`/admin/users/${id}/status`, { status }),
 };
 
 export const categoryApi = {

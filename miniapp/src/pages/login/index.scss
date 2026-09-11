@@ -42,8 +42,64 @@
     display: block;
     font-size: $ck-font-caption;
     color: $ck-muted;
-    margin-bottom: 32px;
+    margin-bottom: 36px;
     line-height: 1.5;
+  }
+
+  &__profile {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  &__avatar-btn {
+    width: 128px;
+    height: 128px;
+    padding: 0;
+    margin: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba($ck-primary, 0.1);
+    border: 2px dashed rgba($ck-primary, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    &::after {
+      border: none;
+    }
+  }
+
+  &__avatar {
+    width: 128px;
+    height: 128px;
+  }
+
+  &__avatar-placeholder {
+    font-size: 24px;
+    color: $ck-primary-d8;
+  }
+
+  &__nickname-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__field-label {
+    display: block;
+    font-size: 22px;
+    color: $ck-muted;
+    margin-bottom: 8px;
+  }
+
+  &__nickname {
+    padding: 18px 20px;
+    border-radius: $ck-radius-sm;
+    background: rgba($ck-primary, 0.06);
+    border: 1px solid rgba($ck-primary, 0.2);
+    font-size: $ck-font-body;
   }
 
   &__switch {
@@ -64,6 +120,10 @@
     &--wx {
       background: #07c160 !important;
       border-color: #07c160 !important;
+    }
+
+    &[disabled] {
+      opacity: 0.55;
     }
   }
 }

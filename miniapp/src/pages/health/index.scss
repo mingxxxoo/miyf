@@ -1,74 +1,244 @@
 .health-page {
   min-height: 100vh;
-  padding-bottom: 140px;
+  padding-bottom: calc(48px + env(safe-area-inset-bottom));
   background:
     radial-gradient(circle at 12% 0%, rgba($ck-health, 0.16), transparent 42%),
     radial-gradient(circle at 92% 8%, rgba($ck-secondary, 0.14), transparent 36%),
     $ck-bg;
 
-  &__top {
-    padding: 24px 32px 0;
+  &__hero {
+    padding: 32px 32px 20px;
+    background: linear-gradient(160deg, rgba($ck-health, 0.16), rgba($ck-secondary, 0.1), transparent);
   }
 
-  &__hero {
-    padding: 28px 32px 8px;
+  &__switch {
+    margin-bottom: 28px;
   }
 
   &__brand {
     display: block;
-    font-size: 24px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    color: $ck-health-d6;
-    margin-bottom: 8px;
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: $ck-health-d8;
+    margin-bottom: 12px;
   }
 
-  &__title {
+  &__greeting {
     display: block;
-    font-size: 44px;
-    font-weight: 700;
+    font-size: 34px;
+    font-weight: 600;
     color: $ck-text;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    line-height: 1.35;
   }
 
   &__sub {
     display: block;
     font-size: $ck-font-caption;
     color: $ck-muted;
-    margin-bottom: 24px;
   }
 
-  &__stat-row {
+  &__providers {
+    margin: 8px 32px 0;
+    padding: 20px 24px 8px;
+    border-radius: $ck-radius-md;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba($ck-health, 0.14);
+  }
+
+  &__providers-title {
+    display: block;
+    font-size: 24px;
+    font-weight: 600;
+    color: $ck-muted;
+    margin-bottom: 12px;
+  }
+
+  &__provider-row {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid rgba($ck-health, 0.08);
+
+    &:first-of-type {
+      border-top: none;
+      padding-top: 4px;
+    }
+  }
+
+  &__provider-copy {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__provider-name {
+    display: block;
+    font-size: 28px;
+    font-weight: 600;
+    color: $ck-text;
+    margin-bottom: 4px;
+  }
+
+  &__provider-status {
+    display: block;
+    font-size: 22px;
+    color: $ck-muted;
+  }
+
+  &__provider-tag {
+    font-size: 20px;
+    color: $ck-health-d8;
+    flex-shrink: 0;
+  }
+
+  &__huawei {
+    margin: 8px 32px 0;
+    padding: 22px 24px;
+    border-radius: $ck-radius-md;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba($ck-health, 0.2);
+    box-shadow: 0 6px 16px rgba($ck-health, 0.06);
+
+    &--on {
+      border-color: rgba($ck-health, 0.35);
+      background: rgba($ck-health, 0.08);
+    }
+
+    &--wait {
+      border-style: dashed;
+    }
+  }
+
+  &__huawei-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 16px;
   }
 
-  &__stat-card {
+  &__huawei-copy {
     flex: 1;
-    padding: 22px 20px;
-    border-radius: $ck-radius-md;
-    background: rgba(255, 255, 255, 0.88);
-    border: 1px solid rgba($ck-health, 0.18);
-    box-shadow: 0 8px 20px rgba($ck-health, 0.08);
+    min-width: 0;
   }
 
-  &__stat-label {
+  &__huawei-title {
+    display: block;
+    font-size: 28px;
+    font-weight: 600;
+    color: $ck-text;
+    margin-bottom: 6px;
+  }
+
+  &__huawei-desc {
     display: block;
     font-size: 22px;
+    color: $ck-muted;
+    line-height: 1.4;
+  }
+
+  &__huawei-ops {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  &__huawei-primary {
+    margin: 0;
+    flex-shrink: 0;
+    height: 64px !important;
+    padding: 0 28px !important;
+    font-size: 26px !important;
+    line-height: 64px !important;
+  }
+
+  &__huawei-unlink {
+    font-size: 24px;
+    color: $ck-muted;
+    padding: 8px 4px;
+
+    &.is-disabled {
+      opacity: 0.45;
+    }
+  }
+
+  &__huawei-manual {
+    display: block;
+    margin-top: 16px;
+    font-size: 24px;
+    color: $ck-health-d8;
+  }
+
+  &__oauth-steps {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px dashed rgba($ck-health, 0.25);
+  }
+
+  &__oauth-step {
+    display: block;
+    font-size: 24px;
+    color: $ck-text;
+    line-height: 1.7;
+  }
+
+  &__oauth-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  &__oauth-btn {
+    flex: 1;
+    margin: 0;
+  }
+
+  &__profile {
+    margin-top: 16px;
+  }
+
+  &__profile-summary {
+    display: block;
+    margin-top: 8px;
+    font-size: 24px;
+    color: $ck-muted;
+    line-height: 1.5;
+  }
+
+  &__profile-form {
+    margin-top: 16px;
+  }
+
+  &__field {
+    margin-bottom: 16px;
+  }
+
+  &__field-label {
+    display: block;
+    font-size: $ck-font-caption;
     color: $ck-muted;
     margin-bottom: 8px;
   }
 
-  &__stat-value {
-    display: block;
-    font-size: 40px;
-    font-weight: 700;
-    color: $ck-health-d10;
-    line-height: 1.2;
+  &__picker {
+    padding: 18px 20px;
+    border-radius: $ck-radius-sm;
+    background: rgba($ck-health, 0.06);
+    border: 1px solid rgba($ck-health, 0.2);
+    font-size: $ck-font-body;
+    color: $ck-text;
 
-    &--sm {
-      font-size: 32px;
+    &--half {
+      flex: 1;
     }
+  }
+
+  &__profile-save {
+    margin: 4px 0 0;
+    width: 100%;
   }
 
   &__metrics {
@@ -110,26 +280,83 @@
     color: $ck-muted;
   }
 
-  &__panels {
+  &__focus {
     display: flex;
-    gap: 12px;
-    padding: 16px 32px 0;
+    align-items: stretch;
+    gap: 16px;
+    margin: 8px 32px 0;
+    padding: 24px;
+    border-radius: $ck-radius-md;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba($ck-health, 0.18);
+    transition: opacity 0.2s ease;
+
+    &--loading {
+      opacity: 0.55;
+    }
   }
 
-  &__panel-tab {
-    padding: 14px 28px;
-    border-radius: 999px;
-    background: #fff;
-    border: 1px solid $ck-border;
-    font-size: 26px;
-    color: $ck-muted;
+  &__focus-main {
+    flex: 1;
+    min-width: 0;
+  }
 
-    &--active {
-      background: rgba($ck-health, 0.16);
-      border-color: rgba($ck-health, 0.4);
-      color: $ck-health-d12;
-      font-weight: 600;
+  &__focus-label {
+    display: block;
+    font-size: 24px;
+    color: $ck-muted;
+    margin-bottom: 8px;
+  }
+
+  &__focus-value {
+    display: block;
+    font-size: 48px;
+    font-weight: 700;
+    color: $ck-health-d10;
+    line-height: 1.15;
+    margin-bottom: 8px;
+  }
+
+  &__focus-delta {
+    display: block;
+    font-size: 22px;
+    color: $ck-health-d8;
+
+    &--muted {
+      color: $ck-muted;
     }
+  }
+
+  &__focus-side {
+    flex-shrink: 0;
+    min-width: 120px;
+    padding: 12px 16px;
+    border-radius: $ck-radius-sm;
+    background: rgba($ck-health, 0.08);
+    border: 1px solid rgba($ck-health, 0.14);
+    text-align: center;
+  }
+
+  &__focus-side-label {
+    display: block;
+    font-size: 20px;
+    color: $ck-muted;
+    margin-bottom: 6px;
+  }
+
+  &__focus-side-value {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    color: $ck-health-d10;
+    line-height: 1.2;
+  }
+
+  &__focus-side-unit {
+    display: block;
+    margin-top: 4px;
+    font-size: 20px;
+    color: $ck-muted;
   }
 
   &__card {
@@ -147,17 +374,21 @@
     display: block;
     font-size: $ck-font-body;
     font-weight: 600;
+
+    &--pad {
+      margin: 20px 32px 8px;
+    }
   }
 
   &__link {
     font-size: $ck-font-caption;
-    color: $ck-health;
+    color: $ck-health-d8;
+    padding: 8px 0 8px 12px;
   }
 
   &__hint {
     display: block;
-    margin-top: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     font-size: $ck-font-caption;
     color: $ck-muted;
   }
@@ -165,32 +396,68 @@
   &__range {
     display: flex;
     justify-content: space-between;
-    margin-top: 12px;
+    margin-top: 8px;
+    margin-bottom: 4px;
     font-size: 22px;
     color: $ck-muted;
   }
 
-  &__input {
+  &__record {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba($ck-health, 0.12);
+  }
+
+  &__record-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__record-time {
+    display: flex;
+    gap: 12px;
     margin-top: 12px;
+  }
+
+  &__input {
     padding: 22px 24px;
     border-radius: $ck-radius-sm;
     background: rgba($ck-health, 0.06);
     border: 1px solid rgba($ck-health, 0.2);
     font-size: $ck-font-body;
     color: $ck-text;
+
+    &--inline {
+      flex: 1;
+      margin: 0;
+      padding: 18px 20px;
+    }
   }
 
-  &__btn {
-    margin-top: 24px;
-    width: 100%;
+  &__record-btn {
+    margin: 0;
+    flex-shrink: 0;
+    height: 72px !important;
+    padding: 0 28px !important;
+    font-size: 26px !important;
+    line-height: 72px !important;
   }
 
   &__list {
     padding: 32px 32px 0;
   }
 
-  &__list &__section {
+  &__list-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
     margin-bottom: 16px;
+  }
+
+  &__list-count {
+    font-size: $ck-font-caption;
+    color: $ck-muted;
   }
 
   &__item {
@@ -199,6 +466,11 @@
     align-items: center;
     gap: 16px;
     margin-bottom: 16px;
+  }
+
+  &__item-body {
+    flex: 1;
+    min-width: 0;
   }
 
   &__item-title {
@@ -214,48 +486,20 @@
     color: $ck-muted;
   }
 
-  &__item-tip {
-    font-size: $ck-font-caption;
-    color: $ck-muted;
+  &__item-del {
     flex-shrink: 0;
+    padding: 10px 8px;
+    font-size: $ck-font-caption;
+    color: $ck-health-d8;
   }
 
-  &__dock {
-    position: fixed;
-    left: 24px;
-    right: 24px;
-    bottom: calc(24px + env(safe-area-inset-bottom));
-    display: flex;
-    gap: 8px;
-    padding: 10px;
-    border-radius: $ck-radius-lg;
-    background: rgba(255, 255, 255, 0.96);
-    border: 1px solid rgba($ck-health, 0.18);
-    box-shadow: 0 10px 28px rgba($ck-health, 0.16);
-    z-index: 20;
-  }
-
-  &__dock-item {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 64px;
-    border-radius: $ck-radius-md;
-
-    &--active {
-      background: rgba($ck-health, 0.14);
-    }
-  }
-
-  &__dock-label {
-    font-size: 26px;
-    font-weight: 500;
-    color: $ck-muted;
-
-    .health-page__dock-item--active & {
-      color: $ck-health-d10;
-      font-weight: 600;
-    }
+  &__metric-error {
+    margin: 0 0 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(180, 35, 24, 0.08);
+    color: #b42318;
+    font-size: $ck-font-caption;
+    text-align: center;
   }
 }

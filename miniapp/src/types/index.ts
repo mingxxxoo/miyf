@@ -70,6 +70,8 @@ export interface OrderItem {
   unit?: string
   note?: string
   remark?: string
+  /** 服务端是否已评价；本地缓存作乐观兜底 */
+  commented?: boolean
 }
 
 export interface Order {

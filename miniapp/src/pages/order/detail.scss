@@ -27,6 +27,17 @@
     line-height: 1.8;
   }
 
+  &__tip {
+    display: block;
+    margin-top: 12px;
+    padding: 12px 16px;
+    border-radius: $ck-radius-sm;
+    background: rgba($ck-primary, 0.12);
+    color: $ck-primary-d10;
+    font-size: 26px;
+    font-weight: 500;
+  }
+
   &__items,
   &__note {
     margin-bottom: 24px;

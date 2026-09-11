@@ -226,10 +226,12 @@ WX_APP_SECRET=你的AppSecret
 
 ### 3.2.1 华为运动健康（OAuth）
 
-默认关闭。需要在管理端拉取华为数据时：
+默认关闭。管理端与个人端（小程序用户自助）可分别授权，**两套回调 URL 均须在华为控制台登记**。
 
 1. 华为开发者联盟创建应用，开通 Health Kit，配置 **OAuth 客户端**（Client ID / Secret）
-2. 回调地址填管理端「健康数据源」页完整 URL（须与 `HUAWEI_HEALTH_REDIRECT_URI` **完全一致**）
+2. 回调地址至少登记两条（须与环境变量 **完全一致**）：
+   - 管理端：`HUAWEI_HEALTH_REDIRECT_URI`（默认管理端「健康数据源」页）
+   - 个人端：`HUAWEI_HEALTH_USER_REDIRECT_URI`（默认本服务公开换票入口）
 3. `.env` 示例：
 
 ```env
@@ -237,21 +239,26 @@ APP_HEALTH_PROVIDER_HUAWEI_ENABLED=true
 APP_HEALTH_HUAWEI_MOCK=false
 HUAWEI_HEALTH_CLIENT_ID=你的ClientId
 HUAWEI_HEALTH_CLIENT_SECRET=你的ClientSecret
-# 生产管理端示例（按实际域名改）
+# 管理端 SPA 回调
 HUAWEI_HEALTH_REDIRECT_URI=https://www.miyf.cn/health/providers
-# 本地 Vite 开发
+# 个人端服务端回跳（生产请改为公网 API 地址）
+HUAWEI_HEALTH_USER_REDIRECT_URI=https://api.miyf.cn/api/health/providers/huawei/oauth/redirect
+# 本地 Vite 开发（管理端）
 # HUAWEI_HEALTH_REDIRECT_URI=http://localhost:5173/health/providers
+# HUAWEI_HEALTH_USER_REDIRECT_URI=http://localhost:8080/api/health/providers/huawei/oauth/redirect
 ```
 
 4. `docker compose up -d server` 使环境变量生效
-5. SUPER_ADMIN 重新登录以加载 `health:huawei:oauth` 等权限
-6. 管理端：选主体 → **OAuth 授权** → 华为账号登录同意 → 回到本页完成绑定 → 同步或等待任务 `health.provider.sync`
+5. SUPER_ADMIN 重新登录以加载 `health:huawei:oauth` 等权限；普通用户依赖个人端权限组中的 `health:user:huawei:oauth`
+6. **管理端**：选主体 → **OAuth 授权** → 华为账号登录同意 → 回到本页完成绑定 → 同步或等待任务 `health.provider.sync`
+7. **个人端**：登录用户调用 `GET /api/health/providers/huawei/authorize-url` 取得授权链接 → 在系统浏览器打开完成华为授权 → 回跳到 `.../oauth/redirect` 自动换票 → 返回小程序后 `POST /api/health/providers/huawei/sync` 或等待定时任务；可用 `GET .../oauth/status` 查询是否已授权
 
 说明：
 
 - `APP_HEALTH_HUAWEI_MOCK=true` 时，未授权主体返回演示数据；已 OAuth 的主体仍走真实接口
 - Token 按主体存 Redis，**不落 clientSecret**；撤销或删除主体会清理该主体 token
-- 用户拒绝授权时 URL 带 `error` / `error_description`，管理端会提示并清掉查询参数
+- 用户拒绝授权时 URL 带 `error` / `error_description`；管理端 SPA 会提示；个人端回跳页会展示失败说明
+- 个人端回跳接口为公开路径（无登录会话），安全依赖一次性 `state` 与华为授权码
 
 ### 3.3 完整示例（请自行替换密钥）
 
@@ -833,8 +840,7 @@ A: 检查 `TARO_APP_API_BASE` 是否带 `/api`；HTTP IP 仅适合开发工具�
 A: 个人加速器常无法代理这类官方镜像。按 **4.0** 把 maven / eclipse-temurin / node / nginx 导入 ACR，`.env` 的 `BASE_*_IMAGE` 指向 `registry.cn-shanghai.aliyuncs.com/miyf/...`，再 build。
 
 **Q: 华为 OAuth 回调失败 / redirect_uri 不匹配？**  
-A: `HUAWEI_HEALTH_REDIRECT_URI` 须与华为开放平台填写的回调 URL **完全一致**（含协议、域名、路径 `/health/providers`）。改
-`.env` 后执行 `docker compose up -d server`。管理端若 URL 带 `error=`，页面会提示拒绝原因。
+A: 管理端用 `HUAWEI_HEALTH_REDIRECT_URI`，个人端用 `HUAWEI_HEALTH_USER_REDIRECT_URI`，均须与华为开放平台登记的回调 URL **完全一致**（含协议、域名、路径）。改 `.env` 后执行 `docker compose up -d server`。管理端若 URL 带 `error=`，页面会提示拒绝原因；个人端回跳页会展示失败说明。
 
 **Q: 磁盘占用过大？**  
 A: 清理悬空镜像：`docker system prune -f`（勿加 `-a` 除非确认可删未用镜像）。数据在 `/miyf/data`，日志在 `/miyf/log`，与镜像无关。

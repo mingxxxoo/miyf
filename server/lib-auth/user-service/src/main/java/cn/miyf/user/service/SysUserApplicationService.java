@@ -6,6 +6,8 @@ import cn.miyf.auth.repository.mapper.SysUserMapper;
 import cn.miyf.auth.repository.mapper.SysUserRoleMapper;
 import cn.miyf.auth.security.AuthPrincipal;
 import cn.miyf.auth.security.DataScope;
+import cn.miyf.auth.security.PrincipalType;
+import cn.miyf.auth.security.TokenVersionService;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.common.id.SnowflakeIdGenerator;
@@ -27,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -34,13 +37,18 @@ import java.util.stream.Collectors;
 
 /**
  * 系统用户（管理员账号）应用服务。
+ * 启停转为 DISABLED 或删除时递增 JWT tokenVersion；bump 失败则回滚，避免误判吊销成功。
+ * 状态写入统一规范化为 ENABLED/DISABLED。
  *
  * @author XieMingJie
  * @since 2026-09-06
+ * @history 1.00 2026-09-06 XieMingJie Created.
  */
 @Service
 @RequiredArgsConstructor
 public class SysUserApplicationService extends BaseApplicationService {
+
+    private static final Set<String> ALLOWED_STATUS = Set.of("ENABLED", "DISABLED");
 
     private final SysUserMapper userMapper;
     private final SysUserRoleMapper userRoleMapper;
@@ -48,6 +56,7 @@ public class SysUserApplicationService extends BaseApplicationService {
     private final SnowflakeIdGenerator snowflakeIdGenerator;
     private final PasswordEncoder passwordEncoder;
     private final DataScopeService dataScopeService;
+    private final TokenVersionService tokenVersionService;
 
     /**
      * 系统用户列表（按数据范围过滤，附带角色 ID）。
@@ -105,7 +114,7 @@ public class SysUserApplicationService extends BaseApplicationService {
                 .setUsername(dto.getUsername())
                 .setPasswordHash(passwordEncoder.encode(dto.getPassword()))
                 .setNickname(dto.getNickname())
-                .setStatus(StringUtils.hasText(dto.getStatus()) ? dto.getStatus() : "ENABLED");
+                .setStatus(StringUtils.hasText(dto.getStatus()) ? normalizeStatus(dto.getStatus()) : "ENABLED");
         entity.setId(snowflakeIdGenerator.nextId());
         entity.setCreateTime(now);
         entity.setLastModifyTime(now);
@@ -120,6 +129,7 @@ public class SysUserApplicationService extends BaseApplicationService {
 
     /**
      * 更新系统用户；roleIds 非 null 时重绑角色。
+     * 状态与启停接口共用规范化；仅在状态变为 DISABLED 时吊销 JWT。
      *
      * @param id  用户 ID
      * @param dto 请求
@@ -133,11 +143,12 @@ public class SysUserApplicationService extends BaseApplicationService {
         dataScopeService.assertCanAccessUser(principal, entity.getId(), entity.getOrgUnitId());
         Long orgUnitId = parseId(dto.getOrgUnitId());
         dataScopeService.assertCanAssignOrg(principal, orgUnitId);
+        String previousStatus = entity.getStatus();
         entity.setOrgUnitId(orgUnitId);
         entity.setUsername(dto.getUsername());
         entity.setNickname(dto.getNickname());
         if (StringUtils.hasText(dto.getStatus())) {
-            entity.setStatus(dto.getStatus());
+            entity.setStatus(normalizeStatus(dto.getStatus()));
         }
         if (StringUtils.hasText(dto.getPassword())) {
             entity.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
@@ -147,11 +158,34 @@ public class SysUserApplicationService extends BaseApplicationService {
         if (dto.getRoleIds() != null) {
             bindUserRoles(id, parseIds(dto.getRoleIds()));
         }
+        revokeIfBecameDisabled(PrincipalType.ADMIN, id, previousStatus, entity.getStatus());
         return toUserVo(entity);
     }
 
     /**
-     * 删除系统用户（级联用户-角色绑定）。
+     * 仅更新启停状态，不改角色绑定；转为 DISABLED 时吊销已发 JWT。
+     *
+     * @param id     用户 ID
+     * @param status ENABLED / DISABLED
+     * @return VO
+     * @history 1.00 2026-09-11 XieMingJie Created.
+     */
+    @Transactional
+    public SysUserVo updateUserStatus(Long id, String status) {
+        AuthPrincipal principal = dataScopeService.requireAdmin();
+        SysUserEntity entity = requireUser(id);
+        dataScopeService.assertCanAccessUser(principal, entity.getId(), entity.getOrgUnitId());
+        String previousStatus = entity.getStatus();
+        String normalized = normalizeStatus(status);
+        entity.setStatus(normalized);
+        entity.setLastModifyTime(Instant.now());
+        userMapper.updateById(entity);
+        revokeIfBecameDisabled(PrincipalType.ADMIN, id, previousStatus, normalized);
+        return toUserVo(entity);
+    }
+
+    /**
+     * 删除系统用户（级联用户-角色绑定）；同时吊销 JWT。
      *
      * @param id 用户 ID
      * @history 1.00 2026-09-08 XieMingJie Created.
@@ -163,6 +197,31 @@ public class SysUserApplicationService extends BaseApplicationService {
         dataScopeService.assertCanAccessUser(principal, entity.getId(), entity.getOrgUnitId());
         userRoleMapper.deleteByUserId(id);
         userMapper.deleteById(id);
+        tokenVersionService.bump(PrincipalType.ADMIN, id);
+    }
+
+    /**
+     * 规范化启停状态为 ENABLED / DISABLED。
+     *
+     * @param status 原始状态
+     * @return 规范化值
+     */
+    private static String normalizeStatus(String status) {
+        String normalized = status == null ? "" : status.trim().toUpperCase(Locale.ROOT);
+        if (!ALLOWED_STATUS.contains(normalized)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "状态仅支持 ENABLED 或 DISABLED");
+        }
+        return normalized;
+    }
+
+    /**
+     * 仅当状态由非 DISABLED 转为 DISABLED 时吊销 JWT。
+     */
+    private void revokeIfBecameDisabled(PrincipalType type, Long id, String previous, String next) {
+        boolean wasDisabled = previous != null && "DISABLED".equalsIgnoreCase(previous.trim());
+        if ("DISABLED".equals(next) && !wasDisabled) {
+            tokenVersionService.bump(type, id);
+        }
     }
 
     private List<SysUserEntity> filterByDataScope(AuthPrincipal principal, List<SysUserEntity> users) {

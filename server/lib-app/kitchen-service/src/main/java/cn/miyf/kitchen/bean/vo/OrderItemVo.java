@@ -57,4 +57,7 @@ public class OrderItemVo implements Serializable {
 
     @Schema(description = "明细备注")
     private String remark;
+
+    @Schema(description = "当前用户是否已评价该明细")
+    private Boolean commented;
 }

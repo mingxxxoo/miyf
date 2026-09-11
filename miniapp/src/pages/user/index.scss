@@ -22,12 +22,29 @@
     margin-bottom: 24px;
   }
 
+  &__avatar-btn {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    padding: 0;
+    margin: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    background: transparent;
+    border: none;
+    flex-shrink: 0;
+    line-height: 0;
+
+    &::after {
+      border: none;
+    }
+  }
+
   &__avatar {
     width: 120px;
     height: 120px;
     border-radius: 50%;
     border: 3px solid rgba($ck-primary, 0.35);
-    flex-shrink: 0;
 
     .user-page--health & {
       border-color: rgba($ck-health, 0.4);
@@ -46,22 +63,96 @@
     }
   }
 
+  &__avatar-tip {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 6px 0;
+    font-size: 20px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.45);
+    text-align: center;
+  }
+
   &__info {
     flex: 1;
+    min-width: 0;
+  }
+
+  &__name-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
   }
 
   &__name {
     display: block;
     font-size: 36px;
     font-weight: 600;
-    margin-bottom: 6px;
+    max-width: 70%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__name-edit-tip {
+    font-size: 22px;
+    color: $ck-primary-d8;
+    flex-shrink: 0;
+
+    .user-page--health & {
+      color: $ck-health-d8;
+    }
+  }
+
+  &__name-edit {
+    margin-bottom: 8px;
+  }
+
+  &__name-input {
+    padding: 12px 16px;
+    border-radius: $ck-radius-sm;
+    background: rgba($ck-primary, 0.06);
+    border: 1px solid rgba($ck-primary, 0.25);
+    font-size: 30px;
+    margin-bottom: 10px;
+
+    .user-page--health & {
+      background: rgba($ck-health, 0.06);
+      border-color: rgba($ck-health, 0.25);
+    }
+  }
+
+  &__name-actions {
+    display: flex;
+    gap: 24px;
+  }
+
+  &__name-action {
+    font-size: 24px;
+    color: $ck-muted;
+
+    &--primary {
+      color: $ck-primary-d8;
+      font-weight: 600;
+
+      .user-page--health & {
+        color: $ck-health-d8;
+      }
+    }
+
+    &.is-disabled {
+      opacity: 0.45;
+    }
   }
 
   &__service {
     display: inline-block;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
     padding: 4px 14px;
-    border-radius: 999px;
+    border-radius: $ck-radius-sm;
     font-size: 22px;
     color: $ck-primary-d10;
     background: rgba($ck-primary, 0.16);
@@ -70,21 +161,6 @@
       color: $ck-health-d8;
       background: rgba($ck-health, 0.16);
     }
-  }
-
-  &__meta {
-    display: block;
-    font-size: $ck-font-caption;
-    color: $ck-muted;
-    line-height: 1.6;
-  }
-
-  &__bio {
-    display: block;
-    font-size: $ck-font-caption;
-    color: $ck-muted;
-    line-height: 1.5;
-    margin-top: 8px;
   }
 
   &__menu {
@@ -120,6 +196,44 @@
   &__menu-arrow {
     font-size: 28px;
     color: $ck-muted;
+  }
+
+  &__health {
+    margin-top: 24px;
+  }
+
+  &__health-loading {
+    display: block;
+    font-size: 26px;
+    color: $ck-muted;
+    text-align: center;
+    padding: 12px 0;
+  }
+
+  &__field {
+    margin-bottom: 20px;
+  }
+
+  &__field-label {
+    display: block;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+    margin-bottom: 10px;
+  }
+
+  &__field-input,
+  &__field-picker {
+    padding: 18px 20px;
+    border-radius: $ck-radius-sm;
+    background: rgba($ck-health, 0.06);
+    border: 1px solid rgba($ck-health, 0.22);
+    font-size: 28px;
+    color: $ck-text;
+  }
+
+  &__health-save {
+    width: 100%;
+    margin-top: 8px;
   }
 
   &__logout {

@@ -8,8 +8,45 @@
     background: $ck-border-l4;
   }
 
+  &__gallery {
+    white-space: nowrap;
+    padding: 16px 24px 0;
+  }
+
+  &__gallery-item {
+    display: inline-block;
+    width: 160px;
+    height: 120px;
+    margin-right: 12px;
+    border-radius: $ck-radius-sm;
+    background: $ck-border-l4;
+  }
+
+  &__comment-imgs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 12px 0;
+  }
+
+  &__comment-img {
+    width: 120px;
+    height: 120px;
+    border-radius: $ck-radius-sm;
+    background: $ck-border-l4;
+  }
+
   &__body {
     padding: 32px;
+  }
+
+  &__qty--disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  &__btn--disabled {
+    opacity: 0.7;
   }
 
   &__name {

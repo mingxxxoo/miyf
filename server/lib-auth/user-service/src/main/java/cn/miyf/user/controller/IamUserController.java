@@ -4,6 +4,7 @@ import cn.miyf.auth.security.IamAdminPopedom;
 import cn.miyf.auth.security.MiyfPermission;
 import cn.miyf.common.ApiResult;
 import cn.miyf.user.bean.dto.SysUserSaveDto;
+import cn.miyf.user.bean.dto.SysUserStatusUpdateDto;
 import cn.miyf.user.bean.vo.SysUserVo;
 import cn.miyf.user.service.SysUserApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -78,6 +79,22 @@ public class IamUserController {
     @PutMapping("/{id}")
     public ApiResult<SysUserVo> update(@PathVariable Long id, @Valid @RequestBody SysUserSaveDto dto) {
         return ApiResult.ok(sysUserApplicationService.updateUser(id, dto));
+    }
+
+    /**
+     * 仅启停登录，不改角色。
+     *
+     * @param id  用户 ID
+     * @param dto 状态
+     * @return VO
+     * @history 1.00 2026-09-11 XieMingJie Created.
+     */
+    @Operation(summary = "启停用户登录")
+    @MiyfPermission(code = "iam:user:update")
+    @PutMapping("/{id}/status")
+    public ApiResult<SysUserVo> updateStatus(@PathVariable Long id,
+                                             @Valid @RequestBody SysUserStatusUpdateDto dto) {
+        return ApiResult.ok(sysUserApplicationService.updateUserStatus(id, dto.getStatus()));
     }
 
     /**

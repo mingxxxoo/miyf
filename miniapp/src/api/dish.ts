@@ -21,6 +21,7 @@ interface DishRaw {
   sortOrder?: number
   rating?: number
   ratingCount?: number
+  prepMinutes?: number
   images?: string[]
 }
 
@@ -54,7 +55,7 @@ function mapDish(raw: DishRaw): Dish {
     stock: raw.stock,
     stockType: raw.stockType,
     unit: raw.unit,
-    prepMinutes: undefined,
+    prepMinutes: raw.prepMinutes != null ? Number(raw.prepMinutes) : undefined,
     rating: ratingCount > 0 && raw.rating != null ? Number(raw.rating) : undefined,
     ratingCount,
     images: raw.images?.map((u) => toResourceUrl(u) ?? u).filter(Boolean)

@@ -229,6 +229,10 @@ export const iamUserApi = {
     });
     return mapUser(raw);
   },
+  updateStatus: async (id: string, status: 'ENABLED' | 'DISABLED') => {
+    const raw = await put<Record<string, unknown>>(`/iam/users/${id}/status`, { status });
+    return mapUser(raw);
+  },
   remove: (id: string) => del<void>(`/iam/users/${id}`),
 };
 

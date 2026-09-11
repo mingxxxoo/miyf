@@ -8,6 +8,8 @@ wx:
     mock-enabled: true
 
 app:
+  security:
+    expose-docs: true
   health:
     huawei:
       mock-enabled: true

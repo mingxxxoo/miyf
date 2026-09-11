@@ -19,6 +19,7 @@ import java.time.Instant;
  *
  * @author XieMingJie
  * @since 2026-09-10
+ * @history 1.00 2026-09-10 XieMingJie Created.
  */
 @Getter
 @Setter

@@ -7,17 +7,15 @@ import './app.scss'
 function App({ children }: PropsWithChildren) {
   const bootstrap = useUserStore((s) => s.bootstrap)
   const logout = useUserStore((s) => s.logout)
-  const goLogin = useUserStore((s) => s.goLogin)
   const hydrateProduct = useProductStore((s) => s.hydrate)
 
   useLaunch(() => {
     hydrateProduct()
-    // 进入应用立刻恢复/请求登录，未登录不进入业务页
     void bootstrap()
-    Taro.eventCenter.on('miyf:auth-expired', () => {
+    const onExpired = () => {
       logout()
-      goLogin()
-    })
+    }
+    Taro.eventCenter.on('miyf:auth-expired', onExpired)
   })
 
   return children

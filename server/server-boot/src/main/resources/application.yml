@@ -121,7 +121,7 @@ app:
     access-sign-secret: ${FILE_STORAGE_ACCESS_SIGN_SECRET:change-me-file-access-sign-secret-32chars}
   security:
     # 是否放行 Swagger；生产 profile 关闭
-    expose-docs: ${APP_SECURITY_EXPOSE_DOCS:true}
+    expose-docs: ${APP_SECURITY_EXPOSE_DOCS:false}
   health:
     enabled: ${APP_HEALTH_ENABLED:true}
     sync:
@@ -137,6 +137,14 @@ app:
       client-id: ${HUAWEI_HEALTH_CLIENT_ID:}
       client-secret: ${HUAWEI_HEALTH_CLIENT_SECRET:}
       redirect-uri: ${HUAWEI_HEALTH_REDIRECT_URI:http://localhost:5173/health/providers}
+      # 个人端浏览器回跳（须在华为控制台另登记一条，与本值完全一致）
+      user-redirect-uri: ${HUAWEI_HEALTH_USER_REDIRECT_URI:http://localhost:8080/api/health/providers/huawei/oauth/redirect}
+      # 可选：换票成功后 302；空则返回内置成功页
+      user-success-redirect-uri: ${HUAWEI_HEALTH_USER_SUCCESS_REDIRECT_URI:}
+      # 成功跳转域名白名单；空则仅允许 localhost/127.0.0.1
+      user-success-redirect-hosts: []
+      # Redis Token 加密密钥；空则回落 client-secret
+      token-encrypt-secret: ${HUAWEI_HEALTH_TOKEN_ENCRYPT_SECRET:}
       authorize-url: https://oauth-login.cloud.huawei.com/oauth2/v3/authorize
       token-url: https://oauth-login.cloud.huawei.com/oauth2/v3/token
       health-api-base: https://health-api.cloud.huawei.com/healthkit/v1

@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 
 /**
  * 菜品应用服务：用户端只读上架；管理端 CRUD、上下架、推荐与份数。
- * 微信端列表/热门/推荐暂时一律走 SQL；ES 召回已在 {@link DishSearchIndexService#isRecallEnabled()} 关闭。
+ * 微信端列表/热门/推荐优先 ES 召回（{@link DishSearchIndexService#isRecallEnabled()}），否则回落 SQL。
  * 数据访问直接使用 {@link DishRepository}/{@link DishImageRepository}（Mapper 接口），
  * 图集替换、分类名 enrich 与默认字段补齐在本服务编排。
  *
@@ -90,7 +90,7 @@ public class DishApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 用户端分页：仅 ON_SALE（暂时一律 SQL；ES 召回关闭）。
+     * 用户端分页：仅 ON_SALE；ES 召回可用时走索引再回表，否则 SQL。
      *
      * @param qo 查询条件
      * @return 分页 VO
@@ -127,7 +127,7 @@ public class DishApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 热门菜品：rating DESC, rating_count DESC（列表缓存；暂时 SQL）。
+     * 热门菜品：rating DESC, rating_count DESC（列表缓存；ES 可用则召回）。
      *
      * @param limit 条数
      * @return 列表
@@ -150,7 +150,7 @@ public class DishApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 推荐菜品列表（列表缓存；暂时 SQL）。
+     * 推荐菜品列表（列表缓存；ES 可用则召回）。
      *
      * @param limit 条数
      * @return 列表
@@ -233,13 +233,12 @@ public class DishApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 更新菜品基础信息（不改状态与评分）；刷新浏览缓存。
+     * 更新菜品基础信息（不改状态与评分）；刷新浏览缓存（索引随 search.enabled 同步）。
      *
      * @param id  菜品 ID
      * @param dto 请求
      * @return 更新后菜品
      * @history 1.00 2026-09-04 XieMingJie Created.
-     * @history 1.01 2026-09-09 XieMingJie 暂时去掉 ES 同步，仅 SQL + 缓存失效.
      */
     @Transactional
     public DishVo update(Long id, DishSaveDto dto) {
@@ -254,12 +253,11 @@ public class DishApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 上架：DRAFT / OFF_SALE → ON_SALE（写库 + 失效浏览缓存；暂时不写 ES）。
+     * 上架：DRAFT / OFF_SALE → ON_SALE（写库 + 失效浏览缓存；ES 随召回开关同步）。
      *
      * @param id 菜品 ID
      * @return 更新后菜品
      * @history 1.00 2026-09-04 XieMingJie Created.
-     * @history 1.01 2026-09-09 XieMingJie 暂时去掉 ES 写入，仅 SQL.
      */
     @Transactional
     public DishVo publish(Long id) {
@@ -280,12 +278,11 @@ public class DishApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 下架：ON_SALE → OFF_SALE（写库 + 失效浏览缓存；暂时不删 ES）。
+     * 下架：ON_SALE → OFF_SALE（写库 + 失效浏览缓存；ES 随召回开关同步）。
      *
      * @param id 菜品 ID
      * @return 更新后菜品
      * @history 1.00 2026-09-04 XieMingJie Created.
-     * @history 1.01 2026-09-09 XieMingJie 暂时去掉 ES 删除，仅 SQL.
      */
     @Transactional
     public DishVo unpublish(Long id) {
@@ -304,7 +301,6 @@ public class DishApplicationService extends BaseApplicationService {
      *
      * @param id 菜品 ID
      * @history 1.00 2026-09-04 XieMingJie Created.
-     * @history 1.01 2026-09-09 XieMingJie 暂时去掉 ES 删除，仅 SQL.
      */
     @Transactional
     public void delete(Long id) {

@@ -27,12 +27,19 @@ import cn.miyf.kitchen.repository.DishRepository;
 import cn.miyf.kitchen.repository.OrderItemRepository;
 import cn.miyf.kitchen.repository.OrderRepository;
 import cn.miyf.kitchen.repository.UserRepository;
+import cn.miyf.oss.bean.dto.FileUploadCommand;
+import cn.miyf.oss.bean.vo.UploadedFileVo;
+import cn.miyf.oss.enums.FileAccessPermission;
+import cn.miyf.oss.service.FileResourceApplicationService;
 import cn.miyf.service.BaseApplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -61,6 +68,37 @@ public class CommentApplicationService extends BaseApplicationService {
     private final UserRepository userRepository;
     private final RedisDistributedLock redisDistributedLock;
     private final KitchenCacheEvictService kitchenCacheEvictService;
+    private final FileResourceApplicationService fileResourceApplicationService;
+
+    /**
+     * 评价配图上传（厨房个人端；公开可读以便菜品页展示）。
+     *
+     * @param file 图片
+     * @return 上传结果
+     * @history 1.00 2026-09-11 XieMingJie Created.
+     */
+    public UploadedFileVo uploadImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_FILE, "请选择图片");
+        }
+        FileUploadCommand command = new FileUploadCommand()
+                .setAppCode("kitchen")
+                .setSource("comment")
+                .setTemp(false)
+                .setCompress(true)
+                .setAccessPermission(FileAccessPermission.PUBLIC);
+        try (InputStream in = file.getInputStream()) {
+            return fileResourceApplicationService.store(
+                    in,
+                    file.getSize(),
+                    file.getContentType(),
+                    file.getOriginalFilename(),
+                    command
+            );
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.STORAGE_UNAVAILABLE, "读取图片失败");
+        }
+    }
 
     /**
      * 用户发表评价。
@@ -210,7 +248,6 @@ public class CommentApplicationService extends BaseApplicationService {
      * @param dishId 菜品 ID
      * @return 评分结果
      * @history 1.00 2026-09-04 17:55 XieMingJie Created.
-     * @history 1.01 2026-09-09 XieMingJie 暂时去掉 ES 同步，仅 SQL + 缓存失效.
      */
     @Transactional
     public DishRatingVo rebuildDishRating(Long dishId) {

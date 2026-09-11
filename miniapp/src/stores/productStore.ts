@@ -5,6 +5,13 @@ export type ProductCode = 'kitchen' | 'health'
 
 const PRODUCT_KEY = 'miyf_active_product'
 
+const TAB_ROUTES = new Set([
+  'pages/index/index',
+  'pages/category/index',
+  'pages/order/index',
+  'pages/user/index'
+])
+
 export const PRODUCT_META: Record<
   ProductCode,
   {
@@ -52,6 +59,10 @@ function currentRoute(): string {
   return cur?.route || ''
 }
 
+function routeInStack(target: string): boolean {
+  return Taro.getCurrentPages().some((p) => (p as { route?: string }).route === target)
+}
+
 function readStoredProduct(): ProductCode {
   const raw = Taro.getStorageSync(PRODUCT_KEY) as string
   return raw === 'health' ? 'health' : 'kitchen'
@@ -82,6 +93,8 @@ export const useProductStore = create<ProductState>((set, get) => ({
     if (route === target) return
     if (meta.homeIsTab) {
       Taro.switchTab({ url: meta.homeUrl })
+    } else if (routeInStack(target)) {
+      Taro.redirectTo({ url: meta.homeUrl })
     } else {
       Taro.navigateTo({ url: meta.homeUrl })
     }
@@ -101,8 +114,12 @@ export const useProductStore = create<ProductState>((set, get) => ({
     if (meta.homeIsTab) {
       // switchTab 会关闭非 tab 页（含健康页），回到厨房主流程
       Taro.switchTab({ url: meta.homeUrl })
-    } else {
+    } else if (TAB_ROUTES.has(route)) {
+      // 从 tab 页进入健康：navigateTo
       Taro.navigateTo({ url: meta.homeUrl })
+    } else {
+      // 从非 tab 栈页（菜品/预约详情等）切到健康：redirectTo 避免堆叠
+      Taro.redirectTo({ url: meta.homeUrl })
     }
   }
 }))

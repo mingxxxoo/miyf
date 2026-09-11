@@ -3,18 +3,64 @@ import type { ApiResult } from '@/types'
 
 const BASE_URL = process.env.TARO_APP_API_BASE || 'https://www.miyf.cn'
 
-const TOKEN_KEY = 'miyf_kitchen_token'
+const TOKEN_KEY = 'miyf_token'
+const LEGACY_TOKEN_KEY = 'miyf_kitchen_token'
+const TOKEN_EXPIRE_AT_KEY = 'miyf_token_expire_at'
 
 export function getToken(): string {
-  return Taro.getStorageSync(TOKEN_KEY) || ''
+  let token = Taro.getStorageSync(TOKEN_KEY) || ''
+  if (!token) {
+    token = Taro.getStorageSync(LEGACY_TOKEN_KEY) || ''
+    if (token) {
+      Taro.setStorageSync(TOKEN_KEY, token)
+      try {
+        Taro.removeStorageSync(LEGACY_TOKEN_KEY)
+      } catch {
+        // ignore
+      }
+    }
+  }
+  if (!token) return ''
+  const expireAt = Number(Taro.getStorageSync(TOKEN_EXPIRE_AT_KEY) || 0)
+  if (expireAt > 0 && Date.now() >= expireAt) {
+    clearToken()
+    return ''
+  }
+  return token
 }
 
-export function setToken(token: string): void {
+export function setToken(token: string, expireSeconds?: number): void {
   Taro.setStorageSync(TOKEN_KEY, token)
+  try {
+    Taro.removeStorageSync(LEGACY_TOKEN_KEY)
+  } catch {
+    // ignore
+  }
+  if (expireSeconds != null && expireSeconds > 0) {
+    // 提前 60s 视为过期，避免边界请求 401
+    const skew = Math.min(60, Math.max(0, expireSeconds - 1))
+    Taro.setStorageSync(TOKEN_EXPIRE_AT_KEY, Date.now() + (expireSeconds - skew) * 1000)
+  } else {
+    try {
+      Taro.removeStorageSync(TOKEN_EXPIRE_AT_KEY)
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export function clearToken(): void {
   Taro.removeStorageSync(TOKEN_KEY)
+  try {
+    Taro.removeStorageSync(LEGACY_TOKEN_KEY)
+  } catch {
+    // ignore
+  }
+  try {
+    Taro.removeStorageSync(TOKEN_EXPIRE_AT_KEY)
+  } catch {
+    // ignore
+  }
 }
 
 interface RequestOptions {

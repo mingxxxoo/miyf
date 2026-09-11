@@ -1,5 +1,5 @@
 import { View, Text, ScrollView } from '@tarojs/components'
-import Taro, { useDidShow } from '@tarojs/taro'
+import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
 import { useMemo, useState } from 'react'
 import DishCard from '@/components/DishCard'
 import EmptyState from '@/components/EmptyState'
@@ -23,9 +23,11 @@ function greetingByHour(): string {
 }
 
 export default function IndexPage() {
-  const { isLoggedIn, bootstrapping } = useAuthGuard()
+  const { bootstrapping } = useAuthGuard({ required: false })
   const setProduct = useProductStore((s) => s.setProduct)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [partialFail, setPartialFail] = useState(false)
   const [recommend, setRecommend] = useState<Dish[]>([])
   const [hotDishes, setHotDishes] = useState<Dish[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -35,23 +37,51 @@ export default function IndexPage() {
   useDidShow(() => {
     setProduct('kitchen')
     Taro.setNavigationBarTitle({ title: PRODUCT_META.kitchen.brand })
-    if (!bootstrapping && isLoggedIn) void loadHome()
+    if (!bootstrapping) void loadHome()
+  })
+
+  usePullDownRefresh(async () => {
+    try {
+      if (!bootstrapping) await loadHome()
+    } finally {
+      Taro.stopPullDownRefresh()
+    }
   })
 
   const loadHome = async () => {
     setLoading(true)
-    try {
-      const [cats, rec, hot] = await Promise.all([
-        fetchCategories().catch(() => [] as Category[]),
-        fetchRecommendDishes(6).catch(() => [] as Dish[]),
-        fetchHotDishes(8).catch(() => [] as Dish[])
-      ])
-      setCategories(cats)
-      setRecommend(rec)
-      setHotDishes(hot)
-    } finally {
-      setLoading(false)
+    setLoadError(false)
+    setPartialFail(false)
+    let failCount = 0
+    const [cats, rec, hot] = await Promise.all([
+      fetchCategories().catch(() => {
+        failCount += 1
+        return null as Category[] | null
+      }),
+      fetchRecommendDishes(6).catch(() => {
+        failCount += 1
+        return null as Dish[] | null
+      }),
+      fetchHotDishes(8).catch(() => {
+        failCount += 1
+        return null as Dish[] | null
+      })
+    ])
+    if (failCount === 3) {
+      setLoadError(true)
+      setCategories([])
+      setRecommend([])
+      setHotDishes([])
+    } else {
+      setCategories(cats || [])
+      setRecommend(rec || [])
+      setHotDishes(hot || [])
+      if (failCount > 0) {
+        setPartialFail(true)
+        Taro.showToast({ title: '部分内容加载失败', icon: 'none' })
+      }
     }
+    setLoading(false)
   }
 
   const goCategory = (categoryId?: string) => {
@@ -63,12 +93,26 @@ export default function IndexPage() {
     Taro.switchTab({ url: '/pages/category/index' })
   }
 
-  if (bootstrapping || !isLoggedIn) {
-    return <Loading fullscreen text='正在登录…' />
+  if (bootstrapping) {
+    return <Loading fullscreen text='打开冰箱看看…' />
   }
 
-  if (loading) {
+  if (loading && !categories.length && !recommend.length && !hotDishes.length) {
     return <Loading fullscreen text='打开冰箱看看…' />
+  }
+
+  if (loadError) {
+    return (
+      <View className='index-page'>
+        <EmptyState
+          emoji='🥄'
+          title='加载失败'
+          description='首页内容暂时拉不下来，请检查网络后重试'
+          actionText='重试'
+          onAction={() => void loadHome()}
+        />
+      </View>
+    )
   }
 
   return (
@@ -78,57 +122,66 @@ export default function IndexPage() {
         <Text className='index-page__brand'>miyf 厨房</Text>
         <Text className='index-page__greeting'>{greeting}</Text>
         <Text className='index-page__subtitle'>把心意端上餐桌</Text>
-      </View>
-
-      <View className='index-page__section'>
-        <View className='index-page__section-head'>
-          <Text className='index-page__section-title'>今日推荐</Text>
-          <Text className='index-page__section-more' onClick={() => goCategory()}>
-            全部菜品 →
+        {partialFail && (
+          <Text className='index-page__subtitle' onClick={() => void loadHome()}>
+            部分内容未加载，点此重试
           </Text>
+        )}
+      </View>
+
+      {categories.length > 0 && (
+        <View className='index-page__section'>
+          <View className='index-page__section-head'>
+            <Text className='index-page__section-title'>分类逛逛</Text>
+            <Text className='index-page__section-more' onClick={() => goCategory()}>
+              全部 →
+            </Text>
+          </View>
+          <ScrollView scrollX className='index-page__cats' enhanced showScrollbar={false}>
+            {categories.map((c) => (
+              <View
+                key={c.id}
+                className='index-page__cat ck-pressable'
+                onClick={() => goCategory(c.id)}
+              >
+                <Text>{c.name}</Text>
+              </View>
+            ))}
+          </ScrollView>
         </View>
-        {recommend.length === 0 ? (
-          <EmptyState emoji='🥄' title='厨房还在备菜中' description='稍后再来看看' />
-        ) : (
+      )}
+
+      {recommend.length > 0 && (
+        <View className='index-page__section'>
+          <Text className='index-page__section-title'>今日推荐</Text>
           <View className='index-page__list'>
-            {recommend.slice(0, 3).map((dish) => (
-              <View key={dish.id} className='index-page__item ck-pressable'>
-                <DishCard dish={dish} />
-              </View>
+            {recommend.map((dish) => (
+              <DishCard key={dish.id} dish={dish} />
             ))}
           </View>
-        )}
-      </View>
+        </View>
+      )}
 
-      <View className='index-page__section'>
-        <Text className='index-page__section-title'>分类逛逛</Text>
-        <ScrollView scrollX className='index-page__cats' enhanced showScrollbar={false}>
-          {categories.map((cat) => (
-            <View
-              key={cat.id}
-              className='index-page__cat ck-pressable'
-              onClick={() => goCategory(cat.id)}
-            >
-              <Text>{cat.name}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-
-      <View className='index-page__section'>
-        <Text className='index-page__section-title'>热门菜品</Text>
-        {hotDishes.length === 0 ? (
-          <EmptyState emoji='🔥' title='还没有热门榜' description='多预约几道，厨房就热闹了' />
-        ) : (
+      {hotDishes.length > 0 && (
+        <View className='index-page__section'>
+          <Text className='index-page__section-title'>大家爱点</Text>
           <View className='index-page__list'>
-            {hotDishes.slice(0, 4).map((dish) => (
-              <View key={dish.id} className='index-page__item ck-pressable'>
-                <DishCard dish={dish} compact />
-              </View>
+            {hotDishes.map((dish) => (
+              <DishCard key={dish.id} dish={dish} />
             ))}
           </View>
-        )}
-      </View>
+        </View>
+      )}
+
+      {!recommend.length && !hotDishes.length && !categories.length && (
+        <EmptyState
+          emoji='🥗'
+          title='厨房还在备菜'
+          description='稍后再来看看，或下拉刷新'
+          actionText='刷新'
+          onAction={() => void loadHome()}
+        />
+      )}
     </View>
   )
 }
