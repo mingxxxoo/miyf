@@ -5,6 +5,7 @@ import { businessRouteDefs, systemRouteDefs } from '@/routes/routeRegistry';
 import AdminLayout from '@/layouts/AdminLayout';
 import SystemLayout, { firstSystemPath } from '@/layouts/SystemLayout';
 import LoginPage from '@/pages/login/LoginPage';
+import LegalPage from '@/pages/legal/LegalPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import { usePermissionStore } from '@/stores/permissionStore';
 
@@ -36,6 +37,8 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+      <Route path="/terms" element={<LegalPage kind="terms" />} />
 
       <Route
         element={

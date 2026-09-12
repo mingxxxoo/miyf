@@ -105,6 +105,8 @@ public class HealthProperties {
                 "https://www.huawei.com/healthkit/step.read",
                 "https://www.huawei.com/healthkit/bloodglucose.read",
                 "https://www.huawei.com/healthkit/bloodpressure.read",
+                "https://www.huawei.com/healthkit/sleep.read",
+                "https://www.huawei.com/healthkit/stress.read",
                 "https://www.huawei.com/healthkit/historydata.open.week"
         ));
 

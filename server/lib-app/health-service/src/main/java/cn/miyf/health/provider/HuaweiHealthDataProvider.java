@@ -86,6 +86,8 @@ public class HuaweiHealthDataProvider implements HealthDataProvider {
                 HealthMetricCodes.BODY_FAT,
                 HealthMetricCodes.HEART_RATE,
                 HealthMetricCodes.STEPS,
+                HealthMetricCodes.SLEEP_MINUTES,
+                HealthMetricCodes.STRESS,
                 HealthMetricCodes.BLOOD_PRESSURE_SYS,
                 HealthMetricCodes.BLOOD_PRESSURE_DIA,
                 HealthMetricCodes.BLOOD_GLUCOSE
@@ -151,6 +153,22 @@ public class HuaweiHealthDataProvider implements HealthDataProvider {
                     .setUnit(HealthMetricCodes.defaultUnit(HealthMetricCodes.STEPS))
                     .setMeasuredTime(cursor.plus(21, ChronoUnit.HOURS))
                     .setSourceSampleId("huawei-mock-steps-" + subjectId + "-" + key)
+                    .setQuality("ESTIMATED"));
+            drafts.add(new HealthSampleDraft()
+                    .setSubjectId(subjectId)
+                    .setMetricCode(HealthMetricCodes.SLEEP_MINUTES)
+                    .setValueNum(BigDecimal.valueOf(420 + (day % 4) * 15L))
+                    .setUnit(HealthMetricCodes.defaultUnit(HealthMetricCodes.SLEEP_MINUTES))
+                    .setMeasuredTime(cursor.plus(6, ChronoUnit.HOURS))
+                    .setSourceSampleId("huawei-mock-sleep-" + subjectId + "-" + key)
+                    .setQuality("ESTIMATED"));
+            drafts.add(new HealthSampleDraft()
+                    .setSubjectId(subjectId)
+                    .setMetricCode(HealthMetricCodes.STRESS)
+                    .setValueNum(BigDecimal.valueOf(35 + (day % 7) * 3L))
+                    .setUnit(HealthMetricCodes.defaultUnit(HealthMetricCodes.STRESS))
+                    .setMeasuredTime(cursor.plus(12, ChronoUnit.HOURS))
+                    .setSourceSampleId("huawei-mock-stress-" + subjectId + "-" + key)
                     .setQuality("ESTIMATED"));
             cursor = cursor.plus(1, ChronoUnit.DAYS);
             day++;

@@ -248,10 +248,12 @@ export const METRIC_OPTIONS: { code: string; label: string; unit: string }[] = [
   { code: 'BODY_FAT', label: '体脂', unit: '%' },
   { code: 'BMI', label: 'BMI', unit: '' },
   { code: 'HEIGHT', label: '身高', unit: 'cm' },
-  { code: 'SLEEP', label: '睡眠', unit: 'h' }
+  /** 入库为分钟；小程序录入/展示按小时 */
+  { code: 'SLEEP_MINUTES', label: '睡眠', unit: 'h' },
+  { code: 'STRESS', label: '压力', unit: '分' }
 ]
 
-/** 手动录入合理区间（宽松校验） */
+/** 手动录入合理区间（宽松校验；睡眠按小时） */
 export const METRIC_VALUE_RANGE: Record<string, { min: number; max: number }> = {
   WEIGHT: { min: 20, max: 300 },
   HEART_RATE: { min: 30, max: 220 },
@@ -262,7 +264,31 @@ export const METRIC_VALUE_RANGE: Record<string, { min: number; max: number }> = 
   BODY_FAT: { min: 1, max: 70 },
   BMI: { min: 10, max: 60 },
   HEIGHT: { min: 50, max: 250 },
-  SLEEP: { min: 0, max: 24 }
+  SLEEP_MINUTES: { min: 0, max: 24 },
+  STRESS: { min: 1, max: 99 }
+}
+
+/** 展示值：睡眠分钟 → 小时 */
+export function displayMetricValue(metricCode: string, valueNum: number): number {
+  if (metricCode === 'SLEEP_MINUTES') {
+    return Math.round((valueNum / 60) * 100) / 100
+  }
+  return valueNum
+}
+
+/** 录入值入库：睡眠小时 → 分钟 */
+export function toStoredMetricValue(metricCode: string, inputValue: number): number {
+  if (metricCode === 'SLEEP_MINUTES') {
+    return Math.round(inputValue * 60)
+  }
+  return inputValue
+}
+
+/** 入库单位 */
+export function storedMetricUnit(metricCode: string, displayUnit: string): string {
+  if (metricCode === 'SLEEP_MINUTES') return 'min'
+  if (metricCode === 'STRESS') return 'score'
+  return displayUnit
 }
 
 export function metricLabel(code: string): string {

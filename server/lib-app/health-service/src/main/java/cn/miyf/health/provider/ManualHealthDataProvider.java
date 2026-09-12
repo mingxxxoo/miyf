@@ -76,6 +76,7 @@ public class ManualHealthDataProvider implements HealthDataProvider {
                 HealthMetricCodes.HEART_RATE,
                 HealthMetricCodes.STEPS,
                 HealthMetricCodes.SLEEP_MINUTES,
+                HealthMetricCodes.STRESS,
                 HealthMetricCodes.BLOOD_PRESSURE_SYS,
                 HealthMetricCodes.BLOOD_PRESSURE_DIA,
                 HealthMetricCodes.BLOOD_GLUCOSE

@@ -233,6 +233,12 @@ export default function LoginPage() {
             </Button>
           </Form.Item>
         </Form>
+
+        <div className="login-legal">
+          <a href="/privacy">隐私政策</a>
+          <span>·</span>
+          <a href="/terms">用户协议</a>
+        </div>
       </Card>
     </div>
   );

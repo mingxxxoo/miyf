@@ -105,6 +105,25 @@ a {
   color: var(--ck-muted);
 }
 
+.login-legal {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ck-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.login-legal a {
+  color: var(--ck-muted);
+}
+
+.login-legal a:hover {
+  color: var(--ck-primary);
+}
+
 .login-captcha-row {
   display: flex;
   align-items: stretch;

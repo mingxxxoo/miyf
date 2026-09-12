@@ -11,6 +11,7 @@ const METRICS = [
   { value: 'BODY_FAT', label: '体脂' },
   { value: 'STEPS', label: '步数' },
   { value: 'SLEEP_MINUTES', label: '睡眠(分)' },
+  { value: 'STRESS', label: '压力' },
   { value: 'BLOOD_PRESSURE_SYS', label: '收缩压' },
   { value: 'BLOOD_PRESSURE_DIA', label: '舒张压' },
   { value: 'BLOOD_GLUCOSE', label: '血糖' },

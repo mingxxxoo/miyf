@@ -22,6 +22,7 @@ const METRICS = [
   { value: 'HEART_RATE', label: '心率 HEART_RATE' },
   { value: 'STEPS', label: '步数 STEPS' },
   { value: 'SLEEP_MINUTES', label: '睡眠分钟 SLEEP_MINUTES' },
+  { value: 'STRESS', label: '压力 STRESS' },
   { value: 'BLOOD_PRESSURE_SYS', label: '收缩压' },
   { value: 'BLOOD_PRESSURE_DIA', label: '舒张压' },
   { value: 'BLOOD_GLUCOSE', label: '血糖' },

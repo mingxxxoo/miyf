@@ -215,7 +215,8 @@ public class HealthCrudApplicationService {
         }
         LambdaQueryWrapper<HealthSampleEntity> query = Wrappers.<HealthSampleEntity>lambdaQuery()
                 .eq(subjectId != null, HealthSampleEntity::getSubjectId, subjectId)
-                .eq(StringUtils.hasText(metricCode), HealthSampleEntity::getMetricCode, metricCode)
+                .eq(StringUtils.hasText(metricCode), HealthSampleEntity::getMetricCode,
+                        StringUtils.hasText(metricCode) ? HealthMetricCodes.normalize(metricCode) : metricCode)
                 .orderByDesc(HealthSampleEntity::getMeasuredTime)
                 .last("LIMIT " + rows);
         if (subjectId == null && !isUnrestricted(principal)) {
@@ -247,7 +248,10 @@ public class HealthCrudApplicationService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "metricCode 不能为空");
         }
         requireAccessibleSubject(subjectId);
-        String metric = metricCode.trim().toUpperCase(Locale.ROOT);
+        String metric = HealthMetricCodes.normalize(metricCode);
+        if (!StringUtils.hasText(metric)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "metricCode 不能为空");
+        }
         int rows = limit == null || limit < 1 ? 200 : Math.min(limit, 1000);
         List<HealthSampleEntity> samples = sampleRepository.selectList(Wrappers.<HealthSampleEntity>lambdaQuery()
                 .eq(HealthSampleEntity::getSubjectId, subjectId)
@@ -307,7 +311,7 @@ public class HealthCrudApplicationService {
     public HealthSampleVo createManualSample(HealthSampleSaveDto dto) {
         Long subjectId = parseId(dto.getSubjectId(), "主体 ID");
         requireAccessibleSubject(subjectId);
-        String metric = dto.getMetricCode().trim().toUpperCase(Locale.ROOT);
+        String metric = HealthMetricCodes.normalize(dto.getMetricCode());
         String unit = StringUtils.hasText(dto.getUnit()) ? dto.getUnit().trim() : HealthMetricCodes.defaultUnit(metric);
         String quality = normalizeQuality(dto.getQuality());
         Instant now = Instant.now();
@@ -581,7 +585,8 @@ public class HealthCrudApplicationService {
         int rows = limit == null || limit < 1 ? 100 : Math.min(limit, 500);
         return sampleRepository.selectList(Wrappers.<HealthSampleEntity>lambdaQuery()
                         .eq(HealthSampleEntity::getSubjectId, subjectId)
-                        .eq(StringUtils.hasText(metricCode), HealthSampleEntity::getMetricCode, metricCode)
+                        .eq(StringUtils.hasText(metricCode), HealthSampleEntity::getMetricCode,
+                                StringUtils.hasText(metricCode) ? HealthMetricCodes.normalize(metricCode) : metricCode)
                         .orderByDesc(HealthSampleEntity::getMeasuredTime)
                         .last("LIMIT " + rows))
                 .stream()

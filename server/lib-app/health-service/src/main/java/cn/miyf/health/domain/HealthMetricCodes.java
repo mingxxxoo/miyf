@@ -17,11 +17,33 @@ public final class HealthMetricCodes {
     public static final String HEART_RATE = "HEART_RATE";
     public static final String STEPS = "STEPS";
     public static final String SLEEP_MINUTES = "SLEEP_MINUTES";
+    /**
+     * 压力评分（华为 Stress，通常 1–99）。
+     */
+    public static final String STRESS = "STRESS";
     public static final String BLOOD_PRESSURE_SYS = "BLOOD_PRESSURE_SYS";
     public static final String BLOOD_PRESSURE_DIA = "BLOOD_PRESSURE_DIA";
     public static final String BLOOD_GLUCOSE = "BLOOD_GLUCOSE";
 
     private HealthMetricCodes() {
+    }
+
+    /**
+     * 规范化指标编码（兼容别名）。
+     *
+     * @param raw 原始编码
+     * @return 大写规范码；空则原样
+     */
+    public static String normalize(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return raw;
+        }
+        String code = raw.trim().toUpperCase(java.util.Locale.ROOT);
+        return switch (code) {
+            case "SLEEP", "SLEEP_HOURS" -> SLEEP_MINUTES;
+            case "PRESSURE", "STRESS_SCORE" -> STRESS;
+            default -> code;
+        };
     }
 
     /**
@@ -35,7 +57,7 @@ public final class HealthMetricCodes {
         if (metricCode == null) {
             return "";
         }
-        return switch (metricCode) {
+        return switch (normalize(metricCode)) {
             case WEIGHT -> "kg";
             case HEIGHT -> "cm";
             case BMI -> "kg/m2";
@@ -43,6 +65,7 @@ public final class HealthMetricCodes {
             case HEART_RATE -> "bpm";
             case STEPS -> "count";
             case SLEEP_MINUTES -> "min";
+            case STRESS -> "score";
             case BLOOD_PRESSURE_SYS, BLOOD_PRESSURE_DIA -> "mmHg";
             case BLOOD_GLUCOSE -> "mmol/L";
             default -> "";

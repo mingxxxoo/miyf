@@ -16,10 +16,13 @@ import {
   fetchProviders,
   METRIC_OPTIONS,
   METRIC_VALUE_RANGE,
+  displayMetricValue,
   providerLabel,
   removeMySample,
   revokeHuaweiOAuth,
+  storedMetricUnit,
   syncMyProvider,
+  toStoredMetricValue,
   updateMyHealth,
   type HealthProvider,
   type HealthProviderBinding,
@@ -135,18 +138,33 @@ export default function HealthPage() {
 
   const latestText = useMemo(() => {
     if (!trend || trend.latest == null) return '—'
-    const unit = trend.unit ? ` ${trend.unit}` : ''
-    return `${trend.latest}${unit}`
-  }, [trend])
+    const v = displayMetricValue(metric.code, Number(trend.latest))
+    const unit = metric.unit ? ` ${metric.unit}` : ''
+    return `${v}${unit}`
+  }, [trend, metric.code, metric.unit])
 
   const deltaText = useMemo(() => {
     const points = trend?.points || []
     const nums = points
-      .map((p) => (typeof p.value === 'number' ? p.value : null))
+      .map((p) => (typeof p.value === 'number' ? displayMetricValue(metric.code, p.value) : null))
       .filter((v): v is number => v != null)
     if (nums.length < 2) return null
-    return formatDelta(nums[nums.length - 1], nums[nums.length - 2], trend?.unit || metric.unit)
-  }, [trend, metric.unit])
+    return formatDelta(nums[nums.length - 1], nums[nums.length - 2], metric.unit)
+  }, [trend, metric.code, metric.unit])
+
+  const displayTrend = useMemo(() => {
+    if (!trend) return null
+    if (metric.code !== 'SLEEP_MINUTES') return trend
+    return {
+      ...trend,
+      unit: metric.unit,
+      latest: trend.latest != null ? displayMetricValue(metric.code, Number(trend.latest)) : trend.latest,
+      points: (trend.points || []).map((p) => ({
+        ...p,
+        value: typeof p.value === 'number' ? displayMetricValue(metric.code, p.value) : p.value
+      }))
+    }
+  }, [trend, metric.code, metric.unit])
 
   const fillProfileForm = (me: HealthSubject) => {
     setProfileName(me.displayName || '')
@@ -352,8 +370,8 @@ export default function HealthPage() {
     try {
       await createMySample({
         metricCode: metric.code,
-        valueNum: num,
-        unit: metric.unit,
+        valueNum: toStoredMetricValue(metric.code, num),
+        unit: storedMetricUnit(metric.code, metric.unit),
         measuredTime: toMeasuredTime(measuredDate, measuredTime)
       })
       setValue('')
@@ -766,7 +784,9 @@ export default function HealthPage() {
         <View className='health-page__focus-side'>
           <Text className='health-page__focus-side-label'>均值</Text>
           <Text className='health-page__focus-side-value'>
-            {trend?.avg != null ? `${trend.avg}` : '—'}
+            {trend?.avg != null
+              ? `${displayMetricValue(metric.code, Number(trend.avg))}`
+              : '—'}
           </Text>
           <Text className='health-page__focus-side-unit'>
             {trend?.pointCount ? `${trend.pointCount} 次` : metric.unit}
@@ -796,13 +816,26 @@ export default function HealthPage() {
 
         {trendOpen && (
           <>
-            {(trend?.min != null || trend?.max != null) && (
+            {(displayTrend?.min != null || displayTrend?.max != null) && (
               <View className='health-page__range'>
-                <Text>最低 {trend?.min ?? '—'}</Text>
-                <Text>最高 {trend?.max ?? '—'}</Text>
+                <Text>
+                  最低{' '}
+                  {displayTrend?.min != null
+                    ? displayMetricValue(metric.code, Number(displayTrend.min))
+                    : '—'}
+                </Text>
+                <Text>
+                  最高{' '}
+                  {displayTrend?.max != null
+                    ? displayMetricValue(metric.code, Number(displayTrend.max))
+                    : '—'}
+                </Text>
               </View>
             )}
-            <TrendSpark points={trend?.points || []} unit={trend?.unit || metric.unit} />
+            <TrendSpark
+              points={displayTrend?.points || []}
+              unit={displayTrend?.unit || metric.unit}
+            />
           </>
         )}
 
@@ -884,8 +917,8 @@ export default function HealthPage() {
             <View key={s.id} className='health-page__item ck-card'>
               <View className='health-page__item-body'>
                 <Text className='health-page__item-title'>
-                  {s.valueNum}
-                  {s.unit ? ` ${s.unit}` : ''}
+                  {displayMetricValue(metric.code, Number(s.valueNum))}
+                  {` ${metric.unit || s.unit || ''}`}
                 </Text>
                 <Text className='health-page__item-meta'>
                   {formatMeasuredTime(s.measuredTime)} · {providerLabel(s.providerCode)}
