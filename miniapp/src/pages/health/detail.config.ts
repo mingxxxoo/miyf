@@ -1,5 +1,5 @@
 export default definePageConfig({
-  navigationBarTitleText: 'miyf 健康',
+  navigationBarTitleText: '指标明细',
   navigationBarBackgroundColor: '#EDEDED',
   backgroundColor: '#EDEDED',
   enablePullDownRefresh: true,

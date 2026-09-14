@@ -169,14 +169,7 @@ export default function UserPage() {
           <View className='user-page__menu-item ck-pressable' onClick={goHealthHome}>
             <View>
               <Text className='user-page__menu-label'>进入健康首页</Text>
-              <Text className='user-page__menu-desc'>记录、趋势与资料</Text>
-            </View>
-            <Text className='user-page__menu-arrow'>→</Text>
-          </View>
-          <View className='user-page__menu-item ck-pressable' onClick={goHealthHome}>
-            <View>
-              <Text className='user-page__menu-label'>完善健康资料</Text>
-              <Text className='user-page__menu-desc'>在健康页编辑称呼、性别、生日与身高</Text>
+              <Text className='user-page__menu-desc'>指标统计与明细</Text>
             </View>
             <Text className='user-page__menu-arrow'>→</Text>
           </View>

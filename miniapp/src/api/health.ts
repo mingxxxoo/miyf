@@ -139,8 +139,16 @@ export async function removeMySample(id: string): Promise<void> {
   await del<void>(`/api/health/me/samples/${asId(id)}`, undefined, { showLoading: true })
 }
 
-export async function fetchMyTrend(metricCode: string, limit = 30): Promise<HealthTrend> {
-  const raw = await get<TrendRaw>('/api/health/me/trends', { metricCode, limit })
+export async function fetchMyTrend(
+  metricCode: string,
+  limit = 30,
+  options?: { showError?: boolean }
+): Promise<HealthTrend> {
+  const raw = await get<TrendRaw>(
+    '/api/health/me/trends',
+    { metricCode, limit },
+    { showError: options?.showError !== false }
+  )
   return {
     subjectId: asId(raw.subjectId),
     metricCode: raw.metricCode,
@@ -248,25 +256,10 @@ export const METRIC_OPTIONS: { code: string; label: string; unit: string }[] = [
   { code: 'BODY_FAT', label: '体脂', unit: '%' },
   { code: 'BMI', label: 'BMI', unit: '' },
   { code: 'HEIGHT', label: '身高', unit: 'cm' },
-  /** 入库为分钟；小程序录入/展示按小时 */
+  /** 入库为分钟；展示按小时 */
   { code: 'SLEEP_MINUTES', label: '睡眠', unit: 'h' },
   { code: 'STRESS', label: '压力', unit: '分' }
 ]
-
-/** 手动录入合理区间（宽松校验；睡眠按小时） */
-export const METRIC_VALUE_RANGE: Record<string, { min: number; max: number }> = {
-  WEIGHT: { min: 20, max: 300 },
-  HEART_RATE: { min: 30, max: 220 },
-  STEPS: { min: 0, max: 100000 },
-  BLOOD_PRESSURE_SYS: { min: 60, max: 250 },
-  BLOOD_PRESSURE_DIA: { min: 30, max: 150 },
-  BLOOD_GLUCOSE: { min: 1, max: 40 },
-  BODY_FAT: { min: 1, max: 70 },
-  BMI: { min: 10, max: 60 },
-  HEIGHT: { min: 50, max: 250 },
-  SLEEP_MINUTES: { min: 0, max: 24 },
-  STRESS: { min: 1, max: 99 }
-}
 
 /** 展示值：睡眠分钟 → 小时 */
 export function displayMetricValue(metricCode: string, valueNum: number): number {
@@ -276,15 +269,7 @@ export function displayMetricValue(metricCode: string, valueNum: number): number
   return valueNum
 }
 
-/** 录入值入库：睡眠小时 → 分钟 */
-export function toStoredMetricValue(metricCode: string, inputValue: number): number {
-  if (metricCode === 'SLEEP_MINUTES') {
-    return Math.round(inputValue * 60)
-  }
-  return inputValue
-}
-
-/** 入库单位 */
+/** 入库单位（兼容旧录入逻辑；个人端已不再手动录入） */
 export function storedMetricUnit(metricCode: string, displayUnit: string): string {
   if (metricCode === 'SLEEP_MINUTES') return 'min'
   if (metricCode === 'STRESS') return 'score'
@@ -293,6 +278,97 @@ export function storedMetricUnit(metricCode: string, displayUnit: string): strin
 
 export function metricLabel(code: string): string {
   return METRIC_OPTIONS.find((m) => m.code === code)?.label || code
+}
+
+export function metricUnit(code: string): string {
+  return METRIC_OPTIONS.find((m) => m.code === code)?.unit || ''
+}
+
+export function formatMeasuredTime(raw?: string): string {
+  if (!raw) return ''
+  const d = new Date(raw)
+  if (Number.isNaN(d.getTime())) return raw.replace('T', ' ').slice(0, 16)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
+  const now = new Date()
+  const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000)
+  if (diffDays === 0) return `今天 ${hm}`
+  if (diffDays === 1) return `昨天 ${hm}`
+  if (diffDays < 7 && diffDays > 1) return `${diffDays} 天前 ${hm}`
+  return `${d.getMonth() + 1}/${d.getDate()} ${hm}`
+}
+
+export interface MetricAlert {
+  level: 'low' | 'high'
+  message: string
+}
+
+/** 成人参考区间（按入库单位；睡眠为分钟），超出则在明细中预警 */
+const METRIC_ALERT_RULES: Record<
+  string,
+  { low?: number; high?: number; lowMessage: string; highMessage: string }
+> = {
+  WEIGHT: { low: 35, high: 150, lowMessage: '体重偏低', highMessage: '体重偏高' },
+  HEART_RATE: { low: 50, high: 100, lowMessage: '心率偏低', highMessage: '心率偏高' },
+  BLOOD_PRESSURE_SYS: { low: 90, high: 139, lowMessage: '收缩压偏低', highMessage: '收缩压偏高' },
+  BLOOD_PRESSURE_DIA: { low: 60, high: 89, lowMessage: '舒张压偏低', highMessage: '舒张压偏高' },
+  BLOOD_GLUCOSE: { low: 3.9, high: 7.8, lowMessage: '血糖偏低', highMessage: '血糖偏高' },
+  BODY_FAT: { low: 8, high: 35, lowMessage: '体脂偏低', highMessage: '体脂偏高' },
+  BMI: { low: 18.5, high: 27.9, lowMessage: 'BMI 偏低', highMessage: 'BMI 偏高' },
+  SLEEP_MINUTES: { low: 300, high: 600, lowMessage: '睡眠偏少', highMessage: '睡眠偏长' },
+  STRESS: { high: 79, lowMessage: '压力偏低', highMessage: '压力偏高' }
+}
+
+export function assessMetricValue(code: string, value: number): MetricAlert | null {
+  if (!Number.isFinite(value)) return null
+  const rule = METRIC_ALERT_RULES[code]
+  if (!rule) return null
+  if (rule.low != null && value < rule.low) {
+    return { level: 'low', message: rule.lowMessage }
+  }
+  if (rule.high != null && value > rule.high) {
+    return { level: 'high', message: rule.highMessage }
+  }
+  return null
+}
+
+function mean(nums: number[]): number {
+  return nums.reduce((a, b) => a + b, 0) / nums.length
+}
+
+function stddev(nums: number[]): number {
+  if (nums.length < 2) return 0
+  const avg = mean(nums)
+  const varSum = nums.reduce((acc, n) => acc + (n - avg) ** 2, 0)
+  return Math.sqrt(varSum / (nums.length - 1))
+}
+
+/** 参考区间优先；样本足够时再标出偏离近期均值的点（value/series 均为入库单位） */
+export function assessMetricPoint(
+  code: string,
+  value: number,
+  series?: number[]
+): MetricAlert | null {
+  const clinical = assessMetricValue(code, value)
+  if (clinical) return clinical
+  if (!series || series.length < 6) return null
+  const valid = series.filter((n) => Number.isFinite(n))
+  if (valid.length < 6) return null
+  const sd = stddev(valid)
+  if (sd <= 0) return null
+  const avg = mean(valid)
+  if (Math.abs(value - avg) < 2.5 * sd) return null
+  return {
+    level: value > avg ? 'high' : 'low',
+    message: '明显偏离近期均值'
+  }
+}
+
+export function formatStatValue(metricCode: string, value?: number): string {
+  if (value == null || Number.isNaN(value)) return '—'
+  const shown = displayMetricValue(metricCode, value)
+  return Number.isInteger(shown) ? String(shown) : String(Number(shown.toFixed(2)))
 }
 
 export function providerLabel(code?: string): string {

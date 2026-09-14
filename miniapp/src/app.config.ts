@@ -8,6 +8,7 @@ export default defineAppConfig({
     'pages/order/detail',
     'pages/comment/create',
     'pages/health/index',
+    'pages/health/detail',
     'pages/user/index'
   ],
   window: {

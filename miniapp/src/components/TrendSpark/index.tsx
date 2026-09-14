@@ -66,7 +66,7 @@ export default function TrendSpark({
   if (!bars.length) {
     return (
       <View className='trend-spark trend-spark--empty'>
-        <Text className='trend-spark__empty-text'>暂无趋势，先记一条吧</Text>
+        <Text className='trend-spark__empty-text'>暂无同步数据</Text>
       </View>
     )
   }
@@ -90,9 +90,9 @@ export default function TrendSpark({
           <Text className='trend-spark__date'>{endLabel}</Text>
         </View>
       )}
-      {unit ? <Text className='trend-spark__unit'>单位 {unit} · 点按查看数值</Text> : (
-        <Text className='trend-spark__unit'>点按查看数值</Text>
-      )}
+      {unit ? (
+        <Text className='trend-spark__unit'>单位 {unit}</Text>
+      ) : null}
     </View>
   )
 }

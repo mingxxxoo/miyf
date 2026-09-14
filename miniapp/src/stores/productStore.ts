@@ -103,11 +103,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
   switchTo: (product) => {
     const meta = PRODUCT_META[product]
     get().setProduct(product)
-    try {
-      Taro.vibrateShort({ type: 'light' })
-    } catch {
-      // 部分端不支持震动
-    }
     const route = currentRoute()
     const target = meta.homeUrl.replace(/^\//, '')
     if (route === target) return

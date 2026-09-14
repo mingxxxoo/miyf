@@ -1,0 +1,184 @@
+.health-detail {
+  min-height: 100vh;
+  padding-bottom: calc(48px + env(safe-area-inset-bottom));
+  background: #ededed;
+
+  &__panel {
+    margin: 24px 24px 0;
+    padding: 36px 32px 8px;
+    background: #fff;
+    border-radius: 8px;
+  }
+
+  &__label {
+    display: block;
+    font-size: 26px;
+    color: #888;
+  }
+
+  &__value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  &__value {
+    font-size: 72px;
+    font-weight: 500;
+    color: #191919;
+    line-height: 1.1;
+  }
+
+  &__unit {
+    font-size: 28px;
+    color: #888;
+  }
+
+  &__time {
+    display: block;
+    margin-top: 8px;
+    font-size: 24px;
+    color: #b2b2b2;
+  }
+
+  &__kpis {
+    display: flex;
+    margin-top: 28px;
+    border-top: 1px solid #e5e5e5;
+  }
+
+  &__kpi {
+    flex: 1;
+    padding: 24px 0;
+    text-align: center;
+    border-right: 1px solid #e5e5e5;
+
+    &:last-child {
+      border-right: none;
+    }
+  }
+
+  &__kpi-v {
+    display: block;
+    font-size: 28px;
+    font-weight: 500;
+    color: #191919;
+    line-height: 1.3;
+  }
+
+  &__kpi-k {
+    display: block;
+    margin-top: 4px;
+    font-size: 22px;
+    color: #888;
+  }
+
+  &__notice {
+    margin: 24px 24px 0;
+    padding: 24px;
+    background: #fff;
+    border-radius: 8px;
+  }
+
+  &__notice-title {
+    display: block;
+    font-size: 28px;
+    font-weight: 500;
+    color: #fa5151;
+    margin-bottom: 8px;
+  }
+
+  &__notice-desc {
+    display: block;
+    font-size: 24px;
+    color: #888;
+    line-height: 1.5;
+  }
+
+  &__group-title {
+    display: block;
+    padding: 32px 40px 16px;
+    font-size: 26px;
+    color: #888;
+  }
+
+  &__group {
+    margin: 0 24px;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+
+    &--pad {
+      padding: 8px 24px 20px;
+    }
+  }
+
+  &__empty {
+    padding: 64px 32px;
+    text-align: center;
+    font-size: 26px;
+    color: #888;
+  }
+
+  &__row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 28px 32px;
+    border-bottom: 1px solid #e5e5e5;
+
+    &.is-last {
+      border-bottom: none;
+    }
+  }
+
+  &__row-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__row-value {
+    display: block;
+    font-size: 32px;
+    color: #191919;
+    line-height: 1.3;
+
+    &.is-alert {
+      color: #fa5151;
+    }
+  }
+
+  &__row-meta {
+    display: block;
+    margin-top: 6px;
+    font-size: 24px;
+    color: #888;
+  }
+
+  &__row-side {
+    flex-shrink: 0;
+    text-align: right;
+    max-width: 240px;
+  }
+
+  &__row-badge {
+    display: block;
+    font-size: 24px;
+    color: #fa5151;
+  }
+
+  &__row-src {
+    display: block;
+    font-size: 24px;
+    color: #b2b2b2;
+  }
+
+  &__row-warn {
+    display: block;
+    margin-top: 6px;
+    font-size: 22px;
+    color: #fa5151;
+  }
+}
