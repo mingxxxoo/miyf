@@ -2,13 +2,16 @@ import { View, Text, Button } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import { fetchChefOrders, updateChefOrderStatus } from '@/api/kitchen'
+import EmptyState from '@/components/EmptyState'
+import StatusBadge from '@/components/StatusBadge'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
+import './chef.scss'
 
-const NEXT: Record<string, string> = {
-  PENDING: 'CONFIRMED',
-  CONFIRMED: 'PREPARING',
-  PREPARING: 'READY',
-  READY: 'COMPLETED'
+const NEXT: Record<string, { status: string; label: string }> = {
+  PENDING: { status: 'CONFIRMED', label: '确认预约' },
+  CONFIRMED: { status: 'PREPARING', label: '开始备餐' },
+  PREPARING: { status: 'READY', label: '可以取餐' },
+  READY: { status: 'COMPLETED', label: '完成' }
 }
 
 export default function ChefOrdersPage() {
@@ -27,19 +30,39 @@ export default function ChefOrdersPage() {
   })
 
   return (
-    <View style={{ padding: '32px' }}>
-      {list.map((o) => (
-        <View key={o.id} style={{ background: '#fff', padding: '24px', borderRadius: '16px', marginBottom: '16px' }}>
-          <Text style={{ display: 'block' }}>{o.orderNo}</Text>
-          <Text style={{ display: 'block', color: '#888' }}>{o.status}</Text>
-          {NEXT[o.status] && (
-            <Button size='mini' onClick={() => void updateChefOrderStatus(o.id, NEXT[o.status]).then(load)}>
-              下一步：{NEXT[o.status]}
-            </Button>
-          )}
+    <View className='chef-page'>
+      <View className='chef-page__hero'>
+        <Text className='chef-page__title'>处理预约</Text>
+        <Text className='chef-page__sub'>按流程推进：确认 → 备餐 → 取餐 → 完成</Text>
+      </View>
+      {list.length === 0 ? (
+        <View className='chef-page__empty'>
+          <EmptyState title='暂无预约' description='食客下单后会出现在这里' />
         </View>
-      ))}
-      {list.length === 0 && <Text>暂无预约</Text>}
+      ) : (
+        list.map((o) => {
+          const next = NEXT[o.status]
+          return (
+            <View key={o.id} className='chef-page__card'>
+              <View className='chef-page__row'>
+                <Text className='chef-dish__name'>{o.orderNo}</Text>
+                <StatusBadge status={o.status} />
+              </View>
+              {next && (
+                <View className='chef-page__actions'>
+                  <Button
+                    className='chef-page__action'
+                    size='mini'
+                    onClick={() => void updateChefOrderStatus(o.id, next.status).then(load)}
+                  >
+                    {next.label}
+                  </Button>
+                </View>
+              )}
+            </View>
+          )
+        })
+      )}
     </View>
   )
 }

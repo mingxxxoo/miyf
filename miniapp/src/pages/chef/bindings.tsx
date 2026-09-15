@@ -8,7 +8,16 @@ import {
   unbindBinding,
   type BindingVo
 } from '@/api/kitchen'
+import EmptyState from '@/components/EmptyState'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
+import './chef.scss'
+
+const STATUS_TEXT: Record<string, string> = {
+  PENDING: '待确认',
+  BOUND: '已绑定',
+  REJECTED: '已拒绝',
+  UNBOUND: '已解除'
+}
 
 export default function ChefBindingsPage() {
   useChefWorkbench()
@@ -38,32 +47,60 @@ export default function ChefBindingsPage() {
   }
 
   return (
-    <View style={{ padding: '32px' }}>
-      {list.map((b) => (
-        <View key={b.id} style={{ background: '#fff', padding: '24px', borderRadius: '16px', marginBottom: '16px' }}>
-          <Text style={{ display: 'block' }}>{b.dinerNickname || b.id}</Text>
-          <Text style={{ display: 'block', color: '#888' }}>{b.status}</Text>
-          {b.status === 'PENDING' && (
-            <View>
-              <Button size='mini' onClick={() => void approveBinding(b.id).then(load)}>
-                通过
-              </Button>
-              <Button size='mini' onClick={() => void rejectBinding(b.id, '暂不接收').then(load)}>
-                拒绝
-              </Button>
-              <Button size='mini' onClick={() => void unbind(b)}>
-                取消申请
-              </Button>
-            </View>
-          )}
-          {b.status === 'BOUND' && (
-            <Button size='mini' onClick={() => void unbind(b)}>
-              解除绑定
-            </Button>
-          )}
+    <View className='chef-page'>
+      <View className='chef-page__hero'>
+        <Text className='chef-page__title'>食客申请</Text>
+        <Text className='chef-page__sub'>通过后对方即可浏览你的菜单并预约</Text>
+      </View>
+      {list.length === 0 ? (
+        <View className='chef-page__empty'>
+          <EmptyState title='还没有申请' description='把邀请码发给食客后，申请会出现在这里' />
         </View>
-      ))}
-      {list.length === 0 && <Text>还没有申请</Text>}
+      ) : (
+        list.map((b) => (
+          <View key={b.id} className='chef-page__card'>
+            <Text className='chef-dish__name'>{b.dinerNickname || '食客'}</Text>
+            <Text className='chef-dish__desc'>{STATUS_TEXT[b.status] || b.status}</Text>
+            {b.rejectReason && <Text className='chef-dish__desc'>原因：{b.rejectReason}</Text>}
+            <View className='chef-page__actions'>
+              {b.status === 'PENDING' && (
+                <>
+                  <Button
+                    className='chef-page__action'
+                    size='mini'
+                    onClick={() => void approveBinding(b.id).then(load)}
+                  >
+                    通过
+                  </Button>
+                  <Button
+                    className='chef-page__action chef-page__action--danger'
+                    size='mini'
+                    onClick={() => void rejectBinding(b.id, '暂不接收').then(load)}
+                  >
+                    拒绝
+                  </Button>
+                  <Button
+                    className='chef-page__action chef-page__action--ghost'
+                    size='mini'
+                    onClick={() => void unbind(b)}
+                  >
+                    取消申请
+                  </Button>
+                </>
+              )}
+              {b.status === 'BOUND' && (
+                <Button
+                  className='chef-page__action chef-page__action--danger'
+                  size='mini'
+                  onClick={() => void unbind(b)}
+                >
+                  解除绑定
+                </Button>
+              )}
+            </View>
+          </View>
+        ))
+      )}
     </View>
   )
 }

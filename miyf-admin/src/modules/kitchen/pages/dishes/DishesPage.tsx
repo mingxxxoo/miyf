@@ -98,7 +98,7 @@ export default function DishesPage() {
     confirmAction({
       title: isOnSale ? '下架菜品' : '上架菜品',
       content: isOnSale
-        ? `确定下架「${record.name}」吗？用户端将不再展示。`
+        ? `确定下架「${record.name}」吗？用户端将不再展示，审核状态不变，可随时再上架。`
         : `确定上架「${record.name}」吗？须已审核通过。`,
       onOk: async () => {
         setActingId(record.id);
@@ -112,6 +112,39 @@ export default function DishesPage() {
           }
         } catch (err) {
           notifyError(err, '操作失败');
+        } finally {
+          setActingId(null);
+        }
+      },
+    });
+  };
+
+  const removeDish = (record: Dish) => {
+    if (record.status === 'ON_SALE') {
+      message.warning('请先下架再删除');
+      return;
+    }
+    if (record.auditStatus === 'PENDING_REVIEW') {
+      message.warning('审核中不可删除，请先撤回');
+      return;
+    }
+    if (record.status !== 'OFF_SALE' && record.status !== 'DRAFT') {
+      message.warning('仅草稿或已下架菜品可删除');
+      return;
+    }
+    confirmAction({
+      title: '删除菜品',
+      content: `确定删除「${record.name}」？删除后不可恢复；有预约历史的菜品无法删除。`,
+      danger: true,
+      onOk: async () => {
+        setActingId(record.id);
+        try {
+          await dishApi.remove(record.id);
+          message.success('已删除');
+          if (detail?.id === record.id) setDetail(null);
+          void fetchData();
+        } catch (err) {
+          notifyError(err, '删除失败');
         } finally {
           setActingId(null);
         }
@@ -240,9 +273,9 @@ export default function DishesPage() {
           {
             title: '操作',
             key: 'action',
-            width: 260,
+            width: 300,
             render: (_, record) => (
-              <Space>
+              <Space wrap>
                 <Button
                   type="link"
                   icon={<EditOutlined />}
@@ -275,6 +308,17 @@ export default function DishesPage() {
                 >
                   {record.status === 'ON_SALE' ? '下架' : '上架'}
                 </Button>
+                {(record.status === 'OFF_SALE' || record.status === 'DRAFT') &&
+                  record.auditStatus !== 'PENDING_REVIEW' && (
+                    <Button
+                      type="link"
+                      danger
+                      loading={actingId === record.id}
+                      onClick={() => removeDish(record)}
+                    >
+                      删除
+                    </Button>
+                  )}
               </Space>
             ),
           },
@@ -312,6 +356,12 @@ export default function DishesPage() {
               <Button type="primary" onClick={() => toggleShelf(detail)}>
                 {detail.status === 'ON_SALE' ? '下架' : '上架'}
               </Button>
+              {(detail.status === 'OFF_SALE' || detail.status === 'DRAFT') &&
+                detail.auditStatus !== 'PENDING_REVIEW' && (
+                  <Button danger onClick={() => removeDish(detail)}>
+                    删除
+                  </Button>
+                )}
             </Space>
           ) : null
         }

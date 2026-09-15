@@ -4,6 +4,15 @@ import { useState } from 'react'
 import { fetchMyKitchen } from '@/api/kitchen'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
 import { useUserStore } from '@/stores/userStore'
+import './chef.scss'
+
+const MENUS = [
+  { label: '厨房资料', desc: '名称与简介', url: '/pages/chef/kitchen', icon: '🏠' },
+  { label: '菜品管理', desc: '上传图片、推荐、提审上架', url: '/pages/chef/dishes', icon: '🍽️' },
+  { label: '邀请码', desc: '邀请食客加入厨房', url: '/pages/chef/invite', icon: '🔗' },
+  { label: '食客申请', desc: '通过或拒绝绑定', url: '/pages/chef/bindings', icon: '👥' },
+  { label: '处理预约', desc: '确认、备餐、完成', url: '/pages/chef/orders', icon: '📋' }
+]
 
 export default function ChefHomePage() {
   useChefWorkbench()
@@ -16,29 +25,32 @@ export default function ChefHomePage() {
     })
   })
 
-  const go = (url: string) => Taro.navigateTo({ url })
-
   return (
-    <View style={{ padding: '40px 32px' }}>
-      <Text style={{ display: 'block', fontSize: '40px', fontWeight: 700 }}>{kitchenName}</Text>
-      <Text style={{ display: 'block', color: '#888', margin: '12px 0 32px' }}>
-        {user?.nickname || '厨师'}，先建厨房，再上传菜品提交审核。无价格、无支付。
-      </Text>
-      {[
-        ['厨房资料', '/pages/chef/kitchen'],
-        ['菜品管理', '/pages/chef/dishes'],
-        ['邀请码', '/pages/chef/invite'],
-        ['食客申请', '/pages/chef/bindings'],
-        ['处理预约', '/pages/chef/orders']
-      ].map(([label, url]) => (
-        <View
-          key={url}
-          style={{ background: '#fff', padding: '28px', borderRadius: '20px', marginBottom: '16px' }}
-          onClick={() => go(url)}
-        >
-          <Text>{label}</Text>
-        </View>
-      ))}
+    <View className='chef-page'>
+      <View className='chef-page__hero'>
+        <Text className='chef-page__title'>{kitchenName}</Text>
+        <Text className='chef-page__sub'>
+          {user?.nickname || '厨师'}的工作台 · 先建厨房，再上传菜品提审。无价格、无支付。
+        </Text>
+      </View>
+      <View className='chef-page__nav'>
+        {MENUS.map((m) => (
+          <View
+            key={m.url}
+            className='chef-page__nav-card ck-pressable'
+            onClick={() => Taro.navigateTo({ url: m.url })}
+          >
+            <View className='chef-page__nav-icon'>
+              <Text>{m.icon}</Text>
+            </View>
+            <View className='chef-page__nav-body'>
+              <Text className='chef-page__nav-title'>{m.label}</Text>
+              <Text className='chef-page__nav-desc'>{m.desc}</Text>
+            </View>
+            <Text className='chef-page__nav-arrow'>›</Text>
+          </View>
+        ))}
+      </View>
     </View>
   )
 }

@@ -1,6 +1,10 @@
-import { get, post, put } from '@/api/request'
+import Taro from '@tarojs/taro'
+import { clearToken, getToken, get, post, put, del } from '@/api/request'
 import type { PageResult } from '@/types'
 import { asId } from '@/utils/id'
+import { toAbsoluteResourceUrl, toResourceUrl } from '@/utils/resourceUrl'
+
+const BASE_URL = process.env.TARO_APP_API_BASE || 'https://www.miyf.cn'
 
 export interface KitchenVo {
   id: string
@@ -28,6 +32,8 @@ export interface InviteVo {
 export interface ChefDish {
   id: string
   name: string
+  subtitle?: string
+  description?: string
   status: string
   auditStatus?: string
   rejectReason?: string
@@ -35,6 +41,39 @@ export interface ChefDish {
   stockType?: string
   unit?: string
   categoryId?: string
+  categoryName?: string
+  coverImage?: string
+  coverUrl?: string
+  images?: string[]
+  recommend?: boolean
+}
+
+export interface ChefDishSavePayload {
+  name: string
+  stockType: string
+  stock?: number
+  unit?: string
+  categoryId?: string
+  subtitle?: string
+  description?: string
+  coverImage?: string
+  images?: string[]
+  recommend?: boolean
+}
+
+function mapChefDish(raw: ChefDish): ChefDish {
+  const cover = raw.coverImage || raw.coverUrl || raw.images?.[0]
+  return {
+    ...raw,
+    id: asId(raw.id),
+    categoryId: raw.categoryId != null ? asId(raw.categoryId) : undefined,
+    coverImage: toResourceUrl(cover) || undefined,
+    coverUrl: toAbsoluteResourceUrl(cover) || undefined,
+    images: (raw.images || [])
+      .map((u) => toAbsoluteResourceUrl(u) || '')
+      .filter(Boolean),
+    recommend: Boolean(raw.recommend)
+  }
 }
 
 export async function chooseRole(role: 'CHEF' | 'DINER') {
@@ -99,30 +138,19 @@ export async function unbindBinding(id: string) {
 }
 
 export async function fetchChefDishes(): Promise<PageResult<ChefDish>> {
-  return get<PageResult<ChefDish>>('/api/chef/dishes', { page: 1, rows: 50 })
-}
-
-export async function createChefDish(payload: {
-  name: string
-  stockType: string
-  stock?: number
-  unit?: string
-  categoryId?: string
-}) {
-  return post<ChefDish>('/api/chef/dishes', payload)
-}
-
-export async function updateChefDish(
-  id: string,
-  payload: {
-    name: string
-    stockType: string
-    stock?: number
-    unit?: string
-    categoryId?: string
+  const page = await get<PageResult<ChefDish>>('/api/chef/dishes', { page: 1, rows: 50 })
+  return {
+    ...page,
+    records: (page.records || []).map(mapChefDish)
   }
-) {
-  return put<ChefDish>(`/api/chef/dishes/${asId(id)}`, payload)
+}
+
+export async function createChefDish(payload: ChefDishSavePayload) {
+  return post<ChefDish>('/api/chef/dishes', payload).then(mapChefDish)
+}
+
+export async function updateChefDish(id: string, payload: ChefDishSavePayload) {
+  return put<ChefDish>(`/api/chef/dishes/${asId(id)}`, payload).then(mapChefDish)
 }
 
 export async function submitChefDish(id: string) {
@@ -139,6 +167,50 @@ export async function publishChefDish(id: string) {
 
 export async function unpublishChefDish(id: string) {
   return post(`/api/chef/dishes/${asId(id)}/unpublish`)
+}
+
+export async function deleteChefDish(id: string) {
+  return del(`/api/chef/dishes/${asId(id)}`)
+}
+
+/** 上传厨师菜品图片，返回可写入 DTO 的 /r/{id} 路径 */
+export async function uploadChefDishImage(filePath: string): Promise<string> {
+  const token = getToken()
+  const res = await Taro.uploadFile({
+    url: `${BASE_URL}/api/chef/dishes/images/upload`,
+    filePath,
+    name: 'file',
+    header: token ? { Authorization: `Bearer ${token}` } : {}
+  })
+  if (res.statusCode === 401) {
+    clearToken()
+    try {
+      Taro.eventCenter.trigger('miyf:auth-expired')
+    } catch {
+      // ignore
+    }
+    throw new Error('请先登录')
+  }
+  let body: { code?: number; message?: string; data?: { url?: string } } | null = null
+  try {
+    body = typeof res.data === 'string' ? JSON.parse(res.data) : (res.data as typeof body)
+  } catch {
+    throw new Error('图片上传失败')
+  }
+  if (body && body.code === 40100) {
+    clearToken()
+    try {
+      Taro.eventCenter.trigger('miyf:auth-expired')
+    } catch {
+      // ignore
+    }
+    throw new Error('请先登录')
+  }
+  const url = body?.data?.url
+  if (!body || body.code !== 0 || !url) {
+    throw new Error(body?.message || '图片上传失败')
+  }
+  return toResourceUrl(url) || url
 }
 
 export async function fetchChefOrders(): Promise<PageResult<{ id: string; orderNo: string; status: string }>> {

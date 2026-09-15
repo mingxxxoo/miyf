@@ -12,17 +12,22 @@ import cn.miyf.kitchen.bean.vo.OrderVo;
 import cn.miyf.kitchen.security.KitchenPersonalPopedom;
 import cn.miyf.kitchen.service.DishApplicationService;
 import cn.miyf.kitchen.service.OrderApplicationService;
+import cn.miyf.oss.bean.vo.UploadedFileVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 厨师菜品与接单。
@@ -54,6 +59,20 @@ public class ChefController {
     @GetMapping("/dishes")
     public ApiResult<PageResult<DishVo>> dishes(DishPageQo qo) {
         return ApiResult.ok(dishApplicationService.pageChef(qo));
+    }
+
+    /**
+     * 上传菜品封面/图集图片。
+     *
+     * @param file 图片文件
+     * @return 上传结果（含 /r/{id}）
+     * @history 1.00 2026-09-15 XieMingJie Created.
+     */
+    @Operation(summary = "上传菜品图片")
+    @MiyfPermission(code = "kitchen:user:dish:list")
+    @PostMapping(value = "/dishes/images/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResult<UploadedFileVo> uploadDishImage(@RequestPart("file") MultipartFile file) {
+        return ApiResult.ok(dishApplicationService.uploadChefImage(file));
     }
 
     /**
@@ -142,7 +161,7 @@ public class ChefController {
     }
 
     /**
-     * 下架本厨房上架菜品。
+     * 下架本厨房上架菜品（不改审核状态，再次上架无需重审）。
      *
      * @param id 菜品 ID
      * @return 更新后菜品
@@ -153,6 +172,21 @@ public class ChefController {
     @PostMapping("/dishes/{id}/unpublish")
     public ApiResult<DishVo> unpublish(@PathVariable Long id) {
         return ApiResult.ok(dishApplicationService.unpublishChef(id));
+    }
+
+    /**
+     * 删除本厨房草稿或已下架菜品。
+     *
+     * @param id 菜品 ID
+     * @return 空
+     * @history 1.00 2026-09-15 XieMingJie Created.
+     */
+    @Operation(summary = "删除菜品")
+    @MiyfPermission(code = "kitchen:user:dish:list")
+    @DeleteMapping("/dishes/{id}")
+    public ApiResult<Void> delete(@PathVariable Long id) {
+        dishApplicationService.deleteChef(id);
+        return ApiResult.ok();
     }
 
     /**

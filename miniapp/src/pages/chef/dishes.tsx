@@ -1,36 +1,105 @@
-import { View, Text, Input, Button } from '@tarojs/components'
+import { View, Text, Input, Textarea, Button, Image, Switch, Picker } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { fetchCategories } from '@/api/category'
 import {
   createChefDish,
+  deleteChefDish,
   fetchChefDishes,
   publishChefDish,
   submitChefDish,
   unpublishChefDish,
   updateChefDish,
+  uploadChefDishImage,
   withdrawChefDish,
-  type ChefDish
+  type ChefDish,
+  type ChefDishSavePayload
 } from '@/api/kitchen'
+import EmptyState from '@/components/EmptyState'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
+import type { Category } from '@/types'
+import { toAbsoluteResourceUrl, toResourceUrl } from '@/utils/resourceUrl'
+import './chef.scss'
+
+const MAX_IMAGES = 6
+
+const AUDIT_LABEL: Record<string, { text: string; tone: string }> = {
+  DRAFT: { text: '草稿', tone: '' },
+  PENDING_REVIEW: { text: '审核中', tone: 'warn' },
+  APPROVED: { text: '已通过', tone: 'ok' },
+  REJECTED: { text: '已驳回', tone: 'bad' }
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  DRAFT: '草稿',
+  ON_SALE: '已上架',
+  OFF_SALE: '已下架'
+}
+
+function isRemotePath(path: string) {
+  return path.startsWith('/r/') || /^https?:\/\//i.test(path)
+}
+
+function displaySrc(path: string) {
+  return toAbsoluteResourceUrl(path) || path
+}
+
+async function resolveUploadPaths(paths: string[]): Promise<string[]> {
+  const out: string[] = []
+  for (const path of paths) {
+    if (!path) continue
+    if (isRemotePath(path)) {
+      out.push(toResourceUrl(path) || path)
+    } else {
+      out.push(await uploadChefDishImage(path))
+    }
+  }
+  return out
+}
 
 export default function ChefDishesPage() {
   useChefWorkbench()
   const [list, setList] = useState<ChefDish[]>([])
-  const [name, setName] = useState('')
-  const [defaultCategoryId, setDefaultCategoryId] = useState<string>()
+  const [categories, setCategories] = useState<Category[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
-  const [editStock, setEditStock] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const [name, setName] = useState('')
+  const [categoryId, setCategoryId] = useState('')
+  const [stockType, setStockType] = useState<'UNLIMITED' | 'LIMITED'>('UNLIMITED')
+  const [stock, setStock] = useState('')
+  const [unit, setUnit] = useState('份')
+  const [recommend, setRecommend] = useState(false)
+  const [description, setDescription] = useState('')
+  const [images, setImages] = useState<string[]>([])
+
+  const categoryNames = useMemo(() => categories.map((c) => c.name), [categories])
+  const categoryIndex = Math.max(
+    0,
+    categories.findIndex((c) => c.id === categoryId)
+  )
+
+  const resetForm = () => {
+    setEditingId(null)
+    setName('')
+    setCategoryId(categories[0]?.id || '')
+    setStockType('UNLIMITED')
+    setStock('')
+    setUnit('份')
+    setRecommend(false)
+    setDescription('')
+    setImages([])
+  }
 
   const load = async () => {
     const [page, cats] = await Promise.all([
       fetchChefDishes(),
-      fetchCategories().catch(() => [])
+      fetchCategories().catch(() => [] as Category[])
     ])
     setList(page.records || [])
-    if (cats.length > 0) {
-      setDefaultCategoryId(cats[0].id)
+    setCategories(cats)
+    if (!categoryId && cats.length > 0) {
+      setCategoryId(cats[0].id)
     }
   }
 
@@ -40,24 +109,25 @@ export default function ChefDishesPage() {
     })
   })
 
-  const create = async () => {
-    if (!name.trim()) {
-      Taro.showToast({ title: '请填写菜名', icon: 'none' })
+  const chooseImages = async () => {
+    const remain = MAX_IMAGES - images.length
+    if (remain <= 0) {
+      Taro.showToast({ title: `最多 ${MAX_IMAGES} 张`, icon: 'none' })
       return
     }
-    if (!defaultCategoryId) {
-      Taro.showToast({ title: '暂无分类，请联系管理员', icon: 'none' })
-      return
+    try {
+      const res = await Taro.chooseImage({
+        count: remain,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera']
+      })
+      const paths = res.tempFilePaths || []
+      if (paths.length) {
+        setImages((prev) => [...prev, ...paths].slice(0, MAX_IMAGES))
+      }
+    } catch {
+      // user cancel
     }
-    await createChefDish({
-      name: name.trim(),
-      stockType: 'UNLIMITED',
-      unit: '份',
-      categoryId: defaultCategoryId
-    })
-    setName('')
-    Taro.showToast({ title: '已保存草稿', icon: 'success' })
-    void load()
   }
 
   const startEdit = (d: ChefDish) => {
@@ -66,87 +136,342 @@ export default function ChefDishesPage() {
       return
     }
     setEditingId(d.id)
-    setEditName(d.name)
-    setEditStock(d.stockType === 'LIMITED' ? String(d.stock ?? 0) : '')
+    setName(d.name || '')
+    setCategoryId(d.categoryId || categories[0]?.id || '')
+    setStockType(d.stockType === 'LIMITED' ? 'LIMITED' : 'UNLIMITED')
+    setStock(d.stockType === 'LIMITED' ? String(d.stock ?? 0) : '')
+    setUnit(d.unit || '份')
+    setRecommend(Boolean(d.recommend))
+    setDescription(d.description || '')
+    const gallery = d.images?.length
+      ? d.images
+      : d.coverUrl || d.coverImage
+        ? [d.coverUrl || d.coverImage!]
+        : []
+    setImages(gallery)
+    Taro.pageScrollTo({ scrollTop: 0, duration: 200 })
   }
 
-  const saveEdit = async (d: ChefDish) => {
-    if (!editName.trim()) {
-      Taro.showToast({ title: '菜名不能为空', icon: 'none' })
-      return
+  const buildPayload = async (): Promise<ChefDishSavePayload | null> => {
+    if (!name.trim()) {
+      Taro.showToast({ title: '请填写菜名', icon: 'none' })
+      return null
     }
-    const limited = editStock.trim() !== ''
-    await updateChefDish(d.id, {
-      name: editName.trim(),
-      categoryId: d.categoryId || defaultCategoryId,
-      stockType: limited ? 'LIMITED' : 'UNLIMITED',
-      stock: limited ? Number(editStock) || 0 : undefined,
-      unit: d.unit || '份'
-    })
-    setEditingId(null)
-    Taro.showToast({ title: '已保存', icon: 'success' })
-    void load()
+    if (!categoryId) {
+      Taro.showToast({ title: '暂无分类，请联系管理员', icon: 'none' })
+      return null
+    }
+    if (stockType === 'LIMITED' && !(Number(stock) > 0)) {
+      Taro.showToast({ title: '请填写限量份数', icon: 'none' })
+      return null
+    }
+    Taro.showLoading({ title: '保存中…', mask: true })
+    try {
+      const uploaded = await resolveUploadPaths(images)
+      const coverImage = uploaded[0] || ''
+      return {
+        name: name.trim(),
+        categoryId,
+        stockType,
+        stock: stockType === 'LIMITED' ? Number(stock) || 0 : undefined,
+        unit: unit.trim() || '份',
+        recommend,
+        description: description.trim() || undefined,
+        coverImage,
+        images: uploaded
+      }
+    } finally {
+      Taro.hideLoading()
+    }
+  }
+
+  const save = async () => {
+    if (saving) return
+    setSaving(true)
+    try {
+      const payload = await buildPayload()
+      if (!payload) return
+      if (editingId) {
+        await updateChefDish(editingId, payload)
+        Taro.showToast({ title: '已保存', icon: 'success' })
+      } else {
+        await createChefDish(payload)
+        Taro.showToast({ title: '已保存草稿', icon: 'success' })
+      }
+      resetForm()
+      await load()
+    } catch (e) {
+      Taro.showToast({
+        title: e instanceof Error ? e.message : '保存失败',
+        icon: 'none'
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const runAction = async (fn: () => Promise<unknown>) => {
+    try {
+      await fn()
+      await load()
+    } catch {
+      // request layer toasts
+    }
   }
 
   return (
-    <View style={{ padding: '32px' }}>
-      <Text>上传菜品后需提交审核，通过才能上架。改菜名等关键信息会重新审核；仅改份数可不审。不填写价格。</Text>
-      <Input value={name} placeholder='新菜名' onInput={(e) => setName(e.detail.value)} />
-      <Button type='primary' onClick={() => void create()}>
-        新增草稿
-      </Button>
-      {list.map((d) => (
-        <View key={d.id} style={{ background: '#fff', padding: '24px', marginTop: '16px', borderRadius: '16px' }}>
-          {editingId === d.id ? (
-            <View>
-              <Input value={editName} onInput={(e) => setEditName(e.detail.value)} placeholder='菜名' />
-              <Input
-                value={editStock}
-                type='number'
-                placeholder='限量份数（空=不限）'
-                onInput={(e) => setEditStock(e.detail.value)}
-              />
-              <Button size='mini' onClick={() => void saveEdit(d)}>
-                保存
-              </Button>
-              <Button size='mini' onClick={() => setEditingId(null)}>
-                取消
-              </Button>
-            </View>
+    <View className='chef-page'>
+      <Text className='chef-page__tip'>
+        流程：保存草稿 → 提交审核 → 通过后由你控制上架/下架（下架无需再审）。草稿与已下架可删除；改菜名或图片会重新审核。
+      </Text>
+
+      <View className='chef-page__card'>
+        <Text className='chef-dish__form-title'>{editingId ? '编辑菜品' : '新增菜品'}</Text>
+
+        <View className='chef-page__field'>
+          <Text className='chef-page__label'>菜品图片（首张为封面）</Text>
+          <View className='chef-dish__images'>
+            {images.map((src, index) => (
+              <View key={`${src}-${index}`} className='chef-dish__thumb-wrap'>
+                <Image className='chef-dish__thumb' src={displaySrc(src)} mode='aspectFill' />
+                {index === 0 && <Text className='chef-dish__thumb-cover'>封面</Text>}
+                <Text
+                  className='chef-dish__thumb-del'
+                  onClick={() => setImages((prev) => prev.filter((_, i) => i !== index))}
+                >
+                  ×
+                </Text>
+              </View>
+            ))}
+            {images.length < MAX_IMAGES && (
+              <View className='chef-dish__add ck-pressable' onClick={() => void chooseImages()}>
+                <Text className='chef-dish__add-icon'>+</Text>
+                <Text className='chef-dish__add-text'>添加</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <View className='chef-page__field'>
+          <Text className='chef-page__label'>菜名</Text>
+          <Input
+            className='chef-page__input'
+            value={name}
+            placeholder='例如：番茄炒蛋'
+            onInput={(e) => setName(e.detail.value)}
+          />
+        </View>
+
+        <View className='chef-page__field'>
+          <Text className='chef-page__label'>分类</Text>
+          {categories.length > 0 ? (
+            <Picker
+              mode='selector'
+              range={categoryNames}
+              value={categoryIndex}
+              onChange={(e) => {
+                const idx = Number(e.detail.value)
+                const cat = categories[idx]
+                if (cat) setCategoryId(cat.id)
+              }}
+            >
+              <View className='chef-page__input' style={{ display: 'flex', alignItems: 'center' }}>
+                <Text>{categories[categoryIndex]?.name || '请选择'}</Text>
+              </View>
+            </Picker>
           ) : (
-            <>
-              <Text style={{ display: 'block', fontWeight: 600 }}>{d.name}</Text>
-              <Text style={{ display: 'block', color: '#888' }}>
-                {d.auditStatus || ''} / {d.status}
-                {d.stockType === 'LIMITED' ? ` · ${d.stock ?? 0}${d.unit || '份'}` : ' · 不限量'}
-                {d.rejectReason ? ` · 驳回：${d.rejectReason}` : ''}
-              </Text>
-              <Button size='mini' onClick={() => startEdit(d)}>
-                编辑
-              </Button>
-              {d.auditStatus === 'PENDING_REVIEW' ? (
-                <Button size='mini' onClick={() => void withdrawChefDish(d.id).then(load)}>
-                  撤回审核
-                </Button>
-              ) : (
-                <Button size='mini' onClick={() => void submitChefDish(d.id).then(load)}>
-                  提交审核
-                </Button>
-              )}
-              {d.auditStatus === 'APPROVED' && d.status !== 'ON_SALE' && (
-                <Button size='mini' onClick={() => void publishChefDish(d.id).then(load)}>
-                  上架
-                </Button>
-              )}
-              {d.status === 'ON_SALE' && (
-                <Button size='mini' onClick={() => void unpublishChefDish(d.id).then(load)}>
-                  下架
-                </Button>
-              )}
-            </>
+            <Text className='ck-muted'>暂无分类</Text>
           )}
         </View>
-      ))}
+
+        <View className='chef-page__field'>
+          <Text className='chef-page__label'>份量</Text>
+          <View className='chef-page__chips'>
+            <Text
+              className={`chef-page__chip ${stockType === 'UNLIMITED' ? 'chef-page__chip--on' : ''}`}
+              onClick={() => setStockType('UNLIMITED')}
+            >
+              不限量
+            </Text>
+            <Text
+              className={`chef-page__chip ${stockType === 'LIMITED' ? 'chef-page__chip--on' : ''}`}
+              onClick={() => setStockType('LIMITED')}
+            >
+              限量
+            </Text>
+          </View>
+          {stockType === 'LIMITED' && (
+            <Input
+              className='chef-page__input'
+              style={{ marginTop: '12px' }}
+              type='number'
+              value={stock}
+              placeholder='可提供份数'
+              onInput={(e) => setStock(e.detail.value)}
+            />
+          )}
+        </View>
+
+        <View className='chef-page__field'>
+          <Text className='chef-page__label'>单位</Text>
+          <Input
+            className='chef-page__input'
+            value={unit}
+            placeholder='份 / 碗 / 盘'
+            onInput={(e) => setUnit(e.detail.value)}
+          />
+        </View>
+
+        <View className='chef-page__field'>
+          <View className='chef-page__switch-row'>
+            <View>
+              <Text className='chef-page__switch-text'>标记为推荐</Text>
+              <Text className='chef-page__switch-hint'>食客端推荐列表会优先展示</Text>
+            </View>
+            <Switch checked={recommend} color='#FFB36B' onChange={(e) => setRecommend(Boolean(e.detail.value))} />
+          </View>
+        </View>
+
+        <View className='chef-page__field'>
+          <Text className='chef-page__label'>简介（可选）</Text>
+          <Textarea
+            className='chef-page__textarea'
+            value={description}
+            placeholder='口味、食材或做法亮点'
+            maxlength={200}
+            onInput={(e) => setDescription(e.detail.value)}
+          />
+        </View>
+
+        <Button className='ck-btn-primary chef-page__btn' loading={saving} onClick={() => void save()}>
+          {editingId ? '保存修改' : '保存为草稿'}
+        </Button>
+        {editingId && (
+          <Button className='chef-page__btn-ghost' onClick={resetForm}>
+            取消编辑
+          </Button>
+        )}
+      </View>
+
+      <Text className='chef-page__section-title'>我的菜品（{list.length}）</Text>
+      {list.length === 0 ? (
+        <View className='chef-page__empty'>
+          <EmptyState title='还没有菜品' description='在上方填写信息并添加图片后保存' />
+        </View>
+      ) : (
+        list.map((d) => {
+          const audit = AUDIT_LABEL[d.auditStatus || ''] || { text: d.auditStatus || '', tone: '' }
+          return (
+            <View key={d.id} className='chef-page__card'>
+              <View className='chef-dish__item'>
+                {d.coverUrl ? (
+                  <Image className='chef-dish__cover' src={d.coverUrl} mode='aspectFill' />
+                ) : (
+                  <View className='chef-dish__cover-empty'>
+                    <Text>🍳</Text>
+                  </View>
+                )}
+                <View className='chef-dish__meta'>
+                  <Text className='chef-dish__name'>{d.name}</Text>
+                  <View className='chef-dish__tags'>
+                    {d.recommend && <Text className='chef-dish__tag chef-dish__tag--rec'>推荐</Text>}
+                    {audit.text && (
+                      <Text className={`chef-dish__tag ${audit.tone ? `chef-dish__tag--${audit.tone}` : ''}`}>
+                        {audit.text}
+                      </Text>
+                    )}
+                    <Text className='chef-dish__tag'>{STATUS_LABEL[d.status] || d.status}</Text>
+                  </View>
+                  <Text className='chef-dish__desc'>
+                    {d.categoryName ? `${d.categoryName} · ` : ''}
+                    {d.stockType === 'LIMITED' ? `${d.stock ?? 0}${d.unit || '份'}` : '不限量'}
+                    {d.rejectReason ? ` · 驳回：${d.rejectReason}` : ''}
+                  </Text>
+                </View>
+              </View>
+              <View className='chef-page__actions'>
+                <Button className='chef-page__action chef-page__action--ghost' size='mini' onClick={() => startEdit(d)}>
+                  编辑
+                </Button>
+                {d.auditStatus === 'PENDING_REVIEW' && (
+                  <Button
+                    className='chef-page__action chef-page__action--ghost'
+                    size='mini'
+                    onClick={() => void runAction(() => withdrawChefDish(d.id))}
+                  >
+                    撤回审核
+                  </Button>
+                )}
+                {(d.auditStatus === 'DRAFT' || d.auditStatus === 'REJECTED' || !d.auditStatus) && (
+                  <Button
+                    className='chef-page__action'
+                    size='mini'
+                    onClick={() =>
+                      void runAction(async () => {
+                        await submitChefDish(d.id)
+                        Taro.showToast({ title: '已提交审核', icon: 'success' })
+                      })
+                    }
+                  >
+                    提交审核
+                  </Button>
+                )}
+                {d.auditStatus === 'APPROVED' && d.status !== 'ON_SALE' && (
+                  <Button
+                    className='chef-page__action'
+                    size='mini'
+                    onClick={() =>
+                      void runAction(async () => {
+                        await publishChefDish(d.id)
+                        Taro.showToast({ title: '已上架', icon: 'success' })
+                      })
+                    }
+                  >
+                    上架售卖
+                  </Button>
+                )}
+                {d.auditStatus === 'APPROVED' && d.status === 'ON_SALE' && (
+                  <Button
+                    className='chef-page__action chef-page__action--ghost'
+                    size='mini'
+                    onClick={() =>
+                      void runAction(async () => {
+                        await unpublishChefDish(d.id)
+                        Taro.showToast({ title: '已下架', icon: 'success' })
+                      })
+                    }
+                  >
+                    下架
+                  </Button>
+                )}
+                {(d.status === 'OFF_SALE' || d.status === 'DRAFT') &&
+                  d.auditStatus !== 'PENDING_REVIEW' && (
+                    <Button
+                      className='chef-page__action chef-page__action--danger'
+                      size='mini'
+                      onClick={() =>
+                        void (async () => {
+                          const res = await Taro.showModal({
+                            title: '删除菜品',
+                            content: `确定删除「${d.name}」？删除后不可恢复。`
+                          })
+                          if (!res.confirm) return
+                          await runAction(async () => {
+                            await deleteChefDish(d.id)
+                            if (editingId === d.id) resetForm()
+                            Taro.showToast({ title: '已删除', icon: 'success' })
+                          })
+                        })()
+                      }
+                    >
+                      删除
+                    </Button>
+                  )}
+              </View>
+            </View>
+          )
+        })
+      )}
     </View>
   )
 }

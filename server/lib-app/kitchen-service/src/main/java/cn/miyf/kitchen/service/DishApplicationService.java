@@ -22,10 +22,17 @@ import cn.miyf.kitchen.repository.CategoryRepository;
 import cn.miyf.kitchen.repository.DishImageRepository;
 import cn.miyf.kitchen.repository.DishRepository;
 import cn.miyf.kitchen.search.DishSearchIndexService;
+import cn.miyf.oss.bean.dto.FileUploadCommand;
+import cn.miyf.oss.bean.vo.UploadedFileVo;
+import cn.miyf.oss.enums.FileAccessPermission;
+import cn.miyf.oss.service.FileResourceApplicationService;
 import cn.miyf.service.BaseApplicationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -62,6 +69,7 @@ public class DishApplicationService extends BaseApplicationService {
     private final DishSearchIndexService dishSearchIndexService;
     private final KitchenAccessService kitchenAccessService;
     private final DishAuditWorkflowService dishAuditWorkflowService;
+    private final FileResourceApplicationService fileResourceApplicationService;
 
     public DishApplicationService(DishRepository dishRepository,
                                   DishImageRepository dishImageRepository,
@@ -71,7 +79,8 @@ public class DishApplicationService extends BaseApplicationService {
                                   KitchenCacheEvictService kitchenCacheEvictService,
                                   DishSearchIndexService dishSearchIndexService,
                                   KitchenAccessService kitchenAccessService,
-                                  DishAuditWorkflowService dishAuditWorkflowService) {
+                                  DishAuditWorkflowService dishAuditWorkflowService,
+                                  FileResourceApplicationService fileResourceApplicationService) {
         this.dishRepository = dishRepository;
         this.dishImageRepository = dishImageRepository;
         this.categoryRepository = categoryRepository;
@@ -81,6 +90,7 @@ public class DishApplicationService extends BaseApplicationService {
         this.dishSearchIndexService = dishSearchIndexService;
         this.kitchenAccessService = kitchenAccessService;
         this.dishAuditWorkflowService = dishAuditWorkflowService;
+        this.fileResourceApplicationService = fileResourceApplicationService;
     }
 
     /**
@@ -292,11 +302,12 @@ public class DishApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 下架：ON_SALE → OFF_SALE（写库 + 失效浏览缓存；ES 随召回开关同步）。
+     * 下架：ON_SALE → OFF_SALE。不改动审核状态，再次上架无需重审。
      *
      * @param id 菜品 ID
      * @return 更新后菜品
      * @history 1.00 2026-09-04 XieMingJie Created.
+     * @history 1.01 2026-09-15 XieMingJie Clarify unpublish keeps APPROVED.
      */
     @Transactional
     public DishVo unpublish(Long id) {
@@ -311,17 +322,16 @@ public class DishApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 物理删除菜品；有预约历史时禁止删除。
+     * 删除菜品：仅草稿或已下架可删；有预约历史禁止删除。
      *
      * @param id 菜品 ID
      * @history 1.00 2026-09-04 XieMingJie Created.
+     * @history 1.01 2026-09-15 XieMingJie Restrict to DRAFT/OFF_SALE.
      */
     @Transactional
     public void delete(Long id) {
-        requireById(dishRepository, id, "菜品不存在");
-        if (dishRepository.countOrderItems(id) > 0) {
-            throw new BusinessException(ErrorCode.CONFLICT, "有预约历史的菜品无法删除");
-        }
+        Dish dish = EntityConverters.toDish(requireById(dishRepository, id, "菜品不存在"));
+        assertDeletable(dish);
         dishImageRepository.deleteByDishId(id);
         deleteById(dishRepository, id);
         kitchenCacheEvictService.evictDishBrowse();
@@ -355,6 +365,37 @@ public class DishApplicationService extends BaseApplicationService {
      */
     public DishVo getChefDetail(Long id) {
         return toVo(requireChefDish(id));
+    }
+
+    /**
+     * 厨师菜品配图上传（公开可读，便于菜单展示）。
+     *
+     * @param file 图片
+     * @return 上传结果（含 /r/{id}）
+     * @history 1.00 2026-09-15 XieMingJie Created.
+     */
+    public UploadedFileVo uploadChefImage(MultipartFile file) {
+        kitchenAccessService.requireOwnedKitchen();
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_FILE, "请选择图片");
+        }
+        FileUploadCommand command = new FileUploadCommand()
+                .setAppCode("kitchen")
+                .setSource("dish")
+                .setTemp(false)
+                .setCompress(true)
+                .setAccessPermission(FileAccessPermission.PUBLIC);
+        try (InputStream in = file.getInputStream()) {
+            return fileResourceApplicationService.store(
+                    in,
+                    file.getSize(),
+                    file.getContentType(),
+                    file.getOriginalFilename(),
+                    command
+            );
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.STORAGE_UNAVAILABLE, "读取图片失败");
+        }
     }
 
     /**
@@ -487,7 +528,7 @@ public class DishApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 厨师下架本厨房上架菜品。
+     * 厨师下架：ON_SALE → OFF_SALE，保留审核状态（已通过则再次上架无需重审）。
      *
      * @param id 菜品 ID
      * @return 更新后菜品
@@ -505,12 +546,42 @@ public class DishApplicationService extends BaseApplicationService {
         return toVo(saved);
     }
 
+    /**
+     * 厨师删除本厨房草稿或已下架菜品。
+     *
+     * @param id 菜品 ID
+     * @history 1.00 2026-09-15 XieMingJie Created.
+     */
+    @Transactional
+    public void deleteChef(Long id) {
+        Dish dish = requireChefDish(id);
+        assertDeletable(dish);
+        dishImageRepository.deleteByDishId(id);
+        deleteById(dishRepository, id);
+        kitchenCacheEvictService.evictDishBrowse();
+    }
+
     /** 校验菜品归属当前厨师厨房。 */
     private Dish requireChefDish(Long id) {
         Dish dish = requireDish(id);
         Long kitchenId = kitchenAccessService.requireOwnedKitchen().getId();
         requireTrue(kitchenId.equals(dish.getKitchenId()), ErrorCode.FORBIDDEN, "无权操作该菜品");
         return dish;
+    }
+
+    /**
+     * 仅草稿/已下架可删；上架须先下架，审核中须先撤回；有预约历史不可删。
+     */
+    private void assertDeletable(Dish dish) {
+        requireTrue(!"ON_SALE".equals(dish.getStatus()),
+                ErrorCode.INVALID_STATUS, "请先下架再删除");
+        requireTrue(!"PENDING_REVIEW".equals(dish.getAuditStatus()),
+                ErrorCode.CONFLICT, "审核中不可删除，请先撤回");
+        requireTrue("OFF_SALE".equals(dish.getStatus()) || "DRAFT".equals(dish.getStatus()),
+                ErrorCode.INVALID_STATUS, "仅草稿或已下架菜品可删除");
+        if (dish.getId() != null && dishRepository.countOrderItems(dish.getId()) > 0) {
+            throw new BusinessException(ErrorCode.CONFLICT, "有预约历史的菜品无法删除");
+        }
     }
 
     /**

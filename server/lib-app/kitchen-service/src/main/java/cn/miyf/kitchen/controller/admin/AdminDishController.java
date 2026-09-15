@@ -102,7 +102,7 @@ public class AdminDishController {
      * @return 空
      * @history 1.00 2026-09-04 17:30 XieMingJie Created.
      */
-    @Operation(summary = "删除菜品")
+    @Operation(summary = "删除菜品（仅草稿/已下架）")
     @MiyfPermission(code = "kitchen:dish:delete")
     @DeleteMapping("/{id}")
     public ApiResult<Void> delete(@PathVariable Long id) {

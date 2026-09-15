@@ -1,0 +1,425 @@
+.chef-page {
+  min-height: 100vh;
+  padding: 32px 32px calc(48px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 12% -8%, rgba($ck-primary, 0.16), transparent 42%),
+    radial-gradient(circle at 92% 8%, rgba($ck-secondary, 0.14), transparent 38%),
+    $ck-bg;
+
+  &__hero {
+    margin-bottom: 28px;
+  }
+
+  &__title {
+    display: block;
+    font-size: 44px;
+    font-weight: 700;
+    color: $ck-text;
+    letter-spacing: 0.5px;
+  }
+
+  &__sub {
+    display: block;
+    margin-top: 10px;
+    font-size: $ck-font-caption;
+    color: $ck-muted;
+    line-height: 1.55;
+  }
+
+  &__tip {
+    display: block;
+    margin-bottom: 20px;
+    padding: 20px 24px;
+    border-radius: $ck-radius-md;
+    background: rgba($ck-primary, 0.1);
+    color: $ck-primary-d18;
+    font-size: 24px;
+    line-height: 1.55;
+  }
+
+  &__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  &__nav-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 28px 24px;
+    background: #fff;
+    border-radius: $ck-radius-md;
+    border: 1px solid $ck-border;
+    box-shadow: $ck-shadow-soft;
+  }
+
+  &__nav-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    background: linear-gradient(145deg, rgba($ck-primary, 0.2), rgba($ck-primary, 0.06));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    flex-shrink: 0;
+  }
+
+  &__nav-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__nav-title {
+    display: block;
+    font-size: 30px;
+    font-weight: 600;
+    color: $ck-text;
+  }
+
+  &__nav-desc {
+    display: block;
+    margin-top: 6px;
+    font-size: 22px;
+    color: $ck-muted;
+  }
+
+  &__nav-arrow {
+    color: $ck-muted-l12;
+    font-size: 32px;
+    flex-shrink: 0;
+  }
+
+  &__card {
+    background: #fff;
+    border-radius: $ck-radius-md;
+    border: 1px solid $ck-border;
+    box-shadow: $ck-shadow-soft;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  &__label {
+    display: block;
+    font-size: 26px;
+    font-weight: 600;
+    color: $ck-text;
+    margin-bottom: 12px;
+  }
+
+  &__field {
+    margin-bottom: 24px;
+  }
+
+  &__input {
+    width: 100%;
+    height: 80px;
+    padding: 0 24px;
+    box-sizing: border-box;
+    border-radius: $ck-radius-sm;
+    background: $ck-bg;
+    border: 1px solid $ck-border;
+    font-size: 28px;
+    color: $ck-text;
+  }
+
+  &__textarea {
+    width: 100%;
+    min-height: 140px;
+    padding: 20px 24px;
+    box-sizing: border-box;
+    border-radius: $ck-radius-sm;
+    background: $ck-bg;
+    border: 1px solid $ck-border;
+    font-size: 28px;
+    color: $ck-text;
+    line-height: 1.5;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  &__chip {
+    padding: 12px 22px;
+    border-radius: 999px;
+    background: $ck-bg;
+    border: 1px solid $ck-border;
+    font-size: 24px;
+    color: $ck-muted;
+
+    &--on {
+      background: rgba($ck-primary, 0.14);
+      border-color: rgba($ck-primary, 0.45);
+      color: $ck-primary-d18;
+      font-weight: 600;
+    }
+  }
+
+  &__switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0 4px;
+  }
+
+  &__switch-text {
+    font-size: 28px;
+    color: $ck-text;
+  }
+
+  &__switch-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 22px;
+    color: $ck-muted;
+  }
+
+  &__btn {
+    margin-top: 8px;
+  }
+
+  &__btn-ghost {
+    margin-top: 12px;
+    height: 80px;
+    border-radius: $ck-radius-lg;
+    background: #fff;
+    color: $ck-text;
+    border: 1px solid $ck-border;
+    font-size: 28px;
+
+    &::after {
+      border: none;
+    }
+  }
+
+  &__section-title {
+    display: block;
+    margin: 8px 0 16px;
+    font-size: 30px;
+    font-weight: 600;
+  }
+
+  &__empty {
+    padding: 48px 0;
+  }
+
+  &__code {
+    display: block;
+    margin: 12px 0 8px;
+    font-size: 64px;
+    font-weight: 800;
+    letter-spacing: 10px;
+    text-align: center;
+    color: $ck-primary-d12;
+  }
+
+  &__link {
+    display: block;
+    margin-top: 12px;
+    font-size: 22px;
+    color: $ck-muted;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  &__action {
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 24px;
+    background: rgba($ck-primary, 0.12);
+    color: $ck-primary-d18;
+    border: none;
+
+    &::after {
+      border: none;
+    }
+
+    &--ghost {
+      background: $ck-bg;
+      color: $ck-muted;
+      border: 1px solid $ck-border;
+    }
+
+    &--danger {
+      background: rgba(#e57373, 0.12);
+      color: #c62828;
+    }
+  }
+}
+
+.chef-dish {
+  &__form-title {
+    display: block;
+    font-size: 30px;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+
+  &__images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  &__thumb-wrap {
+    position: relative;
+    width: 160px;
+    height: 160px;
+  }
+
+  &__thumb {
+    width: 160px;
+    height: 160px;
+    border-radius: $ck-radius-sm;
+    background: $ck-bg;
+  }
+
+  &__thumb-del {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 40px;
+    height: 40px;
+    line-height: 36px;
+    text-align: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 28px;
+  }
+
+  &__thumb-cover {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 20px;
+  }
+
+  &__add {
+    width: 160px;
+    height: 160px;
+    border-radius: $ck-radius-sm;
+    border: 1px dashed $ck-border;
+    background: $ck-bg;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__add-icon {
+    font-size: 40px;
+    color: $ck-muted;
+    line-height: 1;
+  }
+
+  &__add-text {
+    margin-top: 6px;
+    font-size: 22px;
+    color: $ck-muted;
+  }
+
+  &__item {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  &__cover {
+    width: 140px;
+    height: 140px;
+    border-radius: $ck-radius-sm;
+    background: $ck-bg;
+    flex-shrink: 0;
+  }
+
+  &__cover-empty {
+    width: 140px;
+    height: 140px;
+    border-radius: $ck-radius-sm;
+    background: rgba($ck-primary, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    flex-shrink: 0;
+  }
+
+  &__meta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name {
+    display: block;
+    font-size: 30px;
+    font-weight: 600;
+    color: $ck-text;
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  &__tag {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 20px;
+    background: $ck-bg;
+    color: $ck-muted;
+
+    &--rec {
+      background: rgba($ck-primary, 0.16);
+      color: $ck-primary-d18;
+    }
+
+    &--ok {
+      background: rgba($ck-secondary, 0.22);
+      color: $ck-secondary-d28;
+    }
+
+    &--warn {
+      background: rgba(#ffb74d, 0.2);
+      color: #ef6c00;
+    }
+
+    &--bad {
+      background: rgba(#e57373, 0.16);
+      color: #c62828;
+    }
+  }
+
+  &__desc {
+    display: block;
+    margin-top: 8px;
+    font-size: 22px;
+    color: $ck-muted;
+    line-height: 1.45;
+  }
+}
