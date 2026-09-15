@@ -143,4 +143,13 @@ public interface OrderRepository extends BaseMapper<OrderEntity> {
      * @history 1.00 2026-09-05 XieMingJie Created.
      */
     List<Map<String, Object>> hotDishesSince(@Param("since") Instant since, @Param("limit") int limit);
+
+    long countOpenByKitchenAndUser(@Param("kitchenId") Long kitchenId, @Param("userId") Long userId);
+
+    List<OrderEntity> selectChefPage(@Param("kitchenId") Long kitchenId,
+                                     @Param("status") String status,
+                                     @Param("offset") long offset,
+                                     @Param("limit") long limit);
+
+    long countChefPage(@Param("kitchenId") Long kitchenId, @Param("status") String status);
 }

@@ -112,6 +112,9 @@ export interface User {
   phone?: string
   wechatId?: string
   bio?: string
+  activeRole?: 'CHEF' | 'DINER' | string
+  chef?: boolean
+  diner?: boolean
 }
 
 export interface LoginResult {

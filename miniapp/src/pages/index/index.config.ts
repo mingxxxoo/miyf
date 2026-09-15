@@ -1,4 +1,4 @@
 export default definePageConfig({
-  navigationBarTitleText: 'miyf 厨房',
+  navigationBarTitleText: '胡闹厨房',
   enablePullDownRefresh: true
 })

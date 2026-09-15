@@ -1,10 +1,11 @@
-import { View, Text, Button, Input, Picker, ScrollView } from '@tarojs/components'
+﻿import { View, Text, Button, Input, Picker, ScrollView } from '@tarojs/components'
 import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
 import { useEffect, useState } from 'react'
 import OrderCard from '@/components/OrderCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
+import { fetchMyBinding } from '@/api/kitchen'
 import { useOrderStore } from '@/stores/orderStore'
 import { PRODUCT_META, useProductStore } from '@/stores/productStore'
 import { useUserStore } from '@/stores/userStore'
@@ -40,12 +41,40 @@ export default function OrderIndexPage() {
     submitOrder,
     clearDraft
   } = useOrderStore()
-  const { isLoggedIn, requireLogin } = useUserStore()
+  const { isLoggedIn, requireLogin, user, refreshProfile } = useUserStore()
   const setProduct = useProductStore((s) => s.setProduct)
   const [tab, setTab] = useState<'ALL' | OrderStatus>('ALL')
+  const [needJoin, setNeedJoin] = useState(false)
+  const [pending, setPending] = useState(false)
+  const [gateLoading, setGateLoading] = useState(true)
   const minDate = todayStr()
 
   const reload = () => fetchOrders(tab === 'ALL' ? undefined : tab)
+
+  const bootstrapGate = async () => {
+    setGateLoading(true)
+    const profile = (await refreshProfile()) || user
+    if (profile?.activeRole === 'CHEF' || (profile?.chef && profile?.activeRole !== 'DINER')) {
+      Taro.redirectTo({ url: '/pages/chef/index' })
+      return
+    }
+    try {
+      const binding = await fetchMyBinding()
+      if (!binding || binding.status !== 'BOUND') {
+        setNeedJoin(true)
+        setPending(binding?.status === 'PENDING')
+        clearDraft()
+      } else {
+        setNeedJoin(false)
+        setPending(false)
+        await reload()
+      }
+    } catch {
+      setNeedJoin(true)
+    } finally {
+      setGateLoading(false)
+    }
+  }
 
   useDidShow(() => {
     setProduct('kitchen')
@@ -54,16 +83,16 @@ export default function OrderIndexPage() {
       void requireLogin()
       return
     }
-    void reload()
+    void bootstrapGate()
   })
 
   useEffect(() => {
-    if (isLoggedIn) void reload()
-  }, [tab, isLoggedIn])
+    if (isLoggedIn && !needJoin && !gateLoading) void reload()
+  }, [tab, isLoggedIn, needJoin, gateLoading])
 
   usePullDownRefresh(async () => {
     try {
-      if (isLoggedIn) await reload()
+      if (isLoggedIn) await bootstrapGate()
     } finally {
       Taro.stopPullDownRefresh()
     }
@@ -75,6 +104,10 @@ export default function OrderIndexPage() {
   }
 
   const handleSubmit = async () => {
+    if (needJoin) {
+      Taro.showToast({ title: '请先加入厨房', icon: 'none' })
+      return
+    }
     if (!draft.items.length) {
       Taro.showToast({ title: '先选一道想吃的菜吧', icon: 'none' })
       return
@@ -114,8 +147,22 @@ export default function OrderIndexPage() {
     return <Loading fullscreen text='正在前往登录…' />
   }
 
-  if (loading && !orders.length && !draft.items.length && !loadError) {
+  if (gateLoading || (loading && !orders.length && !draft.items.length && !loadError && !needJoin)) {
     return <Loading fullscreen text='整理预约单…' />
+  }
+
+  if (needJoin) {
+    return (
+      <View className='order-page'>
+        <EmptyState
+          emoji='🔑'
+          title={pending ? '等待厨师确认' : '先加入厨房'}
+          description='没有公开菜单。绑定一位厨师后才能预约。'
+          actionText='去加入厨房'
+          onAction={() => Taro.navigateTo({ url: '/pages/join/index' })}
+        />
+      </View>
+    )
   }
 
   return (

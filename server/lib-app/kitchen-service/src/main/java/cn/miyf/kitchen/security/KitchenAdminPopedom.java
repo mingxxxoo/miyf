@@ -11,7 +11,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 厨房超管端权限组（{@link KitchenPopedomCodes.Admin}），展示名「超管-厨房服务」。
+ * 厨房超管端权限组（{@link KitchenPopedomCodes.Admin}），展示名「超管-胡闹厨房」。
  *
  * @author XieMingJie
  * @since 2026-09-07

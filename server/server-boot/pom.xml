@@ -48,6 +48,10 @@
             <groupId>cn.miyf</groupId>
             <artifactId>search-service</artifactId>
         </dependency>
+        <dependency>
+            <groupId>cn.miyf</groupId>
+            <artifactId>workflow-service</artifactId>
+        </dependency>
 
         <!-- lib-auth -->
         <dependency>

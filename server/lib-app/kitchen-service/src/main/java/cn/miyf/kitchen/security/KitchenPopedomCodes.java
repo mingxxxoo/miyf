@@ -17,7 +17,7 @@ public final class KitchenPopedomCodes {
     /** 厨房个人端（普通用户 / 小程序）。 */
     public static final class Personal {
         public static final String CODE = "11010000";
-        public static final String SERVICE = "厨房服务";
+        public static final String SERVICE = "胡闹厨房";
         public static final String PRODUCT = "kitchen";
         public static final PopedomScope SCOPE = PopedomScope.PERSONAL;
         public static final int SORT = 10;
@@ -29,7 +29,7 @@ public final class KitchenPopedomCodes {
     /** 厨房单位端。 */
     public static final class Org {
         public static final String CODE = "11020000";
-        public static final String SERVICE = "厨房服务";
+        public static final String SERVICE = "胡闹厨房";
         public static final String PRODUCT = "kitchen";
         public static final PopedomScope SCOPE = PopedomScope.ORG;
         public static final int SORT = 10;
@@ -41,7 +41,7 @@ public final class KitchenPopedomCodes {
     /** 厨房超管端（管理后台）。 */
     public static final class Admin {
         public static final String CODE = "11030000";
-        public static final String SERVICE = "厨房服务";
+        public static final String SERVICE = "胡闹厨房";
         public static final String PRODUCT = "kitchen";
         public static final PopedomScope SCOPE = PopedomScope.SUPER;
         public static final int SORT = 10;

@@ -55,13 +55,51 @@ export default function DishesPage() {
     void fetchData();
   }, [fetchData]);
 
+  const submitAudit = (record: Dish) => {
+    confirmAction({
+      title: '提交审核',
+      content: `将「${record.name}」提交菜品审核？通过后才能上架。`,
+      onOk: async () => {
+        setActingId(record.id);
+        try {
+          await dishApi.submitAudit(record.id);
+          message.success('已提交审核');
+          void fetchData();
+        } catch (err) {
+          notifyError(err, '提交失败');
+        } finally {
+          setActingId(null);
+        }
+      },
+    });
+  };
+
+  const withdrawAudit = (record: Dish) => {
+    confirmAction({
+      title: '撤回审核',
+      content: `撤回「${record.name}」的审核？菜品将回到草稿。`,
+      onOk: async () => {
+        setActingId(record.id);
+        try {
+          await dishApi.withdrawAudit(record.id);
+          message.success('已撤回');
+          void fetchData();
+        } catch (err) {
+          notifyError(err, '撤回失败');
+        } finally {
+          setActingId(null);
+        }
+      },
+    });
+  };
+
   const toggleShelf = (record: Dish) => {
     const isOnSale = record.status === 'ON_SALE';
     confirmAction({
       title: isOnSale ? '下架菜品' : '上架菜品',
       content: isOnSale
         ? `确定下架「${record.name}」吗？用户端将不再展示。`
-        : `确定上架「${record.name}」吗？`,
+        : `确定上架「${record.name}」吗？须已审核通过。`,
       onOk: async () => {
         setActingId(record.id);
         try {
@@ -168,6 +206,17 @@ export default function DishesPage() {
           },
           { title: '分类', dataIndex: 'categoryName', render: (v?: string) => v || '—' },
           {
+            title: '审核',
+            dataIndex: 'auditStatus',
+            render: (status?: string) =>
+              status ? <StatusBadge code={status} map={{
+                DRAFT: { color: 'default', text: '待提交' },
+                PENDING_REVIEW: { color: 'processing', text: '待审核' },
+                APPROVED: { color: 'success', text: '已通过' },
+                REJECTED: { color: 'error', text: '已驳回' },
+              }} /> : '—',
+          },
+          {
             title: '评分',
             dataIndex: 'rating',
             render: (rating?: number, r?: Dish) =>
@@ -191,7 +240,7 @@ export default function DishesPage() {
           {
             title: '操作',
             key: 'action',
-            width: 200,
+            width: 260,
             render: (_, record) => (
               <Space>
                 <Button
@@ -201,6 +250,24 @@ export default function DishesPage() {
                 >
                   编辑
                 </Button>
+                {(record.auditStatus === 'DRAFT' || record.auditStatus === 'REJECTED') && (
+                  <Button
+                    type="link"
+                    loading={actingId === record.id}
+                    onClick={() => submitAudit(record)}
+                  >
+                    提交审核
+                  </Button>
+                )}
+                {record.auditStatus === 'PENDING_REVIEW' && (
+                  <Button
+                    type="link"
+                    loading={actingId === record.id}
+                    onClick={() => withdrawAudit(record)}
+                  >
+                    撤回审核
+                  </Button>
+                )}
                 <Button
                   type="link"
                   loading={actingId === record.id}

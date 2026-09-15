@@ -11,6 +11,26 @@ export const DISH_STATUS: Record<string, StatusMeta> = {
   DRAFT: { color: 'processing', text: '草稿' },
 };
 
+export const DISH_AUDIT_STATUS: Record<string, StatusMeta> = {
+  DRAFT: { color: 'default', text: '待提交' },
+  PENDING_REVIEW: { color: 'processing', text: '待审核' },
+  APPROVED: { color: 'success', text: '已通过' },
+  REJECTED: { color: 'error', text: '已驳回' },
+};
+
+export const BINDING_STATUS: Record<string, StatusMeta> = {
+  PENDING: { color: 'gold', text: '待确认' },
+  BOUND: { color: 'success', text: '已绑定' },
+  REJECTED: { color: 'error', text: '已拒绝' },
+  UNBOUND: { color: 'default', text: '已解除' },
+};
+
+export const KITCHEN_STATUS: Record<string, StatusMeta> = {
+  OPEN: { color: 'success', text: '营业' },
+  CLOSED: { color: 'default', text: '停业' },
+  BANNED: { color: 'error', text: '封禁' },
+};
+
 export const ORDER_STATUS: Record<string, StatusMeta> = {
   PENDING: { color: 'gold', text: '待确认' },
   CONFIRMED: { color: 'blue', text: '已确认' },

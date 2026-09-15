@@ -13,7 +13,7 @@
     </update>
 
     <select id="selectUserPage" resultType="cn.miyf.kitchen.bean.entity.OrderEntity">
-        SELECT id, order_no, user_id, status, remark, create_time, last_modify_time
+        SELECT id, order_no, user_id, kitchen_id, status, remark, create_time, last_modify_time
         FROM kitchen_order
         WHERE user_id = #{userId}
           <if test="status != null and status != ''">
@@ -33,7 +33,7 @@
     </select>
 
     <select id="selectAdminPage" resultType="cn.miyf.kitchen.bean.entity.OrderEntity">
-        SELECT id, order_no, user_id, status, remark, create_time, last_modify_time
+        SELECT id, order_no, user_id, kitchen_id, status, remark, create_time, last_modify_time
         FROM kitchen_order
         WHERE 1 = 1
           <if test="status != null and status != ''">
@@ -117,5 +117,33 @@
         GROUP BY oi.dish_name
         ORDER BY cnt DESC
         LIMIT #{limit}
+    </select>
+
+    <select id="countOpenByKitchenAndUser" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_order
+        WHERE kitchen_id = #{kitchenId}
+          AND user_id = #{userId}
+          AND status IN ('PENDING', 'CONFIRMED', 'PREPARING', 'READY')
+    </select>
+
+    <select id="selectChefPage" resultType="cn.miyf.kitchen.bean.entity.OrderEntity">
+        SELECT id, order_no, user_id, kitchen_id, status, remark, create_time, last_modify_time
+        FROM kitchen_order
+        WHERE kitchen_id = #{kitchenId}
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+        ORDER BY create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countChefPage" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_order
+        WHERE kitchen_id = #{kitchenId}
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
     </select>
 </mapper>

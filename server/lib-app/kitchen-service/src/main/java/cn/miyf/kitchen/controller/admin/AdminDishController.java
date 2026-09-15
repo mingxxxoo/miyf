@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 管理端菜品接口。
+ * 含提交/撤回 Flowable 审核。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:30
@@ -107,6 +108,34 @@ public class AdminDishController {
     public ApiResult<Void> delete(@PathVariable Long id) {
         dishApplicationService.delete(id);
         return ApiResult.ok();
+    }
+
+    /**
+     * 提交菜品审核（Flowable）。
+     *
+     * @param id 菜品 ID
+     * @return 更新后菜品
+     * @history 1.00 2026-09-15 XieMingJie Created.
+     */
+    @Operation(summary = "提交菜品审核")
+    @MiyfPermission(code = "kitchen:dish:audit")
+    @PostMapping("/{id}/submit-audit")
+    public ApiResult<DishVo> submitAudit(@PathVariable Long id) {
+        return ApiResult.ok(dishApplicationService.submitAdminAudit(id));
+    }
+
+    /**
+     * 撤回菜品审核（Flowable 实例删除，回退草稿）。
+     *
+     * @param id 菜品 ID
+     * @return 更新后菜品
+     * @history 1.00 2026-09-15 XieMingJie Created.
+     */
+    @Operation(summary = "撤回菜品审核")
+    @MiyfPermission(code = "kitchen:dish:audit")
+    @PostMapping("/{id}/withdraw-audit")
+    public ApiResult<DishVo> withdrawAudit(@PathVariable Long id) {
+        return ApiResult.ok(dishApplicationService.withdrawAdminAudit(id));
     }
 
     /**

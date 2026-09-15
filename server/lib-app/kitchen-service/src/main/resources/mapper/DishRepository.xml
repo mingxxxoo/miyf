@@ -10,18 +10,20 @@
 <mapper namespace="cn.miyf.kitchen.repository.DishRepository">
 
     <sql id="DishColumns">
-        d.id, d.category_id, d.name, d.subtitle, d.description, d.cover_image,
-        d.status, d.sort_order, d.is_recommend AS recommend, d.stock, d.stock_type, d.unit,
+        d.id, d.kitchen_id, d.category_id, d.name, d.subtitle, d.description, d.cover_image,
+        d.status, d.audit_status, d.process_instance_id, d.reject_reason,
+        d.sort_order, d.is_recommend AS recommend, d.stock, d.stock_type, d.unit,
         d.rating, d.rating_count, d.created_by, d.updated_by,
         d.create_time, d.last_modify_time
     </sql>
 
-    <!-- 用户端：仅展示可预约（ON_SALE） -->
     <select id="selectUserPage" resultType="cn.miyf.kitchen.bean.entity.DishEntity">
         SELECT
         <include refid="DishColumns"/>
         FROM dish d
-WHERE d.status = 'ON_SALE'
+        WHERE d.status = 'ON_SALE'
+          AND d.audit_status = 'APPROVED'
+          AND d.kitchen_id = #{kitchenId}
           <if test="categoryId != null">
               AND d.category_id = #{categoryId}
           </if>
@@ -39,7 +41,9 @@ WHERE d.status = 'ON_SALE'
     <select id="countUserPage" resultType="long">
         SELECT COUNT(1)
         FROM dish d
-WHERE d.status = 'ON_SALE'
+        WHERE d.status = 'ON_SALE'
+          AND d.audit_status = 'APPROVED'
+          AND d.kitchen_id = #{kitchenId}
           <if test="categoryId != null">
               AND d.category_id = #{categoryId}
           </if>
@@ -57,11 +61,17 @@ WHERE d.status = 'ON_SALE'
         <include refid="DishColumns"/>
         FROM dish d
         WHERE 1 = 1
+          <if test="kitchenId != null">
+              AND d.kitchen_id = #{kitchenId}
+          </if>
           <if test="categoryId != null">
               AND d.category_id = #{categoryId}
           </if>
           <if test="status != null and status != ''">
               AND d.status = #{status}
+          </if>
+          <if test="auditStatus != null and auditStatus != ''">
+              AND d.audit_status = #{auditStatus}
           </if>
           <if test="keyword != null and keyword != ''">
               AND d.name ILIKE CONCAT('%', #{keyword}, '%')
@@ -74,23 +84,30 @@ WHERE d.status = 'ON_SALE'
         SELECT COUNT(1)
         FROM dish d
         WHERE 1 = 1
+          <if test="kitchenId != null">
+              AND d.kitchen_id = #{kitchenId}
+          </if>
           <if test="categoryId != null">
               AND d.category_id = #{categoryId}
           </if>
           <if test="status != null and status != ''">
               AND d.status = #{status}
           </if>
+          <if test="auditStatus != null and auditStatus != ''">
+              AND d.audit_status = #{auditStatus}
+          </if>
           <if test="keyword != null and keyword != ''">
               AND d.name ILIKE CONCAT('%', #{keyword}, '%')
           </if>
     </select>
 
-    <!-- 热门：评分优先，评价数次之；不含任何销售金额指标 -->
     <select id="selectHot" resultType="cn.miyf.kitchen.bean.entity.DishEntity">
         SELECT
         <include refid="DishColumns"/>
         FROM dish d
-WHERE d.status = 'ON_SALE'
+        WHERE d.status = 'ON_SALE'
+          AND d.audit_status = 'APPROVED'
+          AND d.kitchen_id = #{kitchenId}
         ORDER BY d.rating DESC, d.rating_count DESC, d.last_modify_time DESC
         LIMIT #{limit}
     </select>
@@ -99,13 +116,47 @@ WHERE d.status = 'ON_SALE'
         SELECT
         <include refid="DishColumns"/>
         FROM dish d
-WHERE d.status = 'ON_SALE'
+        WHERE d.status = 'ON_SALE'
+          AND d.audit_status = 'APPROVED'
           AND d.is_recommend = TRUE
+          AND d.kitchen_id = #{kitchenId}
         ORDER BY d.sort_order ASC, d.create_time DESC
         LIMIT #{limit}
     </select>
 
-    <!-- 并发安全：WHERE stock >= qty，影响行数为 0 即库存不足 -->
+    <select id="selectChefPage" resultType="cn.miyf.kitchen.bean.entity.DishEntity">
+        SELECT
+        <include refid="DishColumns"/>
+        FROM dish d
+        WHERE d.kitchen_id = #{kitchenId}
+          <if test="status != null and status != ''">
+              AND d.status = #{status}
+          </if>
+          <if test="auditStatus != null and auditStatus != ''">
+              AND d.audit_status = #{auditStatus}
+          </if>
+          <if test="keyword != null and keyword != ''">
+              AND d.name ILIKE CONCAT('%', #{keyword}, '%')
+          </if>
+        ORDER BY d.sort_order ASC, d.last_modify_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countChefPage" resultType="long">
+        SELECT COUNT(1)
+        FROM dish d
+        WHERE d.kitchen_id = #{kitchenId}
+          <if test="status != null and status != ''">
+              AND d.status = #{status}
+          </if>
+          <if test="auditStatus != null and auditStatus != ''">
+              AND d.audit_status = #{auditStatus}
+          </if>
+          <if test="keyword != null and keyword != ''">
+              AND d.name ILIKE CONCAT('%', #{keyword}, '%')
+          </if>
+    </select>
+
     <update id="deductStock">
         UPDATE dish
         SET stock = stock - #{qty},
@@ -140,12 +191,12 @@ WHERE d.status = 'ON_SALE'
     <select id="countOnSale" resultType="long">
         SELECT COUNT(1)
         FROM dish d
-WHERE d.status = 'ON_SALE'
+        WHERE d.status = 'ON_SALE'
     </select>
 
     <select id="countByCategoryId" resultType="long">
         SELECT COUNT(1)
         FROM dish d
-WHERE d.category_id = #{categoryId}
+        WHERE d.category_id = #{categoryId}
     </select>
 </mapper>

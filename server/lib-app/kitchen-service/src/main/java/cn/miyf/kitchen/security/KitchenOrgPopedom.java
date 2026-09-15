@@ -10,7 +10,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 厨房单位端权限组（{@link KitchenPopedomCodes.Org}），展示名「单位-厨房服务」。
+ * 厨房单位端权限组（{@link KitchenPopedomCodes.Org}），展示名「单位-胡闹厨房」。
  *
  * @author XieMingJie
  * @since 2026-09-10

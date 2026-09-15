@@ -30,72 +30,47 @@ public interface DishRepository extends BaseMapper<DishEntity> {
      * @return 菜品实体列表
      * @history 1.00 2026-09-04 16:35 XieMingJie Created.
      */
-    List<DishEntity> selectUserPage(@Param("categoryId") Long categoryId,
+    List<DishEntity> selectUserPage(@Param("kitchenId") Long kitchenId,
+                                    @Param("categoryId") Long categoryId,
                                     @Param("keyword") String keyword,
                                     @Param("recommend") Boolean recommend,
                                     @Param("offset") long offset,
                                     @Param("limit") long limit);
 
-    /**
-     * 用户端分页总数，条件与 {@link #selectUserPage} 一致。
-     *
-     * @param categoryId 分类 ID，可空
-     * @param keyword    关键词，可空
-     * @param recommend  是否仅推荐，可空
-     * @return 总数
-     * @history 1.00 2026-09-04 16:35 XieMingJie Created.
-     */
-    long countUserPage(@Param("categoryId") Long categoryId,
+    long countUserPage(@Param("kitchenId") Long kitchenId,
+                       @Param("categoryId") Long categoryId,
                        @Param("keyword") String keyword,
                        @Param("recommend") Boolean recommend);
 
-    /**
-     * 管理端分页查询，可按分类、状态、关键词筛选。
-     *
-     * @param categoryId 分类 ID，可空
-     * @param status     状态，可空
-     * @param keyword    关键词，可空
-     * @param offset     偏移量
-     * @param limit      条数
-     * @return 菜品实体列表
-     * @history 1.00 2026-09-04 16:35 XieMingJie Created.
-     */
-    List<DishEntity> selectAdminPage(@Param("categoryId") Long categoryId,
+    List<DishEntity> selectAdminPage(@Param("kitchenId") Long kitchenId,
+                                     @Param("categoryId") Long categoryId,
                                      @Param("status") String status,
+                                     @Param("auditStatus") String auditStatus,
                                      @Param("keyword") String keyword,
                                      @Param("offset") long offset,
                                      @Param("limit") long limit);
 
-    /**
-     * 管理端分页总数，条件与 {@link #selectAdminPage} 一致。
-     *
-     * @param categoryId 分类 ID，可空
-     * @param status     状态，可空
-     * @param keyword    关键词，可空
-     * @return 总数
-     * @history 1.00 2026-09-04 16:35 XieMingJie Created.
-     */
-    long countAdminPage(@Param("categoryId") Long categoryId,
+    long countAdminPage(@Param("kitchenId") Long kitchenId,
+                        @Param("categoryId") Long categoryId,
                         @Param("status") String status,
+                        @Param("auditStatus") String auditStatus,
                         @Param("keyword") String keyword);
 
-    /**
-     * 热门菜品列表：按评分、评价数降序。
-     *
-     * @param limit 条数
-     * @return 菜品列表
-     * @history 1.00 2026-09-04 16:35 XieMingJie Created.
-     */
-    List<DishEntity> selectHot(@Param("limit") int limit);
+    List<DishEntity> selectHot(@Param("kitchenId") Long kitchenId, @Param("limit") int limit);
 
-    /**
-     * 今日推荐菜品列表。
-     *
-     * @param limit 条数
-     * @return 菜品列表
-     * @history 1.00 2026-09-04 16:35 XieMingJie Created.
-     */
-    List<DishEntity> selectRecommend(@Param("limit") int limit);
+    List<DishEntity> selectRecommend(@Param("kitchenId") Long kitchenId, @Param("limit") int limit);
+
+    List<DishEntity> selectChefPage(@Param("kitchenId") Long kitchenId,
+                                    @Param("status") String status,
+                                    @Param("auditStatus") String auditStatus,
+                                    @Param("keyword") String keyword,
+                                    @Param("offset") long offset,
+                                    @Param("limit") long limit);
+
+    long countChefPage(@Param("kitchenId") Long kitchenId,
+                       @Param("status") String status,
+                       @Param("auditStatus") String auditStatus,
+                       @Param("keyword") String keyword);
 
     /**
      * 有限量模式下原子扣减可提供份数。

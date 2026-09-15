@@ -32,6 +32,7 @@ public enum ErrorCode {
     ACCOUNT_LOCKED(41012, "登录失败次数过多，账号已临时锁定"),
     TOO_MANY_REQUESTS(42900, "请求过于频繁，请稍后再试"),
     LOCK_BUSY(42901, "系统繁忙，请稍后重试"),
+    BINDING_REQUIRED(41013, "请先加入厨房"),
     INTERNAL_ERROR(50000, "系统繁忙，请稍后再试");
 
     /**

@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -34,10 +35,10 @@ import java.util.Set;
  * 厨房用户应用服务：管理端列表/启停；个人端资料读写与头像上传。
  * 启停转为 DISABLED 时递增 JWT tokenVersion（bump 失败回滚）；
  * 头像仅允许相对 /r/ 或与 file-storage.base-url 同 host 的本站绝对 URL。
+ * 胡闹厨房：支持开通厨师/食客身份及切换 activeRole。
  *
  * @author XieMingJie
  * @since 2026-09-05
- * @history 1.00 2026-09-05 XieMingJie Created.
  */
 @Service
 @RequiredArgsConstructor
@@ -113,6 +114,58 @@ public class UserApplicationService extends BaseApplicationService {
      */
     public UserVo getMe(Long userId) {
         return toVo(EntityConverters.toUser(requireById(userRepository, userId, "用户不存在")));
+    }
+
+    /**
+     * 首次选择并开通厨师或食客身份，并设为当前 activeRole。
+     *
+     * @param userId 用户 ID
+     * @param role   CHEF 或 DINER
+     * @return 用户 VO
+     * @history 1.00 2026-09-15 XieMingJie Created.
+     */
+    @Transactional
+    public UserVo chooseRole(Long userId, String role) {
+        String normalized = role == null ? "" : role.trim().toUpperCase();
+        requireTrue("CHEF".equals(normalized) || "DINER".equals(normalized),
+                ErrorCode.BAD_REQUEST, "身份仅支持 CHEF 或 DINER");
+        UserEntity entity = requireById(userRepository, userId, "用户不存在");
+        Instant now = Instant.now();
+        if ("CHEF".equals(normalized)) {
+            entity.setChef(true);
+        } else {
+            entity.setDiner(true);
+        }
+        entity.setActiveRole(normalized);
+        if (entity.getRoleChosenAt() == null) {
+            entity.setRoleChosenAt(now);
+        }
+        userRepository.updateById(entity);
+        return toVo(EntityConverters.toUser(entity));
+    }
+
+    /**
+     * 在已开通身份间切换工作台（activeRole）。
+     *
+     * @param userId 用户 ID
+     * @param role   CHEF 或 DINER
+     * @return 用户 VO
+     * @history 1.00 2026-09-15 XieMingJie Created.
+     */
+    @Transactional
+    public UserVo switchActiveRole(Long userId, String role) {
+        String normalized = role == null ? "" : role.trim().toUpperCase();
+        UserEntity entity = requireById(userRepository, userId, "用户不存在");
+        if ("CHEF".equals(normalized)) {
+            requireTrue(Boolean.TRUE.equals(entity.getChef()), ErrorCode.FORBIDDEN, "尚未开通厨师身份");
+        } else if ("DINER".equals(normalized)) {
+            requireTrue(Boolean.TRUE.equals(entity.getDiner()), ErrorCode.FORBIDDEN, "尚未开通食客身份");
+        } else {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "身份仅支持 CHEF 或 DINER");
+        }
+        entity.setActiveRole(normalized);
+        userRepository.updateById(entity);
+        return toVo(EntityConverters.toUser(entity));
     }
 
     /**
@@ -193,6 +246,9 @@ public class UserApplicationService extends BaseApplicationService {
                 // 管理端脱敏：仅保留前后各 2 位
                 .setOpenId(maskOpenId(user.getOpenid()))
                 .setStatus(user.getStatus())
+                .setActiveRole(user.getActiveRole())
+                .setChef(user.isChef())
+                .setDiner(user.isDiner())
                 .setCreateTime(user.getCreateTime())
                 .setLastLoginTime(null);
     }

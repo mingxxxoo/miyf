@@ -10,7 +10,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 厨房个人端权限组（{@link KitchenPopedomCodes.Personal}），展示名「个人-厨房服务」。
+ * 厨房个人端权限组（{@link KitchenPopedomCodes.Personal}），展示名「个人-胡闹厨房」。
  *
  * @author XieMingJie
  * @since 2026-09-09

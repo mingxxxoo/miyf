@@ -1,7 +1,6 @@
 package cn.miyf.kitchen.bean.dto;
 
 import cn.miyf.bean.dto.BaseDto;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -37,6 +36,9 @@ public class DishSaveDto extends BaseDto {
 
     @Schema(description = "分类 ID")
     private Long categoryId;
+
+    @Schema(description = "厨房 ID（管理端创建时必填）")
+    private Long kitchenId;
 
     @NotBlank
     @Schema(description = "菜品名称", requiredMode = Schema.RequiredMode.REQUIRED)

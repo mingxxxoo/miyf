@@ -1,7 +1,6 @@
 package cn.miyf.kitchen.bean.entity;
 
 import cn.miyf.bean.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -17,7 +16,7 @@ import java.io.Serial;
 import java.math.BigDecimal;
 
 /**
- * 菜品表实体；不含价格字段。
+ * 菜品表实体。
  *
  * @author XieMingJie
  * @since 2026-09-04 16:54
@@ -40,6 +39,10 @@ public class DishEntity extends BaseEntity {
     @Schema(description = "分类 ID")
     private Long categoryId;
 
+    @TableField("kitchen_id")
+    @Schema(description = "所属厨房")
+    private Long kitchenId;
+
     @TableField("name")
     @Schema(description = "菜品名称")
     private String name;
@@ -59,6 +62,18 @@ public class DishEntity extends BaseEntity {
     @TableField("status")
     @Schema(description = "状态：DRAFT/ON_SALE/OFF_SALE")
     private String status;
+
+    @TableField("audit_status")
+    @Schema(description = "DRAFT/PENDING_REVIEW/APPROVED/REJECTED")
+    private String auditStatus;
+
+    @TableField("process_instance_id")
+    @Schema(description = "Flowable 流程实例")
+    private String processInstanceId;
+
+    @TableField("reject_reason")
+    @Schema(description = "最近驳回原因")
+    private String rejectReason;
 
     @TableField("sort_order")
     @Schema(description = "排序值")

@@ -14,6 +14,7 @@ public class Order {
     private Long id;
     private String orderNo;
     private Long userId;
+    private Long kitchenId;
     private String status;
     private String remark;
     private Instant createTime;
@@ -42,6 +43,14 @@ public class Order {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public Long getKitchenId() {
+        return kitchenId;
+    }
+
+    public void setKitchenId(Long kitchenId) {
+        this.kitchenId = kitchenId;
     }
 
     public String getStatus() {

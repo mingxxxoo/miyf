@@ -26,9 +26,9 @@ export const PRODUCT_META: Record<
 > = {
   kitchen: {
     code: 'kitchen',
-    label: '厨房服务',
+    label: '胡闹厨房',
     shortLabel: '厨房',
-    brand: 'miyf 厨房',
+    brand: '胡闹厨房',
     homeUrl: '/pages/index/index',
     homeIsTab: true,
     accent: 'kitchen'

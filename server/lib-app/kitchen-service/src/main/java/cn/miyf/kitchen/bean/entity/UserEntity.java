@@ -1,7 +1,6 @@
 package cn.miyf.kitchen.bean.entity;
 
 import cn.miyf.bean.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -66,4 +65,20 @@ public class UserEntity extends BaseEntity {
     @TableField("status")
     @Schema(description = "状态：ENABLED/DISABLED")
     private String status;
+
+    @TableField("active_role")
+    @Schema(description = "当前工作台：CHEF/DINER")
+    private String activeRole;
+
+    @TableField("is_chef")
+    @Schema(description = "是否具备厨师身份")
+    private Boolean chef;
+
+    @TableField("is_diner")
+    @Schema(description = "是否具备食客身份")
+    private Boolean diner;
+
+    @TableField("role_chosen_at")
+    @Schema(description = "首次选择身份时间")
+    private java.time.Instant roleChosenAt;
 }

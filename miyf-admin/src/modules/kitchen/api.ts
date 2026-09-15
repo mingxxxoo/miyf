@@ -55,6 +55,9 @@ function mapDish(raw: Record<string, unknown>): Dish {
     images: Array.isArray(raw.images)
       ? (raw.images as string[]).map((u) => toResourceUrl(u) ?? u).filter(Boolean)
       : undefined,
+    kitchenId: raw.kitchenId ? sid(raw.kitchenId) : undefined,
+    auditStatus: raw.auditStatus ? String(raw.auditStatus) : undefined,
+    rejectReason: raw.rejectReason ? String(raw.rejectReason) : undefined,
   };
 }
 
@@ -237,16 +240,20 @@ function toDishSaveBody(data: Partial<Dish>) {
         .map((img) => (typeof img === 'string' ? img : img.url))
         .filter((url): url is string => Boolean(url))
     : undefined;
+  const cover =
+    data.coverImage !== undefined
+      ? data.coverImage
+      : data.coverUrl !== undefined
+        ? data.coverUrl
+        : undefined;
   return {
+    kitchenId: data.kitchenId,
     categoryId: data.categoryId,
     name: data.name,
     subtitle: data.subtitle,
     description: data.description,
-    coverImage:
-      data.coverImage !== undefined
-        ? data.coverImage || ''
-        : data.coverUrl || '',
-
+    // undefined = 不改封面；空串 = 清空（服务端 blankToNull）
+    ...(cover !== undefined ? { coverImage: cover || '' } : {}),
     sortOrder: data.sortOrder,
     recommend: data.recommend ?? data.recommended,
     stockType: data.stockType,
@@ -275,6 +282,10 @@ export const dishApi = {
     return mapDish(raw);
   },
   remove: (id: string) => del<void>(`/admin/dishes/${id}`),
+  submitAudit: async (id: string) =>
+    mapDish(await post<Record<string, unknown>>(`/admin/dishes/${id}/submit-audit`)),
+  withdrawAudit: async (id: string) =>
+    mapDish(await post<Record<string, unknown>>(`/admin/dishes/${id}/withdraw-audit`)),
   publish: async (id: string) =>
     mapDish(await post<Record<string, unknown>>(`/admin/dishes/${id}/publish`)),
   unpublish: async (id: string) =>
@@ -376,4 +387,60 @@ export const commentApi = {
   remove: (id: string) => del<void>(`/admin/comments/${id}`),
   rebuildRating: (dishId: string) => post(`/admin/comments/rebuild-rating/${dishId}`),
 };
+
+export const kitchenApi = {
+  page: (params: PageQuery & { status?: string }) =>
+    get<PageResult<Record<string, unknown>>>('/admin/kitchens', toPageParams(params)).then((r) => {
+      const page = asPage(r, params.page, params.pageSize);
+      return {
+        ...page,
+        records: page.records.map((raw) => ({
+          id: sid(raw.id),
+          ownerUserId: sid(raw.ownerUserId),
+          name: String(raw.name ?? ''),
+          intro: raw.intro ? String(raw.intro) : undefined,
+          status: String(raw.status ?? 'OPEN'),
+        })),
+      };
+    }),
+  updateStatus: (id: string, status: string) =>
+    put<Record<string, unknown>>(`/admin/kitchens/${id}/status?status=${encodeURIComponent(status)}`),
+};
+
+export const bindingApi = {
+  page: (params: PageQuery & { status?: string; kitchenId?: string }) =>
+    get<PageResult<Record<string, unknown>>>('/admin/bindings', toPageParams(params)).then((r) => {
+      const page = asPage(r, params.page, params.pageSize);
+      return {
+        ...page,
+        records: page.records.map((raw) => ({
+          id: sid(raw.id),
+          kitchenId: sid(raw.kitchenId),
+          kitchenName: raw.kitchenName ? String(raw.kitchenName) : '',
+          dinerUserId: sid(raw.dinerUserId),
+          dinerNickname: raw.dinerNickname ? String(raw.dinerNickname) : '',
+          status: String(raw.status ?? ''),
+          rejectReason: raw.rejectReason ? String(raw.rejectReason) : undefined,
+        })),
+      };
+    }),
+  unbind: (id: string) => post(`/admin/bindings/${id}/unbind`),
+};
+
+export const dishAuditApi = {
+  list: () =>
+    get<Record<string, unknown>[]>('/admin/dish-audits').then((list) =>
+      (list || []).map((raw) => ({
+        taskId: String(raw.taskId ?? ''),
+        dishId: sid(raw.dishId),
+        kitchenId: sid(raw.kitchenId),
+        dishName: String(raw.dishName ?? ''),
+        kitchenName: String(raw.kitchenName ?? ''),
+      })),
+    ),
+  approve: (taskId: string) => post(`/admin/dish-audits/${taskId}/approve`),
+  reject: (taskId: string, reason: string) =>
+    post(`/admin/dish-audits/${taskId}/reject`, { reason }),
+};
+
 

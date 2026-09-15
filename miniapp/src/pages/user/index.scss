@@ -1,6 +1,8 @@
 .user-page {
-  padding: 32px;
-  min-height: 100vh;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100vh;
+  padding: 32px 32px calc(32px + env(safe-area-inset-bottom));
   background:
     radial-gradient(circle at 10% 0%, rgba($ck-primary, 0.12), transparent 40%),
     $ck-bg;
@@ -11,33 +13,36 @@
       $ck-bg;
   }
 
+  &__hint {
+    display: block;
+    padding-top: 80px;
+    text-align: center;
+    color: $ck-muted;
+    font-size: 28px;
+  }
+
   &__switch {
-    margin-bottom: 24px;
+    display: block;
+    width: 100%;
+    margin-bottom: 28px;
+    box-sizing: border-box;
   }
 
   &__profile {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 28px;
     margin-bottom: 24px;
+    box-sizing: border-box;
   }
 
-  &__avatar-btn {
+  &__avatar-wrap {
     position: relative;
+    flex: 0 0 120px;
     width: 120px;
     height: 120px;
-    padding: 0;
-    margin: 0;
     border-radius: 50%;
     overflow: hidden;
-    background: transparent;
-    border: none;
-    flex-shrink: 0;
-    line-height: 0;
-
-    &::after {
-      border: none;
-    }
   }
 
   &__avatar {
@@ -45,21 +50,31 @@
     height: 120px;
     border-radius: 50%;
     border: 3px solid rgba($ck-primary, 0.35);
+    box-sizing: border-box;
 
     .user-page--health & {
       border-color: rgba($ck-health, 0.4);
     }
 
-    &--placeholder {
+    &--empty {
       display: flex;
       align-items: center;
       justify-content: center;
       background: rgba($ck-primary, 0.12);
-      font-size: 48px;
 
       .user-page--health & {
         background: rgba($ck-health, 0.12);
       }
+    }
+  }
+
+  &__avatar-letter {
+    font-size: 44px;
+    font-weight: 600;
+    color: $ck-primary-d8;
+
+    .user-page--health & {
+      color: $ck-health-d8;
     }
   }
 
@@ -70,37 +85,41 @@
     bottom: 0;
     padding: 6px 0;
     font-size: 20px;
+    line-height: 1.2;
     color: #fff;
     background: rgba(0, 0, 0, 0.45);
     text-align: center;
   }
 
   &__info {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
+    overflow: hidden;
   }
 
   &__name-row {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 6px;
+    margin-bottom: 10px;
+    max-width: 100%;
   }
 
   &__name {
-    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
     font-size: 36px;
     font-weight: 600;
-    max-width: 70%;
+    line-height: 1.3;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   &__name-edit-tip {
+    flex: 0 0 auto;
     font-size: 22px;
     color: $ck-primary-d8;
-    flex-shrink: 0;
 
     .user-page--health & {
       color: $ck-health-d8;
@@ -108,16 +127,20 @@
   }
 
   &__name-edit {
-    margin-bottom: 8px;
+    width: 100%;
+    margin-bottom: 10px;
   }
 
   &__name-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
     padding: 12px 16px;
     border-radius: $ck-radius-sm;
     background: rgba($ck-primary, 0.06);
     border: 1px solid rgba($ck-primary, 0.25);
     font-size: 30px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 
     .user-page--health & {
       background: rgba($ck-health, 0.06);
@@ -127,12 +150,14 @@
 
   &__name-actions {
     display: flex;
-    gap: 24px;
+    align-items: center;
+    gap: 28px;
   }
 
   &__name-action {
-    font-size: 24px;
+    font-size: 26px;
     color: $ck-muted;
+    line-height: 1.4;
 
     &--primary {
       color: $ck-primary-d8;
@@ -150,12 +175,16 @@
 
   &__service {
     display: inline-block;
-    margin-bottom: 4px;
+    max-width: 100%;
     padding: 4px 14px;
     border-radius: $ck-radius-sm;
     font-size: 22px;
+    line-height: 1.4;
     color: $ck-primary-d10;
     background: rgba($ck-primary, 0.16);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
     .user-page--health & {
       color: $ck-health-d8;
@@ -166,82 +195,63 @@
   &__menu {
     padding: 0;
     overflow: hidden;
+    margin-bottom: 8px;
   }
 
   &__menu-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 16px;
     padding: 28px;
     border-bottom: 1px solid $ck-border;
+    box-sizing: border-box;
 
     &:last-child {
       border-bottom: none;
     }
   }
 
+  &__menu-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
   &__menu-label {
     display: block;
     font-size: 30px;
+    line-height: 1.35;
     color: $ck-text;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
 
   &__menu-desc {
     display: block;
     font-size: 22px;
+    line-height: 1.4;
     color: $ck-muted;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__menu-arrow {
+    flex: 0 0 auto;
     font-size: 28px;
     color: $ck-muted;
-  }
-
-  &__health {
-    margin-top: 24px;
-  }
-
-  &__health-loading {
-    display: block;
-    font-size: 26px;
-    color: $ck-muted;
-    text-align: center;
-    padding: 12px 0;
-  }
-
-  &__field {
-    margin-bottom: 20px;
-  }
-
-  &__field-label {
-    display: block;
-    font-size: $ck-font-caption;
-    color: $ck-muted;
-    margin-bottom: 10px;
-  }
-
-  &__field-input,
-  &__field-picker {
-    padding: 18px 20px;
-    border-radius: $ck-radius-sm;
-    background: rgba($ck-health, 0.06);
-    border: 1px solid rgba($ck-health, 0.22);
-    font-size: 28px;
-    color: $ck-text;
-  }
-
-  &__health-save {
-    width: 100%;
-    margin-top: 8px;
+    line-height: 1;
   }
 
   &__logout {
-    margin-top: 48px;
+    display: block;
+    width: 100%;
+    margin-top: 40px;
+    padding: 20px 0;
     background: transparent;
     color: $ck-muted;
     font-size: 28px;
     border: none;
+    line-height: 1.4;
 
     &::after {
       border: none;
@@ -251,7 +261,7 @@
   &__brand {
     display: block;
     text-align: center;
-    margin-top: 64px;
+    margin: 48px 0 24px;
     font-size: 22px;
     color: $ck-muted-l12;
   }

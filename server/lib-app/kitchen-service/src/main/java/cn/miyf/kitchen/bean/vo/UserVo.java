@@ -61,6 +61,15 @@ public class UserVo extends BaseVo {
     @Schema(description = "状态：ENABLED/DISABLED")
     private String status;
 
+    @Schema(description = "当前工作台 CHEF/DINER")
+    private String activeRole;
+
+    @Schema(description = "是否厨师")
+    private Boolean chef;
+
+    @Schema(description = "是否食客")
+    private Boolean diner;
+
     @Schema(description = "注册时间")
     private Instant createTime;
 

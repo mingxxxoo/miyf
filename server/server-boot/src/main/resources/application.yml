@@ -28,6 +28,12 @@ spring:
       max-file-size: 10MB
       max-request-size: 20MB
 
+flowable:
+  database-schema-update: true
+  async-executor-activate: false
+  variable-json-mapper: jackson2
+
+
 server:
   port: ${SERVER_PORT:8080}
 

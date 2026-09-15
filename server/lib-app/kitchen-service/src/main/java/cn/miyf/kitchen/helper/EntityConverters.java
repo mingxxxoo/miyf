@@ -43,6 +43,10 @@ public final class EntityConverters {
         u.setWechatId(e.getWechatId());
         u.setAvatarUrl(e.getAvatarUrl());
         u.setStatus(e.getStatus());
+        u.setActiveRole(e.getActiveRole());
+        u.setChef(Boolean.TRUE.equals(e.getChef()));
+        u.setDiner(Boolean.TRUE.equals(e.getDiner()));
+        u.setRoleChosenAt(e.getRoleChosenAt());
         u.setCreateTime(e.getCreateTime());
         u.setLastModifyTime(e.getLastModifyTime());
         return u;
@@ -59,6 +63,10 @@ public final class EntityConverters {
         e.setWechatId(u.getWechatId());
         e.setAvatarUrl(u.getAvatarUrl());
         e.setStatus(u.getStatus());
+        e.setActiveRole(u.getActiveRole());
+        e.setChef(u.isChef());
+        e.setDiner(u.isDiner());
+        e.setRoleChosenAt(u.getRoleChosenAt());
         e.setCreateTime(u.getCreateTime());
         e.setLastModifyTime(u.getLastModifyTime());
         return e;
@@ -93,12 +101,16 @@ public final class EntityConverters {
         if (e == null) return null;
         Dish d = new Dish();
         d.setId(e.getId());
+        d.setKitchenId(e.getKitchenId());
         d.setCategoryId(e.getCategoryId());
         d.setName(e.getName());
         d.setSubtitle(e.getSubtitle());
         d.setDescription(e.getDescription());
         d.setCoverImage(e.getCoverImage());
         d.setStatus(e.getStatus());
+        d.setAuditStatus(e.getAuditStatus());
+        d.setProcessInstanceId(e.getProcessInstanceId());
+        d.setRejectReason(e.getRejectReason());
         d.setSortOrder(e.getSortOrder() == null ? 0 : e.getSortOrder());
         d.setRecommend(Boolean.TRUE.equals(e.getRecommend()));
         d.setStock(e.getStock() == null ? 0 : e.getStock());
@@ -116,12 +128,16 @@ public final class EntityConverters {
     public static DishEntity toDishEntity(Dish d) {
         DishEntity e = new DishEntity();
         e.setId(d.getId());
+        e.setKitchenId(d.getKitchenId());
         e.setCategoryId(d.getCategoryId());
         e.setName(d.getName());
         e.setSubtitle(d.getSubtitle());
         e.setDescription(d.getDescription());
         e.setCoverImage(d.getCoverImage());
         e.setStatus(d.getStatus());
+        e.setAuditStatus(d.getAuditStatus());
+        e.setProcessInstanceId(d.getProcessInstanceId());
+        e.setRejectReason(d.getRejectReason());
         e.setSortOrder(d.getSortOrder());
         e.setRecommend(d.isRecommend());
         e.setStock(d.getStock());
@@ -181,6 +197,7 @@ public final class EntityConverters {
         o.setId(e.getId());
         o.setOrderNo(e.getOrderNo());
         o.setUserId(e.getUserId());
+        o.setKitchenId(e.getKitchenId());
         o.setStatus(e.getStatus());
         o.setRemark(e.getRemark());
         o.setCreateTime(e.getCreateTime());
@@ -209,6 +226,7 @@ public final class EntityConverters {
         e.setId(o.getId());
         e.setOrderNo(o.getOrderNo());
         e.setUserId(o.getUserId());
+        e.setKitchenId(o.getKitchenId());
         e.setStatus(o.getStatus());
         e.setRemark(o.getRemark());
         e.setCreateTime(o.getCreateTime());

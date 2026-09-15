@@ -17,6 +17,9 @@ export {
   recipeApi,
   orderApi,
   commentApi,
+  kitchenApi,
+  bindingApi,
+  dishAuditApi,
 } from '@/modules/kitchen/api';
 
 export interface LoginResult {

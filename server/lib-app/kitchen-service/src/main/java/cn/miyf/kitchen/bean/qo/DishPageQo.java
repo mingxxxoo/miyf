@@ -39,4 +39,10 @@ public class DishPageQo extends AbstractCondition {
 
     @Schema(description = "是否仅推荐")
     private Boolean recommend;
+
+    @Schema(description = "厨房 ID")
+    private Long kitchenId;
+
+    @Schema(description = "审核状态")
+    private String auditStatus;
 }

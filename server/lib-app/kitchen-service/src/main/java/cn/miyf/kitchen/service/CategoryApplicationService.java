@@ -23,6 +23,7 @@ import java.util.Set;
 
 /**
  * 分类应用服务：用户端只读启用列表；管理端 CRUD / 启停 / 排序。
+ * 用户端 listEnabled 经 {@link KitchenAccessService#requireChefOrBound()} 门控。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:30
@@ -37,6 +38,7 @@ public class CategoryApplicationService extends BaseApplicationService {
     private final ListCache<CategoryVo> categoryListCache;
     private final RedisAppProperties redisAppProperties;
     private final KitchenCacheEvictService kitchenCacheEvictService;
+    private final KitchenAccessService kitchenAccessService;
 
     /**
      * 构造分类服务。
@@ -46,27 +48,31 @@ public class CategoryApplicationService extends BaseApplicationService {
      * @param cacheClient              缓存门面
      * @param redisAppProperties       Redis 配置
      * @param kitchenCacheEvictService 失效服务
+     * @param kitchenAccessService     身份与绑定门控
      * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public CategoryApplicationService(CategoryRepository categoryRepository,
                                       DishRepository dishRepository,
                                       CacheClient cacheClient,
                                       RedisAppProperties redisAppProperties,
-                                      KitchenCacheEvictService kitchenCacheEvictService) {
+                                      KitchenCacheEvictService kitchenCacheEvictService,
+                                      KitchenAccessService kitchenAccessService) {
         this.categoryRepository = categoryRepository;
         this.dishRepository = dishRepository;
         this.categoryListCache = cacheClient.lists(CategoryVo.class);
         this.redisAppProperties = redisAppProperties;
         this.kitchenCacheEvictService = kitchenCacheEvictService;
+        this.kitchenAccessService = kitchenAccessService;
     }
 
     /**
-     * 用户端：启用中的分类列表（列表缓存）。
+     * 用户端：启用中的分类列表（列表缓存）。厨师或已绑定食客可访问。
      *
      * @return 分类 VO 列表
      * @history 1.00 2026-09-04 XieMingJie Created.
      */
     public List<CategoryVo> listEnabled() {
+        kitchenAccessService.requireChefOrBound();
         Duration ttl = Duration.ofSeconds(redisAppProperties.getCache().getCategoryTtlSeconds());
         return categoryListCache.getOrLoadList(
                 KitchenCacheKeys.categoriesEnabled(),

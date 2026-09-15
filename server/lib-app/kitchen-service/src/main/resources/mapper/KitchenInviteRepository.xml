@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.miyf.kitchen.repository.KitchenInviteRepository">
+
+    <sql id="Cols">
+        id, kitchen_id, code, token, expire_at, max_uses, used_count, status, create_time, last_modify_time
+    </sql>
+
+    <select id="selectActiveByKitchenId" resultType="cn.miyf.kitchen.bean.entity.KitchenInviteEntity">
+        SELECT <include refid="Cols"/>
+        FROM kitchen_invite
+        WHERE kitchen_id = #{kitchenId}
+          AND status = 'ACTIVE'
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectByCode" resultType="cn.miyf.kitchen.bean.entity.KitchenInviteEntity">
+        SELECT <include refid="Cols"/>
+        FROM kitchen_invite
+        WHERE code = #{code}
+        LIMIT 1
+    </select>
+
+    <select id="selectByToken" resultType="cn.miyf.kitchen.bean.entity.KitchenInviteEntity">
+        SELECT <include refid="Cols"/>
+        FROM kitchen_invite
+        WHERE token = #{token}
+        LIMIT 1
+    </select>
+
+    <update id="incrementUsedCount">
+        UPDATE kitchen_invite
+        SET used_count = used_count + 1,
+            last_modify_time = NOW()
+        WHERE id = #{id}
+    </update>
+</mapper>

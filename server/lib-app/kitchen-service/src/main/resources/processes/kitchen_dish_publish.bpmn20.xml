@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://miyf.cn/kitchen"
+             xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/2.0/20100524/BPMN20.xsd">
+  <process id="kitchen_dish_publish" name="菜品上架审核" isExecutable="true">
+    <startEvent id="start"/>
+    <userTask id="auditTask" name="管理员审核" flowable:candidateGroups="kitchen_dish_auditor"/>
+    <exclusiveGateway id="decision"/>
+    <endEvent id="approvedEnd"/>
+    <endEvent id="rejectedEnd"/>
+    <sequenceFlow sourceRef="start" targetRef="auditTask"/>
+    <sequenceFlow sourceRef="auditTask" targetRef="decision"/>
+    <sequenceFlow sourceRef="decision" targetRef="approvedEnd">
+      <conditionExpression xsi:type="tFormalExpression">${approved}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow sourceRef="decision" targetRef="rejectedEnd">
+      <conditionExpression xsi:type="tFormalExpression">${!approved}</conditionExpression>
+    </sequenceFlow>
+  </process>
+</definitions>

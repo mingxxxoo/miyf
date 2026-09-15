@@ -1,7 +1,6 @@
 package cn.miyf.kitchen.bean.entity;
 
 import cn.miyf.bean.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -42,6 +41,10 @@ public class OrderEntity extends BaseEntity {
     @TableField("user_id")
     @Schema(description = "用户 ID")
     private Long userId;
+
+    @TableField("kitchen_id")
+    @Schema(description = "厨房 ID")
+    private Long kitchenId;
 
     @TableField("status")
     @Schema(description = "状态")

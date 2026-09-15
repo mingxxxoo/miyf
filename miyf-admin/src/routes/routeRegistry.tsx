@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react';
+import DishAuditsPage from '@/modules/kitchen/pages/audits/DishAuditsPage';
+import KitchensPage from '@/modules/kitchen/pages/kitchens/KitchensPage';
+import BindingsPage from '@/modules/kitchen/pages/bindings/BindingsPage';
 import CategoriesPage from '@/modules/kitchen/pages/categories/CategoriesPage';
 import DishesPage from '@/modules/kitchen/pages/dishes/DishesPage';
 import DishCreatePage from '@/modules/kitchen/pages/dishes/DishCreatePage';
@@ -46,6 +49,11 @@ export type RouteDef = {
 };
 
 export const businessRouteDefs: RouteDef[] = [
+  {
+    path: '/kitchen/audits',
+    element: <DishAuditsPage />,
+    fallbackPermissions: ['kitchen:dish:audit'],
+  },
   {
     path: '/kitchen/categories',
     element: <CategoriesPage />,
@@ -100,6 +108,16 @@ export const businessRouteDefs: RouteDef[] = [
     path: '/kitchen/operation-logs',
     element: <OperationLogsPage />,
     fallbackPermissions: ['operation-log:list'],
+  },
+  {
+    path: '/kitchen/kitchens',
+    element: <KitchensPage />,
+    fallbackPermissions: ['kitchen:kitchen:list'],
+  },
+  {
+    path: '/kitchen/bindings',
+    element: <BindingsPage />,
+    fallbackPermissions: ['kitchen:binding:list'],
   },
   {
     path: '/health/overview',

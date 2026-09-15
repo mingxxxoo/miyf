@@ -7,8 +7,10 @@ import Loading from '@/components/Loading'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
 import { fetchCategories } from '@/api/category'
 import { fetchDishes } from '@/api/dish'
+import { fetchMyBinding } from '@/api/kitchen'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { PRODUCT_META, useProductStore } from '@/stores/productStore'
+import { useUserStore } from '@/stores/userStore'
 import type { Category, Dish } from '@/types'
 import './index.scss'
 
@@ -20,6 +22,8 @@ const PAGE_SIZE = 20
 export default function CategoryPage() {
   const { bootstrapping } = useAuthGuard({ required: false })
   const setProduct = useProductStore((s) => s.setProduct)
+  const isLoggedIn = useUserStore((s) => s.isLoggedIn)
+  const user = useUserStore((s) => s.user)
   const [activeId, setActiveId] = useState(ALL)
   const [categories, setCategories] = useState<Category[]>([])
   const [dishes, setDishes] = useState<Dish[]>([])
@@ -28,6 +32,11 @@ export default function CategoryPage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [needJoin, setNeedJoin] = useState(false)
+  const [pending, setPending] = useState(false)
+  const [rejected, setRejected] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
+  const [kitchenName, setKitchenName] = useState('')
   const [keyword, setKeyword] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -83,6 +92,19 @@ export default function CategoryPage() {
     pageNo: number,
     append: boolean
   ) => {
+    if (!isLoggedIn) {
+      setNeedJoin(false)
+      setDishes([])
+      setLoading(false)
+      return
+    }
+    if (user?.activeRole === 'CHEF' || (user?.chef && user?.activeRole !== 'DINER')) {
+      setNeedJoin(false)
+      setDishes([])
+      setLoading(false)
+      Taro.redirectTo({ url: '/pages/chef/index' })
+      return
+    }
     if (append) {
       if (loadingMoreRef.current) return
       setLoadingMore(true)
@@ -91,6 +113,23 @@ export default function CategoryPage() {
       setLoadError(false)
     }
     try {
+      const binding = await fetchMyBinding()
+      if (!binding || binding.status !== 'BOUND') {
+        setNeedJoin(true)
+        setPending(binding?.status === 'PENDING')
+        setRejected(binding?.status === 'REJECTED')
+        setRejectReason(binding?.rejectReason || '')
+        setKitchenName(binding?.kitchenName || '')
+        setDishes([])
+        setTotal(0)
+        setCategories([])
+        return
+      }
+      setNeedJoin(false)
+      setPending(false)
+      setRejected(false)
+      setRejectReason('')
+      setKitchenName(binding.kitchenName || '')
       if (!append) {
         const cats = await fetchCategories().catch(() => [] as Category[])
         setCategories(cats)
@@ -121,7 +160,7 @@ export default function CategoryPage() {
   }
 
   const loadMore = async () => {
-    if (loadingMoreRef.current || loading) return
+    if (needJoin || loadingMoreRef.current || loading) return
     if (dishes.length >= totalRef.current) return
     await loadData(activeIdRef.current, keywordRef.current, pageRef.current + 1, true)
   }
@@ -156,8 +195,54 @@ export default function CategoryPage() {
     return <Loading fullscreen text='整理菜品柜…' />
   }
 
-  if (loading && dishes.length === 0 && !loadError) {
+  if (loading && dishes.length === 0 && !loadError && !needJoin) {
     return <Loading fullscreen text='整理菜品柜…' />
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <View className='category-page'>
+        <EmptyState
+          emoji='🔑'
+          title='登录后看专属菜单'
+          description='胡闹厨房没有公开菜，加入厨师厨房后才能浏览。'
+          actionText='去登录'
+          onAction={() => Taro.navigateTo({ url: '/pages/login/index' })}
+        />
+      </View>
+    )
+  }
+
+  if (needJoin) {
+    return (
+      <View className='category-page'>
+        <EmptyState
+          emoji='🔑'
+          title={
+            pending
+              ? `等待「${kitchenName || '厨房'}」确认`
+              : rejected
+                ? `「${kitchenName || '厨房'}」未通过申请`
+                : '先加入厨房'
+          }
+          description={
+            pending
+              ? '申请已提交，厨师确认后才能按分类看菜。'
+              : rejected
+                ? rejectReason
+                  ? `原因：${rejectReason}。可换码重新申请。`
+                  : '申请被拒绝。可换邀请码重新申请。'
+                : '没有公开菜单。用邀请码绑定一位厨师后，才能按分类看菜。'
+          }
+          actionText={pending ? '查看首页' : '去加入厨房'}
+          onAction={() =>
+            pending
+              ? Taro.switchTab({ url: '/pages/index/index' })
+              : Taro.navigateTo({ url: '/pages/join/index' })
+          }
+        />
+      </View>
+    )
   }
 
   return (

@@ -16,6 +16,11 @@ function isNotFoundError(err: unknown): boolean {
   return /不存在|找不到|404|NOT_FOUND/i.test(msg)
 }
 
+function isBindingRequiredError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err || '')
+  return /请先加入厨房|BINDING_REQUIRED|41013/i.test(msg)
+}
+
 function formatNutrition(nutrition?: Record<string, unknown>): string {
   if (!nutrition || typeof nutrition !== 'object') return ''
   return Object.entries(nutrition)
@@ -35,6 +40,7 @@ export default function DishDetailPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [notFound, setNotFound] = useState(false)
+  const [needJoin, setNeedJoin] = useState(false)
   const [dish, setDish] = useState<Dish | null>(null)
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
@@ -56,6 +62,7 @@ export default function DishDetailPage() {
     setLoading(true)
     setLoadError(false)
     setNotFound(false)
+    setNeedJoin(false)
     try {
       const [d, r, c] = await Promise.all([
         fetchDishDetail(id),
@@ -84,7 +91,9 @@ export default function DishDetailPage() {
       setDish(null)
       setRecipe(null)
       setComments([])
-      if (isNotFoundError(err)) {
+      if (isBindingRequiredError(err)) {
+        setNeedJoin(true)
+      } else if (isNotFoundError(err)) {
         setNotFound(true)
       } else {
         setLoadError(true)
@@ -136,6 +145,18 @@ export default function DishDetailPage() {
 
   if (loading) {
     return <Loading fullscreen text='端上这道菜…' />
+  }
+
+  if (needJoin) {
+    return (
+      <EmptyState
+        emoji='🔑'
+        title='先加入厨房'
+        description='没有公开菜品。绑定厨师后才能查看详情与预约。'
+        actionText='去加入厨房'
+        onAction={() => Taro.navigateTo({ url: '/pages/join/index' })}
+      />
+    )
   }
 
   if (loadError) {

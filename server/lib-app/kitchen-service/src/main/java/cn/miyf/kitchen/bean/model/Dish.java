@@ -15,6 +15,7 @@ import java.util.List;
  */
 public class Dish {
     private Long id;
+    private Long kitchenId;
     private Long categoryId;
     private String categoryName;
     private String name;
@@ -22,6 +23,9 @@ public class Dish {
     private String description;
     private String coverImage;
     private String status;
+    private String auditStatus;
+    private String processInstanceId;
+    private String rejectReason;
     private int sortOrder;
     private boolean recommend;
     private int stock;
@@ -42,6 +46,14 @@ public class Dish {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getKitchenId() {
+        return kitchenId;
+    }
+
+    public void setKitchenId(Long kitchenId) {
+        this.kitchenId = kitchenId;
     }
 
     public Long getCategoryId() {
@@ -98,6 +110,30 @@ public class Dish {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getAuditStatus() {
+        return auditStatus;
+    }
+
+    public void setAuditStatus(String auditStatus) {
+        this.auditStatus = auditStatus;
+    }
+
+    public String getProcessInstanceId() {
+        return processInstanceId;
+    }
+
+    public void setProcessInstanceId(String processInstanceId) {
+        this.processInstanceId = processInstanceId;
+    }
+
+    public String getRejectReason() {
+        return rejectReason;
+    }
+
+    public void setRejectReason(String rejectReason) {
+        this.rejectReason = rejectReason;
     }
 
     public int getSortOrder() {

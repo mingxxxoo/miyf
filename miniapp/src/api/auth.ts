@@ -24,6 +24,9 @@ interface UserVoRaw {
   phone?: string
   wechatId?: string
   status?: string
+  activeRole?: string
+  chef?: boolean
+  diner?: boolean
 }
 
 export interface WxLoginProfile {
@@ -51,7 +54,10 @@ function mapUser(raw: UserVoRaw | LoginVoRaw, profile?: WxLoginProfile): User {
       '微信用户',
     phone: userLike.phone || profile?.phone,
     wechatId: userLike.wechatId || profile?.wechatId,
-    avatarUrl: avatar
+    avatarUrl: avatar,
+    activeRole: userLike.activeRole,
+    chef: userLike.chef,
+    diner: userLike.diner
   }
 }
 

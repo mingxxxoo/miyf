@@ -24,5 +24,6 @@
         <module>monitor-service</module>
         <module>job-service</module>
         <module>search-service</module>
+        <module>workflow-service</module>
     </modules>
 </project>

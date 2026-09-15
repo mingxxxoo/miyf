@@ -44,6 +44,10 @@ public class DishVo extends BaseVo {
     @Schema(description = "分类 ID", type = "string")
     private Long categoryId;
 
+    @JsonSerialize(using = ToStringSerializer.class)
+    @Schema(description = "厨房 ID", type = "string")
+    private Long kitchenId;
+
     @Schema(description = "分类名称")
     private String categoryName;
 
@@ -62,6 +66,12 @@ public class DishVo extends BaseVo {
 
     @Schema(description = "状态")
     private String status;
+
+    @Schema(description = "审核状态")
+    private String auditStatus;
+
+    @Schema(description = "驳回原因")
+    private String rejectReason;
 
     @Schema(description = "是否推荐")
     private Boolean recommend;

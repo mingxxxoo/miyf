@@ -34,6 +34,7 @@
         <jjwt.version>0.12.6</jjwt.version>
         <springdoc.version>3.0.2</springdoc.version>
         <testcontainers.version>1.21.3</testcontainers.version>
+        <flowable.version>8.0.0</flowable.version>
     </properties>
 
     <dependencyManagement>
@@ -77,6 +78,11 @@
             <dependency>
                 <groupId>cn.miyf</groupId>
                 <artifactId>search-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.miyf</groupId>
+                <artifactId>workflow-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

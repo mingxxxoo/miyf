@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.miyf.kitchen.repository.KitchenBindingRepository">
+
+    <sql id="Cols">
+        id, kitchen_id, diner_user_id, status, reject_reason, applied_at, decided_at, unbound_at,
+        create_time, last_modify_time
+    </sql>
+
+    <select id="selectBoundByDiner" resultType="cn.miyf.kitchen.bean.entity.KitchenBindingEntity">
+        SELECT <include refid="Cols"/>
+        FROM kitchen_binding
+        WHERE diner_user_id = #{dinerUserId}
+          AND status = 'BOUND'
+        LIMIT 1
+    </select>
+
+    <select id="selectActiveByDiner" resultType="cn.miyf.kitchen.bean.entity.KitchenBindingEntity">
+        SELECT <include refid="Cols"/>
+        FROM kitchen_binding
+        WHERE diner_user_id = #{dinerUserId}
+          AND status IN ('BOUND', 'PENDING', 'REJECTED')
+        ORDER BY CASE status
+            WHEN 'BOUND' THEN 0
+            WHEN 'PENDING' THEN 1
+            ELSE 2
+        END, applied_at DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectPending" resultType="cn.miyf.kitchen.bean.entity.KitchenBindingEntity">
+        SELECT <include refid="Cols"/>
+        FROM kitchen_binding
+        WHERE kitchen_id = #{kitchenId}
+          AND diner_user_id = #{dinerUserId}
+          AND status = 'PENDING'
+        LIMIT 1
+    </select>
+
+    <select id="selectPendingByDiner" resultType="cn.miyf.kitchen.bean.entity.KitchenBindingEntity">
+        SELECT <include refid="Cols"/>
+        FROM kitchen_binding
+        WHERE diner_user_id = #{dinerUserId}
+          AND status = 'PENDING'
+        ORDER BY applied_at DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectLatest" resultType="cn.miyf.kitchen.bean.entity.KitchenBindingEntity">
+        SELECT <include refid="Cols"/>
+        FROM kitchen_binding
+        WHERE kitchen_id = #{kitchenId}
+          AND diner_user_id = #{dinerUserId}
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectChefPage" resultType="cn.miyf.kitchen.bean.entity.KitchenBindingEntity">
+        SELECT <include refid="Cols"/>
+        FROM kitchen_binding
+        WHERE kitchen_id = #{kitchenId}
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+        ORDER BY applied_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countChefPage" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_binding
+        WHERE kitchen_id = #{kitchenId}
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+    </select>
+
+    <select id="selectAdminPage" resultType="cn.miyf.kitchen.bean.entity.KitchenBindingEntity">
+        SELECT <include refid="Cols"/>
+        FROM kitchen_binding
+        WHERE 1 = 1
+          <if test="kitchenId != null">
+              AND kitchen_id = #{kitchenId}
+          </if>
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+        ORDER BY applied_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAdminPage" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_binding
+        WHERE 1 = 1
+          <if test="kitchenId != null">
+              AND kitchen_id = #{kitchenId}
+          </if>
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+    </select>
+</mapper>

@@ -198,6 +198,12 @@ export interface Dish {
 
   lastModifyTime?: string;
 
+  kitchenId?: string;
+
+  auditStatus?: string;
+
+  rejectReason?: string;
+
 }
 
 

@@ -18,6 +18,10 @@ public class User {
     private String wechatId;
     private String avatarUrl;
     private String status;
+    private String activeRole;
+    private boolean chef;
+    private boolean diner;
+    private Instant roleChosenAt;
     private Instant createTime;
     private Instant lastModifyTime;
 
@@ -91,6 +95,38 @@ public class User {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getActiveRole() {
+        return activeRole;
+    }
+
+    public void setActiveRole(String activeRole) {
+        this.activeRole = activeRole;
+    }
+
+    public boolean isChef() {
+        return chef;
+    }
+
+    public void setChef(boolean chef) {
+        this.chef = chef;
+    }
+
+    public boolean isDiner() {
+        return diner;
+    }
+
+    public void setDiner(boolean diner) {
+        this.diner = diner;
+    }
+
+    public Instant getRoleChosenAt() {
+        return roleChosenAt;
+    }
+
+    public void setRoleChosenAt(Instant roleChosenAt) {
+        this.roleChosenAt = roleChosenAt;
     }
 
     public Instant getCreateTime() {

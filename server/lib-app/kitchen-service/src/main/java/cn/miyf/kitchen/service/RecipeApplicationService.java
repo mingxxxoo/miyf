@@ -26,6 +26,7 @@ import java.util.Optional;
 
 /**
  * 菜谱应用服务：一菜一谱、结构校验、管理端 CRUD、用户端只读。
+ * 用户端按菜品查询经绑定门控，且菜品须上架且已审核通过。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:35
@@ -36,6 +37,7 @@ public class RecipeApplicationService extends BaseApplicationService {
 
     private final RecipeRepository recipeRepository;
     private final DishRepository dishRepository;
+    private final KitchenAccessService kitchenAccessService;
 
     /**
      * 管理端菜谱列表。
@@ -95,7 +97,9 @@ public class RecipeApplicationService extends BaseApplicationService {
      */
     public RecipeVo getByDishIdUser(Long dishId) {
         Dish dish = EntityConverters.toDish(requireById(dishRepository, dishId, "菜品不存在"));
-        requireTrue("ON_SALE".equals(dish.getStatus()), ErrorCode.NOT_FOUND, "菜品不存在或未上架");
+        kitchenAccessService.requireBoundToDish(dish);
+        requireTrue("ON_SALE".equals(dish.getStatus()) && "APPROVED".equals(dish.getAuditStatus()),
+                ErrorCode.NOT_FOUND, "菜品不存在或未上架");
         Recipe recipe = requireFound(findRecipeByDishId(dishId), "该菜品暂无菜谱");
         return toVo(recipe);
     }

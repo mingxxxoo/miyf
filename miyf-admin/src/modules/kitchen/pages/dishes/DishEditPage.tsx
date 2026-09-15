@@ -119,7 +119,7 @@ export default function DishEditPage() {
 
         description: values.description ? String(values.description) : undefined,
 
-        coverImage: values.coverImage ? String(values.coverImage) : '',
+        coverImage: values.coverImage ? String(values.coverImage) : undefined,
 
         stockType: values.stockType as 'LIMITED' | 'UNLIMITED',
 

@@ -12,6 +12,7 @@ import cn.miyf.kitchen.bean.entity.CommentImageEntity;
 import cn.miyf.kitchen.bean.entity.OrderEntity;
 import cn.miyf.kitchen.bean.entity.UserEntity;
 import cn.miyf.kitchen.bean.model.Comment;
+import cn.miyf.kitchen.bean.model.Dish;
 import cn.miyf.kitchen.bean.model.Order;
 import cn.miyf.kitchen.bean.model.OrderItem;
 import cn.miyf.kitchen.bean.model.OrderStatus;
@@ -52,6 +53,7 @@ import java.util.stream.Collectors;
 /**
  * 评价应用服务：完成单资格校验、隐藏/恢复/删除后评分重算。
  * 用户昵称/头像与图片 enrich、图集替换由本服务编排，Repository 仅返回 Entity。
+ * 胡闹厨房：评价前经绑定门控校验菜品所属厨房。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:55
@@ -69,6 +71,7 @@ public class CommentApplicationService extends BaseApplicationService {
     private final RedisDistributedLock redisDistributedLock;
     private final KitchenCacheEvictService kitchenCacheEvictService;
     private final FileResourceApplicationService fileResourceApplicationService;
+    private final KitchenAccessService kitchenAccessService;
 
     /**
      * 评价配图上传（厨房个人端；公开可读以便菜品页展示）。
@@ -152,7 +155,10 @@ public class CommentApplicationService extends BaseApplicationService {
      * @history 1.00 2026-09-04 17:55 XieMingJie Created.
      */
     public PageResult<CommentVo> pageByDish(Long dishId, CommentPageQo qo) {
-        requireTrue(existsById(dishRepository, dishId), ErrorCode.NOT_FOUND, "菜品不存在");
+        Dish dish = EntityConverters.toDish(requireById(dishRepository, dishId, "菜品不存在"));
+        kitchenAccessService.requireBoundToDish(dish);
+        requireTrue("ON_SALE".equals(dish.getStatus()) && "APPROVED".equals(dish.getAuditStatus()),
+                ErrorCode.NOT_FOUND, "菜品不存在或未上架");
         if (qo.getRating() != null) {
             requireTrue(qo.getRating() >= 1 && qo.getRating() <= 5, ErrorCode.BAD_REQUEST, "星级筛选无效");
         }

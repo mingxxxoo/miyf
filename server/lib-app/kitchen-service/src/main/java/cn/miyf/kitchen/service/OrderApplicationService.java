@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 
 /**
  * 预约应用服务：创建扣库存、状态机流转、取消回补。
+ * 胡闹厨房：食客须 BOUND 且厨房 OPEN 方可下单；厨师端可处理本厨预约。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:40
@@ -57,6 +58,7 @@ public class OrderApplicationService extends BaseApplicationService {
     private final OrderItemRepository orderItemRepository;
     private final DishRepository dishRepository;
     private final CommentRepository commentRepository;
+    private final KitchenAccessService kitchenAccessService;
 
     /**
      * 用户创建预约：校验上架 → 原子扣库存 → 写单头与明细。
@@ -68,6 +70,7 @@ public class OrderApplicationService extends BaseApplicationService {
     @Transactional
     public OrderVo create(OrderCreateDto dto) {
         Long userId = SecurityUtils.currentUserId();
+        Long kitchenId = kitchenAccessService.requireBoundKitchen().getId();
         Map<Long, Integer> quantityByDish = mergeQuantities(dto.getItems());
         Map<Long, String> remarkByDish = firstRemarkByDish(dto.getItems());
 
@@ -77,7 +80,10 @@ public class OrderApplicationService extends BaseApplicationService {
             Long dishId = entry.getKey();
             int quantity = entry.getValue();
             Dish dish = EntityConverters.toDish(requireById(dishRepository, dishId, "菜品不存在"));
-            requireTrue("ON_SALE".equals(dish.getStatus()), ErrorCode.INVALID_STATUS, "菜品未上架，暂时不能预约");
+            requireTrue(kitchenId.equals(dish.getKitchenId()), ErrorCode.FORBIDDEN, "只能预约已绑定厨房的菜品");
+            kitchenAccessService.requireBoundToDish(dish);
+            requireTrue("ON_SALE".equals(dish.getStatus()) && "APPROVED".equals(dish.getAuditStatus()),
+                    ErrorCode.INVALID_STATUS, "菜品未上架，暂时不能预约");
             if ("LIMITED".equals(dish.getStockType())) {
                 requireTrue(dishRepository.deductStock(dishId, quantity) > 0,
                         ErrorCode.STOCK_INSUFFICIENT, "「" + dish.getName() + "」可提供份数不足");
@@ -94,6 +100,7 @@ public class OrderApplicationService extends BaseApplicationService {
         Order order = new Order();
         order.setOrderNo(nextOrderNo());
         order.setUserId(userId);
+        order.setKitchenId(kitchenId);
         order.setStatus(OrderStatus.PENDING.name());
         order.setRemark(dto.getRemark());
         order.setItems(items);
@@ -158,6 +165,63 @@ public class OrderApplicationService extends BaseApplicationService {
         OrderVo vo = toVo(requireOrder(id));
         vo.setDisplayTip("这次预约取消啦");
         return vo;
+    }
+
+    /**
+     * 厨师端本厨房预约分页。
+     *
+     * @param qo 状态与分页
+     * @return 分页
+     * @history 1.00 2026-09-15 XieMingJie Created.
+     */
+    public PageResult<OrderVo> pageChef(OrderPageQo qo) {
+        Long kitchenId = kitchenAccessService.requireOwnedKitchen().getId();
+        return QueryConditionHolder.run(qo, "create_time DESC", () -> {
+            String status = normalizeStatusFilter(qo.getStatus());
+            long page = pageOf(qo);
+            long pageSize = pageSizeOf(qo);
+            List<OrderVo> records = orderRepository.selectChefPage(kitchenId, status, offset(page, pageSize), pageSize)
+                    .stream()
+                    .map(e -> toVo(enrichItems(EntityConverters.toOrder(e, null))))
+                    .toList();
+            long total = orderRepository.countChefPage(kitchenId, status);
+            return PageResult.of(records, total, page, pageSize);
+        });
+    }
+
+    /**
+     * 厨师端预约详情（须归属本厨）。
+     *
+     * @param id 预约 ID
+     * @return 预约 VO
+     * @history 1.00 2026-09-15 XieMingJie Created.
+     */
+    public OrderVo getChef(Long id) {
+        return toVo(requireChefOrder(id));
+    }
+
+    /**
+     * 厨师处理预约状态流转。
+     *
+     * @param id  预约 ID
+     * @param dto 目标状态
+     * @return 更新后预约
+     * @history 1.00 2026-09-15 XieMingJie Created.
+     */
+    @Transactional
+    public OrderVo updateStatusChef(Long id, OrderStatusUpdateDto dto) {
+        Order order = requireChefOrder(id);
+        OrderStatus target = parseStatus(dto.getStatus());
+        transitAndRestore(order, target);
+        return toVo(requireOrder(id));
+    }
+
+    /** 校验预约归属当前厨师厨房。 */
+    private Order requireChefOrder(Long id) {
+        Order order = requireOrder(id);
+        Long kitchenId = kitchenAccessService.requireOwnedKitchen().getId();
+        requireTrue(kitchenId.equals(order.getKitchenId()), ErrorCode.FORBIDDEN, "无权处理该预约");
+        return order;
     }
 
     /**
@@ -376,6 +440,7 @@ public class OrderApplicationService extends BaseApplicationService {
                 .setId(order.getId())
                 .setOrderNo(order.getOrderNo())
                 .setUserId(order.getUserId())
+                .setKitchenId(order.getKitchenId())
                 .setStatus(order.getStatus())
                 .setRemark(order.getRemark())
                 .setCreateTime(order.getCreateTime())
