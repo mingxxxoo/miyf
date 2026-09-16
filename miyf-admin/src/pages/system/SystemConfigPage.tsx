@@ -8,9 +8,12 @@ import {
   Select,
   Space,
   Switch,
+  Table,
+  Tag,
   Typography,
   message,
 } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { notifyError } from '@/api/errors';
 import { useSubmitting } from '@/hooks/useSubmitting';
 import { sysConfigApi, type SysConfig } from '@/modules/system/api';
@@ -22,7 +25,6 @@ import {
   LoadingState,
   PageHeader,
   PageToolbar,
-  SettingSection,
   type ChangeItem,
 } from '@/ui';
 
@@ -67,7 +69,7 @@ function normalizeValue(v: string | undefined) {
 }
 
 /**
- * 基础设置：按分组展示可编辑配置项，保存前摘要确认。
+ * 基础设置：以列表维护平台、业务与安全配置；保存前摘要确认。
  */
 export default function SystemConfigPage() {
   const [loading, setLoading] = useState(false);
@@ -145,26 +147,19 @@ export default function SystemConfigPage() {
     });
   }, [dirtyIds, configs]);
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, SysConfig[]>();
-    for (const cfg of configs) {
-      const code = cfg.groupCode || 'default';
-      const list = map.get(code) ?? [];
-      list.push(cfg);
-      map.set(code, list);
-    }
-    for (const list of map.values()) {
-      list.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.configKey.localeCompare(b.configKey));
-    }
-    const keys = Array.from(map.keys()).sort((a, b) => {
-      const ia = GROUP_ORDER.indexOf(a);
-      const ib = GROUP_ORDER.indexOf(b);
-      if (ia >= 0 || ib >= 0) {
-        return (ia >= 0 ? ia : 999) - (ib >= 0 ? ib : 999);
-      }
-      return a.localeCompare(b);
+  const sortedConfigs = useMemo(() => {
+    return [...configs].sort((a, b) => {
+      const ga = a.groupCode || 'default';
+      const gb = b.groupCode || 'default';
+      const ia = GROUP_ORDER.indexOf(ga);
+      const ib = GROUP_ORDER.indexOf(gb);
+      const groupCmp =
+        ia >= 0 || ib >= 0
+          ? (ia >= 0 ? ia : 999) - (ib >= 0 ? ib : 999)
+          : ga.localeCompare(gb);
+      if (groupCmp !== 0) return groupCmp;
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.configKey.localeCompare(b.configKey);
     });
-    return keys.map((code) => ({ code, title: groupTitle(code), items: map.get(code)! }));
   }, [configs]);
 
   const setValue = (id: string, next: string) => {
@@ -280,7 +275,7 @@ export default function SystemConfigPage() {
     if (type === 'NUMBER') {
       return (
         <InputNumber
-          style={{ width: '100%', maxWidth: 320 }}
+          style={{ width: '100%', maxWidth: 220 }}
           value={value === '' ? null : Number(value)}
           onChange={(n) => setValue(cfg.id, n == null ? '' : String(n))}
         />
@@ -305,11 +300,79 @@ export default function SystemConfigPage() {
     );
   };
 
+  const columns: ColumnsType<SysConfig> = [
+    {
+      title: '名称',
+      dataIndex: 'name',
+      width: 180,
+      render: (name: string, row) => (
+        <Space direction="vertical" size={0}>
+          <Typography.Text strong>
+            {name || row.configKey}
+            {dirtyIds.includes(row.id) ? (
+              <Tag color="warning" style={{ marginLeft: 8 }}>
+                已修改
+              </Tag>
+            ) : null}
+          </Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {row.configKey}
+          </Typography.Text>
+        </Space>
+      ),
+    },
+    {
+      title: '分组',
+      dataIndex: 'groupCode',
+      width: 120,
+      render: (code: string) => groupTitle(code || 'default'),
+    },
+    {
+      title: '类型',
+      dataIndex: 'valueType',
+      width: 90,
+      render: (t: string) => t || 'STRING',
+    },
+    {
+      title: '配置值',
+      key: 'value',
+      render: (_, row) => renderEditor(row),
+    },
+    {
+      title: '说明',
+      dataIndex: 'description',
+      ellipsis: true,
+      width: 180,
+      render: (v?: string) => v || '—',
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 140,
+      fixed: 'right',
+      render: (_, row) => {
+        const dirty = dirtyIds.includes(row.id);
+        return (
+          <Space>
+            <Button type="link" size="small" disabled={!dirty} onClick={() => restoreOne(row.id)}>
+              恢复
+            </Button>
+            <Popconfirm title="确认删除该配置？" onConfirm={() => void handleDelete(row.id)}>
+              <Button type="link" size="small" danger>
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="ck-page">
       <PageHeader
         title="基础设置"
-        description="按分组维护平台、业务与安全配置；保存前可预览变更摘要"
+        description="以列表维护平台、业务与安全配置；保存前可预览变更摘要"
         extra={
           <Space>
             <Button onClick={() => void fetchData()} loading={loading}>
@@ -334,9 +397,7 @@ export default function SystemConfigPage() {
             }}
           />
         }
-        right={
-          <Button onClick={openCreate}>新增配置</Button>
-        }
+        right={<Button onClick={openCreate}>新增配置</Button>}
       />
 
       {loading && !configs.length ? (
@@ -344,61 +405,15 @@ export default function SystemConfigPage() {
       ) : !configs.length ? (
         <EmptyState description="暂无配置" actionText="新增配置" onAction={openCreate} />
       ) : (
-        grouped.map((group) => (
-          <SettingSection
-            key={group.code}
-            title={group.title}
-            description={`分组：${group.code}`}
-            danger={group.code.toLowerCase().includes('security')}
-          >
-            <Space direction="vertical" size={16} style={{ width: '100%' }}>
-              {group.items.map((cfg) => {
-                const dirty = dirtyIds.includes(cfg.id);
-                return (
-                  <div key={cfg.id} className="setting-config-row">
-                    <div className="setting-config-main">
-                      <Space align="start" style={{ width: '100%', justifyContent: 'space-between' }}>
-                        <div>
-                          <Typography.Text strong>{cfg.name || cfg.configKey}</Typography.Text>
-                          {dirty ? (
-                            <Typography.Text type="warning" style={{ marginLeft: 8 }}>
-                              已修改
-                            </Typography.Text>
-                          ) : null}
-                          <div>
-                            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                              {cfg.configKey}
-                              {cfg.description ? ` · ${cfg.description}` : ''}
-                            </Typography.Text>
-                          </div>
-                        </div>
-                        <Space>
-                          <Button
-                            type="link"
-                            size="small"
-                            disabled={!dirty}
-                            onClick={() => restoreOne(cfg.id)}
-                          >
-                            恢复
-                          </Button>
-                          <Popconfirm
-                            title="确认删除该配置？"
-                            onConfirm={() => void handleDelete(cfg.id)}
-                          >
-                            <Button type="link" size="small" danger>
-                              删除
-                            </Button>
-                          </Popconfirm>
-                        </Space>
-                      </Space>
-                      <div style={{ marginTop: 8 }}>{renderEditor(cfg)}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </Space>
-          </SettingSection>
-        ))
+        <Table<SysConfig>
+          rowKey="id"
+          size="middle"
+          loading={loading}
+          columns={columns}
+          dataSource={sortedConfigs}
+          pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+          scroll={{ x: 960 }}
+        />
       )}
 
       <ChangeSummaryModal

@@ -2,11 +2,6 @@ import type { ReactNode } from 'react';
 import DishAuditsPage from '@/modules/kitchen/pages/audits/DishAuditsPage';
 import KitchensPage from '@/modules/kitchen/pages/kitchens/KitchensPage';
 import BindingsPage from '@/modules/kitchen/pages/bindings/BindingsPage';
-import CategoriesPage from '@/modules/kitchen/pages/categories/CategoriesPage';
-import DishesPage from '@/modules/kitchen/pages/dishes/DishesPage';
-import DishCreatePage from '@/modules/kitchen/pages/dishes/DishCreatePage';
-import DishEditPage from '@/modules/kitchen/pages/dishes/DishEditPage';
-import RecipesPage from '@/modules/kitchen/pages/recipes/RecipesPage';
 import OrdersPage from '@/modules/kitchen/pages/orders/OrdersPage';
 import OrderDetailPage from '@/modules/kitchen/pages/orders/OrderDetailPage';
 import CommentsPage from '@/modules/kitchen/pages/comments/CommentsPage';
@@ -53,31 +48,6 @@ export const businessRouteDefs: RouteDef[] = [
     path: '/kitchen/audits',
     element: <DishAuditsPage />,
     fallbackPermissions: ['kitchen:dish:audit'],
-  },
-  {
-    path: '/kitchen/categories',
-    element: <CategoriesPage />,
-    fallbackPermissions: ['kitchen:category:list'],
-  },
-  {
-    path: '/kitchen/dishes',
-    element: <DishesPage />,
-    fallbackPermissions: ['kitchen:dish:list'],
-  },
-  {
-    path: '/kitchen/dishes/create',
-    element: <DishCreatePage />,
-    fallbackPermissions: ['kitchen:dish:create'],
-  },
-  {
-    path: '/kitchen/dishes/:id/edit',
-    element: <DishEditPage />,
-    fallbackPermissions: ['kitchen:dish:update', 'kitchen:dish:list'],
-  },
-  {
-    path: '/kitchen/recipes',
-    element: <RecipesPage />,
-    fallbackPermissions: ['kitchen:recipe:list'],
   },
   {
     path: '/kitchen/orders',

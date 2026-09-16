@@ -105,6 +105,63 @@ public class RecipeApplicationService extends BaseApplicationService {
     }
 
     /**
+     * 厨师端按菜品查询菜谱（本厨菜品，可无谱）。
+     *
+     * @param dishId 菜品 ID
+     * @return 菜谱，未配置时返回 null
+     */
+    public RecipeVo getByDishIdChef(Long dishId) {
+        requireChefDish(dishId);
+        return findRecipeByDishId(dishId).map(this::toVo).orElse(null);
+    }
+
+    /**
+     * 厨师端保存菜谱：无则创建，有则更新。
+     *
+     * @param dishId 菜品 ID
+     * @param dto    请求（dishId 以路径为准）
+     * @return 保存后菜谱
+     */
+    @Transactional
+    public RecipeVo saveChef(Long dishId, RecipeSaveDto dto) {
+        requireChefDish(dishId);
+        dto.setDishId(dishId);
+        RecipeStructureValidator.validateAndNormalize(dto);
+        Optional<Recipe> existing = findRecipeByDishId(dishId);
+        if (existing.isEmpty()) {
+            Recipe recipe = new Recipe();
+            applyDto(recipe, dto);
+            RecipeEntity entity = EntityConverters.toRecipeEntity(recipe);
+            insert(recipeRepository, entity);
+            return toVo(EntityConverters.toRecipe(entity));
+        }
+        Recipe recipe = existing.get();
+        applyDto(recipe, dto);
+        RecipeEntity entity = EntityConverters.toRecipeEntity(recipe);
+        update(recipeRepository, entity);
+        return toVo(EntityConverters.toRecipe(entity));
+    }
+
+    /**
+     * 厨师端删除本厨菜品菜谱。
+     *
+     * @param dishId 菜品 ID
+     */
+    @Transactional
+    public void deleteChefByDishId(Long dishId) {
+        requireChefDish(dishId);
+        Recipe recipe = requireFound(findRecipeByDishId(dishId), "该菜品尚未配置菜谱");
+        deleteById(recipeRepository, recipe.getId());
+    }
+
+    private DishEntity requireChefDish(Long dishId) {
+        DishEntity dish = requireById(dishRepository, dishId, "菜品不存在");
+        Long kitchenId = kitchenAccessService.requireOwnedKitchen().getId();
+        requireTrue(kitchenId.equals(dish.getKitchenId()), ErrorCode.FORBIDDEN, "无权操作该菜品菜谱");
+        return dish;
+    }
+
+    /**
      * 创建菜谱（一菜一谱）。
      *
      * @param dto 请求

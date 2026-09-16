@@ -3,15 +3,24 @@ package cn.miyf.kitchen.controller.personal;
 import cn.miyf.auth.security.MiyfPermission;
 import cn.miyf.common.ApiResult;
 import cn.miyf.common.PageResult;
+import cn.miyf.kitchen.bean.dto.CategorySaveDto;
 import cn.miyf.kitchen.bean.dto.DishSaveDto;
 import cn.miyf.kitchen.bean.dto.OrderStatusUpdateDto;
+import cn.miyf.kitchen.bean.dto.RecipeSaveDto;
 import cn.miyf.kitchen.bean.qo.DishPageQo;
 import cn.miyf.kitchen.bean.qo.OrderPageQo;
+import cn.miyf.kitchen.bean.vo.CategoryVo;
 import cn.miyf.kitchen.bean.vo.DishVo;
 import cn.miyf.kitchen.bean.vo.OrderVo;
+import cn.miyf.kitchen.bean.vo.RecipeVo;
+import cn.miyf.kitchen.bean.vo.WxSubscribeConfigVo;
 import cn.miyf.kitchen.security.KitchenPersonalPopedom;
+import cn.miyf.kitchen.service.CategoryApplicationService;
 import cn.miyf.kitchen.service.DishApplicationService;
+import cn.miyf.kitchen.service.KitchenAccessService;
 import cn.miyf.kitchen.service.OrderApplicationService;
+import cn.miyf.kitchen.service.OrderChefWxNotifyService;
+import cn.miyf.kitchen.service.RecipeApplicationService;
 import cn.miyf.oss.bean.vo.UploadedFileVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,9 +38,11 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 /**
- * 厨师菜品与接单。
- * 菜品须审核通过后方可上架；预约状态由厨师侧流转。
+ * 厨师菜品、分类、菜谱与接单。
+ * 菜品须审核通过后方可上架；预约状态由厨师侧流转；分类与菜谱由厨师自管。
  *
  * @author XieMingJie
  * @since 2026-09-15
@@ -46,6 +57,80 @@ public class ChefController {
 
     private final DishApplicationService dishApplicationService;
     private final OrderApplicationService orderApplicationService;
+    private final CategoryApplicationService categoryApplicationService;
+    private final RecipeApplicationService recipeApplicationService;
+    private final OrderChefWxNotifyService orderChefWxNotifyService;
+    private final KitchenAccessService kitchenAccessService;
+
+    /**
+     * 微信订阅消息配置（厨师端授权用）。
+     *
+     * @return 开关与模板 ID
+     */
+    @Operation(summary = "微信订阅消息配置")
+    @MiyfPermission(code = "kitchen:user:order:list")
+    @GetMapping("/wx-subscribe-config")
+    public ApiResult<WxSubscribeConfigVo> wxSubscribeConfig() {
+        kitchenAccessService.requireOwnedKitchen();
+        String templateId = orderChefWxNotifyService.resolveTemplateId();
+        boolean enabled = orderChefWxNotifyService.isEnabled() && templateId != null && !templateId.isBlank();
+        return ApiResult.ok(new WxSubscribeConfigVo()
+                .setEnabled(enabled)
+                .setTemplateIds(enabled ? List.of(templateId.trim()) : List.of()));
+    }
+
+    /**
+     * 本厨房分类列表（含停用）。
+     *
+     * @return 分类列表
+     */
+    @Operation(summary = "厨师分类列表")
+    @MiyfPermission(code = "kitchen:user:category:list")
+    @GetMapping("/categories")
+    public ApiResult<List<CategoryVo>> categories() {
+        return ApiResult.ok(categoryApplicationService.listChef());
+    }
+
+    /**
+     * 创建本厨房分类。
+     *
+     * @param dto 分类内容
+     * @return 新建分类
+     */
+    @Operation(summary = "创建分类")
+    @MiyfPermission(code = "kitchen:user:category:list")
+    @PostMapping("/categories")
+    public ApiResult<CategoryVo> createCategory(@Valid @RequestBody CategorySaveDto dto) {
+        return ApiResult.ok(categoryApplicationService.createChef(dto));
+    }
+
+    /**
+     * 更新本厨房分类。
+     *
+     * @param id  分类 ID
+     * @param dto 分类内容
+     * @return 更新后分类
+     */
+    @Operation(summary = "更新分类")
+    @MiyfPermission(code = "kitchen:user:category:list")
+    @PutMapping("/categories/{id}")
+    public ApiResult<CategoryVo> updateCategory(@PathVariable Long id, @Valid @RequestBody CategorySaveDto dto) {
+        return ApiResult.ok(categoryApplicationService.updateChef(id, dto));
+    }
+
+    /**
+     * 删除本厨房分类。
+     *
+     * @param id 分类 ID
+     * @return 空
+     */
+    @Operation(summary = "删除分类")
+    @MiyfPermission(code = "kitchen:user:category:list")
+    @DeleteMapping("/categories/{id}")
+    public ApiResult<Void> deleteCategory(@PathVariable Long id) {
+        categoryApplicationService.deleteChef(id);
+        return ApiResult.ok();
+    }
 
     /**
      * 本厨房菜品分页。
@@ -186,6 +271,47 @@ public class ChefController {
     @DeleteMapping("/dishes/{id}")
     public ApiResult<Void> delete(@PathVariable Long id) {
         dishApplicationService.deleteChef(id);
+        return ApiResult.ok();
+    }
+
+    /**
+     * 查询本厨菜品菜谱（可为空）。
+     *
+     * @param dishId 菜品 ID
+     * @return 菜谱或 null
+     */
+    @Operation(summary = "厨师菜谱查询")
+    @MiyfPermission(code = "kitchen:user:dish:list")
+    @GetMapping("/dishes/{dishId}/recipe")
+    public ApiResult<RecipeVo> recipe(@PathVariable Long dishId) {
+        return ApiResult.ok(recipeApplicationService.getByDishIdChef(dishId));
+    }
+
+    /**
+     * 保存本厨菜品菜谱（无则创建，有则更新）。
+     *
+     * @param dishId 菜品 ID
+     * @param dto    菜谱内容
+     * @return 保存后菜谱
+     */
+    @Operation(summary = "保存菜谱")
+    @MiyfPermission(code = "kitchen:user:dish:list")
+    @PutMapping("/dishes/{dishId}/recipe")
+    public ApiResult<RecipeVo> saveRecipe(@PathVariable Long dishId, @Valid @RequestBody RecipeSaveDto dto) {
+        return ApiResult.ok(recipeApplicationService.saveChef(dishId, dto));
+    }
+
+    /**
+     * 删除本厨菜品菜谱。
+     *
+     * @param dishId 菜品 ID
+     * @return 空
+     */
+    @Operation(summary = "删除菜谱")
+    @MiyfPermission(code = "kitchen:user:dish:list")
+    @DeleteMapping("/dishes/{dishId}/recipe")
+    public ApiResult<Void> deleteRecipe(@PathVariable Long dishId) {
+        recipeApplicationService.deleteChefByDishId(dishId);
         return ApiResult.ok();
     }
 

@@ -18,15 +18,28 @@ public class KitchenCacheEvictService {
     private final CacheClient cacheClient;
 
     /**
-     * 分类列表变更后失效。
+     * 分类列表变更后失效（按厨房）。
+     *
+     * @param kitchenId 厨房 ID，可空时清全部厨房前缀
+     */
+    public void evictCategories(Long kitchenId) {
+        if (!cacheClient.isEnabled()) {
+            return;
+        }
+        if (kitchenId == null) {
+            cacheClient.evictByPrefix(KitchenCacheKeys.categoriesEnabledPrefix());
+            return;
+        }
+        cacheClient.evict(KitchenCacheKeys.categoriesEnabled(kitchenId));
+    }
+
+    /**
+     * 分类列表变更后失效（全部厨房）。
      *
      * @history 1.00 2026-09-05 09:13 XieMingJie Created.
      */
     public void evictCategories() {
-        if (!cacheClient.isEnabled()) {
-            return;
-        }
-        cacheClient.evict(KitchenCacheKeys.categoriesEnabled());
+        evictCategories(null);
     }
 
     /**

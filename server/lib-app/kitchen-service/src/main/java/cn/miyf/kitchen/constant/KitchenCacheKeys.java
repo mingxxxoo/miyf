@@ -14,13 +14,30 @@ public final class KitchenCacheKeys {
     }
 
     /**
-     * 用户端启用分类列表。
+     * 指定厨房的启用分类列表。
      *
+     * @param kitchenId 厨房 ID
      * @return key
-     * @history 1.00 2026-09-05 09:13 XieMingJie Created.
      */
+    public static String categoriesEnabled(Long kitchenId) {
+        return CacheKeys.join(CacheKeys.DOMAIN_DATA, "cat", "enabled", kitchenId);
+    }
+
+    /**
+     * 分类启用列表 key 前缀（SCAN 失效）。
+     *
+     * @return 前缀
+     */
+    public static String categoriesEnabledPrefix() {
+        return CacheKeys.join(CacheKeys.DOMAIN_DATA, "cat", "enabled") + ":";
+    }
+
+    /**
+     * @deprecated 分类已按厨房隔离，请使用 {@link #categoriesEnabled(Long)}
+     */
+    @Deprecated
     public static String categoriesEnabled() {
-        return CacheKeys.join(CacheKeys.DOMAIN_DATA, "cat", "enabled");
+        return categoriesEnabledPrefix();
     }
 
     /**

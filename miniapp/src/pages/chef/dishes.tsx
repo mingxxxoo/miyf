@@ -158,7 +158,7 @@ export default function ChefDishesPage() {
       return null
     }
     if (!categoryId) {
-      Taro.showToast({ title: '暂无分类，请联系管理员', icon: 'none' })
+      Taro.showToast({ title: '暂无分类，请先去分类管理新建', icon: 'none' })
       return null
     }
     if (stockType === 'LIMITED' && !(Number(stock) > 0)) {
@@ -280,7 +280,12 @@ export default function ChefDishesPage() {
               </View>
             </Picker>
           ) : (
-            <Text className='ck-muted'>暂无分类</Text>
+            <Text
+              className='ck-muted'
+              onClick={() => Taro.navigateTo({ url: '/pages/chef/categories' })}
+            >
+              暂无分类，去新建 ›
+            </Text>
           )}
         </View>
 

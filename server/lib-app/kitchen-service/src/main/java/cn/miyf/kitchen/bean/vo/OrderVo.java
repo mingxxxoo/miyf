@@ -46,6 +46,9 @@ public class OrderVo extends BaseVo {
     @Schema(description = "用户 ID", type = "string")
     private Long userId;
 
+    @Schema(description = "下单用户昵称")
+    private String userNickname;
+
     @JsonSerialize(using = ToStringSerializer.class)
     @Schema(description = "厨房 ID", type = "string")
     private Long kitchenId;

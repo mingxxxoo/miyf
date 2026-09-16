@@ -9,10 +9,10 @@ public final class CacheKeys {
     private CacheKeys() {
     }
 
-    /** @deprecated 使用 {@link KitchenCacheKeys#categoriesEnabled()} */
+    /** @deprecated 使用 {@link KitchenCacheKeys#categoriesEnabled(Long)} */
     @Deprecated
     public static String categoriesEnabled() {
-        return KitchenCacheKeys.categoriesEnabled();
+        return KitchenCacheKeys.categoriesEnabledPrefix();
     }
 
     /** @deprecated 使用 {@link KitchenCacheKeys#dishesHot(int)} */

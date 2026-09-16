@@ -10,10 +10,10 @@ import org.springframework.web.client.RestClient;
 
 /**
  * 微信登录相关配置。
+ * 订阅消息业务参数走系统配置（sys_config），不在此绑定 YAML。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:20
- * @history 1.00 2026-09-04 17:20 XieMingJie Created.
  */
 @Configuration
 @EnableConfigurationProperties({WxAuthProperties.class})

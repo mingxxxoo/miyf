@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 用户端分类接口（只读启用分类）。
+ * 用户端分类接口（只读当前厨房启用分类）。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:30

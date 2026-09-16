@@ -3,6 +3,7 @@ package cn.miyf.kitchen.repository;
 import cn.miyf.kitchen.bean.entity.CategoryEntity;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -24,6 +25,22 @@ public interface CategoryRepository extends BaseMapper<CategoryEntity> {
      * @history 1.00 2026-09-04 XieMingJie Created.
      */
     List<CategoryEntity> selectAllEnabled();
+
+    /**
+     * 查询指定厨房的启用分类。
+     *
+     * @param kitchenId 厨房 ID
+     * @return 启用分类列表
+     */
+    List<CategoryEntity> selectEnabledByKitchenId(@Param("kitchenId") Long kitchenId);
+
+    /**
+     * 查询指定厨房全部分类（含停用）。
+     *
+     * @param kitchenId 厨房 ID
+     * @return 分类列表
+     */
+    List<CategoryEntity> selectByKitchenId(@Param("kitchenId") Long kitchenId);
 
     /**
      * 查询全部分类（含停用），按 sort_order 升序，供管理端维护。

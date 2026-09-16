@@ -211,7 +211,7 @@ export default function SystemAppsPage() {
           <Input placeholder="如：CoffeeOutlined" />
         </FormItem>
         <FormItem name="homePath" label="默认入口">
-          <Input placeholder="如：/kitchen/categories" />
+          <Input placeholder="如：/kitchen/audits" />
         </FormItem>
         <FormItem name="sortOrder" label="排序">
           <InputNumber style={{ width: '100%' }} min={0} />

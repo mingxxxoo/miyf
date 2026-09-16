@@ -76,6 +76,7 @@ public final class EntityConverters {
         if (e == null) return null;
         Category c = new Category();
         c.setId(e.getId());
+        c.setKitchenId(e.getKitchenId());
         c.setName(e.getName());
         c.setIcon(e.getIcon());
         c.setSortOrder(e.getSortOrder() == null ? 0 : e.getSortOrder());
@@ -88,6 +89,7 @@ public final class EntityConverters {
     public static CategoryEntity toCategoryEntity(Category c) {
         CategoryEntity e = new CategoryEntity();
         e.setId(c.getId());
+        e.setKitchenId(c.getKitchenId());
         e.setName(c.getName());
         e.setIcon(c.getIcon());
         e.setSortOrder(c.getSortOrder());

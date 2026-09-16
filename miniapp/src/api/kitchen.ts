@@ -213,10 +213,172 @@ export async function uploadChefDishImage(filePath: string): Promise<string> {
   return toResourceUrl(url) || url
 }
 
-export async function fetchChefOrders(): Promise<PageResult<{ id: string; orderNo: string; status: string }>> {
-  return get('/api/chef/orders', { page: 1, rows: 50 })
+export async function fetchChefOrders(status?: string): Promise<PageResult<ChefOrder>> {
+  const page = await get<PageResult<ChefOrderRaw>>('/api/chef/orders', {
+    page: 1,
+    rows: 50,
+    status: status || undefined
+  })
+  return {
+    ...page,
+    records: (page.records || []).map(mapChefOrder)
+  }
 }
 
 export async function updateChefOrderStatus(id: string, status: string) {
   return put(`/api/chef/orders/${asId(id)}/status`, { status })
+}
+
+export interface ChefCategory {
+  id: string
+  name: string
+  icon?: string
+  sortOrder?: number
+  status?: string
+}
+
+export async function fetchChefCategories(): Promise<ChefCategory[]> {
+  const list = await get<ChefCategory[]>('/api/chef/categories')
+  return (list || []).map((c) => ({
+    ...c,
+    id: asId(c.id)
+  }))
+}
+
+export async function createChefCategory(payload: {
+  name: string
+  sortOrder?: number
+  status?: string
+}) {
+  return post<ChefCategory>('/api/chef/categories', payload).then((c) => ({
+    ...c,
+    id: asId(c.id)
+  }))
+}
+
+export async function updateChefCategory(
+  id: string,
+  payload: { name: string; sortOrder?: number; status?: string }
+) {
+  return put<ChefCategory>(`/api/chef/categories/${asId(id)}`, payload).then((c) => ({
+    ...c,
+    id: asId(c.id)
+  }))
+}
+
+export async function deleteChefCategory(id: string) {
+  return del(`/api/chef/categories/${asId(id)}`)
+}
+
+export interface ChefRecipe {
+  id?: string
+  dishId: string
+  dishName?: string
+  description?: string
+  difficulty?: string
+  prepareMinutes?: number
+  cookMinutes?: number
+  servings?: number
+  tips?: string
+  ingredients?: { name: string; amount?: string }[]
+  seasonings?: { name: string; amount?: string }[]
+  steps?: { step: number; title?: string; description?: string }[]
+}
+
+export async function fetchChefRecipe(dishId: string): Promise<ChefRecipe | null> {
+  const raw = await get<ChefRecipe | null>(`/api/chef/dishes/${asId(dishId)}/recipe`, undefined, {
+    showError: false
+  }).catch(() => null)
+  if (!raw) return null
+  return {
+    ...raw,
+    id: raw.id != null ? asId(raw.id) : undefined,
+    dishId: asId(raw.dishId)
+  }
+}
+
+export async function saveChefRecipe(
+  dishId: string,
+  payload: {
+    description?: string
+    difficulty?: string
+    prepareMinutes?: number
+    cookMinutes?: number
+    servings?: number
+    tips?: string
+    ingredients?: { name: string; amount: string }[]
+    seasonings?: { name: string; amount: string }[]
+    steps?: { step: number; title?: string; description: string }[]
+  }
+) {
+  return put<ChefRecipe>(`/api/chef/dishes/${asId(dishId)}/recipe`, {
+    dishId: asId(dishId),
+    ...payload
+  })
+}
+
+export async function deleteChefRecipe(dishId: string) {
+  return del(`/api/chef/dishes/${asId(dishId)}/recipe`)
+}
+
+export interface ChefOrderItem {
+  id?: string
+  dishId: string
+  dishName: string
+  quantity: number
+  unit?: string
+  remark?: string
+  coverUrl?: string
+}
+
+export interface ChefOrder {
+  id: string
+  orderNo: string
+  userId?: string
+  userNickname?: string
+  status: string
+  remark?: string
+  createTime?: string
+  items: ChefOrderItem[]
+}
+
+interface ChefOrderRaw {
+  id: string
+  orderNo: string
+  userId?: string
+  userNickname?: string
+  status: string
+  remark?: string
+  createTime?: string
+  items?: {
+    id?: string
+    dishId: string
+    dishName: string
+    quantity: number
+    unit?: string
+    remark?: string
+    coverImage?: string
+    coverUrl?: string
+  }[]
+}
+
+function mapChefOrder(raw: ChefOrderRaw): ChefOrder {
+  return {
+    id: asId(raw.id),
+    orderNo: raw.orderNo,
+    userId: raw.userId != null ? asId(raw.userId) : undefined,
+    userNickname: raw.userNickname,
+    status: raw.status,
+    remark: raw.remark,
+    createTime: raw.createTime,
+    items: (raw.items || []).map((it) => ({
+      id: it.id != null ? asId(it.id) : undefined,
+      dishId: asId(it.dishId),
+      dishName: it.dishName,
+      quantity: it.quantity,
+      unit: it.unit,
+      remark: it.remark,
+      coverUrl: toAbsoluteResourceUrl(it.coverImage || it.coverUrl) || undefined
+    }))
+  }
 }

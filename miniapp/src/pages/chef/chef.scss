@@ -215,6 +215,35 @@
     padding: 48px 0;
   }
 
+  &__tabs {
+    width: 100%;
+    margin-bottom: 20px;
+    white-space: nowrap;
+  }
+
+  &__tabs-inner {
+    display: inline-flex;
+    gap: 12px;
+    padding-bottom: 4px;
+  }
+
+  &__tab {
+    display: inline-block;
+    padding: 12px 22px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid $ck-border;
+    font-size: 24px;
+    color: $ck-muted;
+
+    &--on {
+      background: rgba($ck-primary, 0.14);
+      border-color: rgba($ck-primary, 0.45);
+      color: $ck-primary-d18;
+      font-weight: 600;
+    }
+  }
+
   &__code {
     display: block;
     margin: 12px 0 8px;

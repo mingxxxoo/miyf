@@ -11,6 +11,7 @@ import cn.miyf.kitchen.bean.dto.OrderStatusUpdateDto;
 import cn.miyf.kitchen.bean.entity.DishEntity;
 import cn.miyf.kitchen.bean.entity.OrderEntity;
 import cn.miyf.kitchen.bean.entity.OrderItemEntity;
+import cn.miyf.kitchen.bean.entity.UserEntity;
 import cn.miyf.kitchen.bean.model.Dish;
 import cn.miyf.kitchen.bean.model.Order;
 import cn.miyf.kitchen.bean.model.OrderItem;
@@ -24,6 +25,7 @@ import cn.miyf.kitchen.repository.CommentRepository;
 import cn.miyf.kitchen.repository.DishRepository;
 import cn.miyf.kitchen.repository.OrderItemRepository;
 import cn.miyf.kitchen.repository.OrderRepository;
+import cn.miyf.kitchen.repository.UserRepository;
 import cn.miyf.service.BaseApplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 /**
  * 预约应用服务：创建扣库存、状态机流转、取消回补。
  * 胡闹厨房：食客须 BOUND 且厨房 OPEN 方可下单；厨师端可处理本厨预约。
+ * 食客下单成功后尽力向厨师推送微信订阅消息。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:40
@@ -58,7 +61,9 @@ public class OrderApplicationService extends BaseApplicationService {
     private final OrderItemRepository orderItemRepository;
     private final DishRepository dishRepository;
     private final CommentRepository commentRepository;
+    private final UserRepository userRepository;
     private final KitchenAccessService kitchenAccessService;
+    private final OrderChefWxNotifyService orderChefWxNotifyService;
 
     /**
      * 用户创建预约：校验上架 → 原子扣库存 → 写单头与明细。
@@ -105,6 +110,8 @@ public class OrderApplicationService extends BaseApplicationService {
         order.setRemark(dto.getRemark());
         order.setItems(items);
         Order saved = insertWithItems(order);
+        // 推送失败不影响下单；厨师须先授权订阅消息模板
+        orderChefWxNotifyService.notifyNewOrder(saved);
         OrderVo vo = toVo(saved);
         vo.setDisplayTip("厨房收到啦");
         return vo;
@@ -440,12 +447,21 @@ public class OrderApplicationService extends BaseApplicationService {
                 .setId(order.getId())
                 .setOrderNo(order.getOrderNo())
                 .setUserId(order.getUserId())
+                .setUserNickname(resolveUserNickname(order.getUserId()))
                 .setKitchenId(order.getKitchenId())
                 .setStatus(order.getStatus())
                 .setRemark(order.getRemark())
                 .setCreateTime(order.getCreateTime())
                 .setLastModifyTime(order.getLastModifyTime())
                 .setItems(items);
+    }
+
+    private String resolveUserNickname(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        UserEntity user = userRepository.selectById(userId);
+        return user == null ? null : user.getNickname();
     }
 
     /**

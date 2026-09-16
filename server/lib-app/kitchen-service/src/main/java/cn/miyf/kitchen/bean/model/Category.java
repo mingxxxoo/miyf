@@ -10,6 +10,7 @@ import java.time.Instant;
  */
 public class Category {
     private Long id;
+    private Long kitchenId;
     private String name;
     private String icon;
     private int sortOrder;
@@ -23,6 +24,14 @@ public class Category {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getKitchenId() {
+        return kitchenId;
+    }
+
+    public void setKitchenId(Long kitchenId) {
+        this.kitchenId = kitchenId;
     }
 
     public String getName() {

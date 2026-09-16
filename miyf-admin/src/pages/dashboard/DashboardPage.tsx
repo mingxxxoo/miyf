@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Card, Col, Empty, Row, Segmented, Space, Table, Tag, message } from 'antd';
 import ReactECharts from 'echarts-for-react';
 import { useNavigate } from 'react-router-dom';
-import { dashboardApi, dishApi, orderApi, notifyError } from '@/api';
+import { dashboardApi, orderApi, notifyError } from '@/api';
 import type { DashboardStats, Order, OrderStatus } from '@/types';
 import { ORDER_STATUS, statusOf } from '@/constants/status';
 import {
@@ -41,20 +41,17 @@ export default function DashboardPage() {
   const [error, setError] = useState<unknown>(null);
   const [range, setRange] = useState<RangeKey>('7d');
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
-  const [onSaleCount, setOnSaleCount] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [data, pending, dishes] = await Promise.all([
+      const [data, pending] = await Promise.all([
         dashboardApi.stats(),
         orderApi.page({ page: 1, pageSize: 5, status: 'PENDING' }),
-        dishApi.page({ page: 1, pageSize: 1, status: 'ON_SALE' }),
       ]);
       setStats(data);
       setPendingOrders(pending.records ?? []);
-      setOnSaleCount(dishes.total ?? data.dishCount ?? 0);
     } catch (err) {
       setStats(emptyStats);
       setPendingOrders([]);
@@ -160,12 +157,9 @@ export default function DashboardPage() {
         title="数据概览"
         description={`${greeting} · 今天厨房还有 ${pendingOrders.length} 单待确认`}
         extra={
-          <Space wrap>
-            <Button onClick={() => navigate('/kitchen/dishes/create')}>新增菜品</Button>
-            <Button type="primary" onClick={() => navigate('/kitchen/orders')}>
-              处理预约
-            </Button>
-          </Space>
+          <Button type="primary" onClick={() => navigate('/kitchen/orders')}>
+            处理预约
+          </Button>
         }
       />
 
@@ -188,11 +182,7 @@ export default function DashboardPage() {
             />
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <MetricCard
-              label="上架菜品"
-              value={onSaleCount || stats.dishCount}
-              onClick={() => navigate('/kitchen/dishes')}
-            />
+            <MetricCard label="菜品总数" value={stats.dishCount} hint="由厨师自行维护" />
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <MetricCard
@@ -210,11 +200,7 @@ export default function DashboardPage() {
           style={{ marginBottom: 16 }}
         >
           {pendingOrders.length === 0 ? (
-            <EmptyState
-              description="暂时没有待确认预约，去上架几道菜吧"
-              actionText="管理菜品"
-              onAction={() => navigate('/kitchen/dishes')}
-            />
+            <EmptyState description="暂时没有待确认预约" />
           ) : (
             <Table<Order>
               rowKey="id"
@@ -272,11 +258,7 @@ export default function DashboardPage() {
           <Empty
             description="暂无统计数据，厨房还在安静地等待第一批预约"
             style={{ marginBottom: 24 }}
-          >
-            <Button type="primary" onClick={() => navigate('/kitchen/dishes/create')}>
-              发布第一道菜
-            </Button>
-          </Empty>
+          />
         ) : null}
 
         <Row gutter={[16, 16]}>
@@ -306,11 +288,11 @@ export default function DashboardPage() {
                   预约管理 · {statusOf(ORDER_STATUS, 'PENDING').text}
                 </Tag>
                 <Tag
-                  color="green"
+                  color="blue"
                   style={{ cursor: 'pointer', padding: '6px 12px' }}
-                  onClick={() => navigate('/kitchen/dishes')}
+                  onClick={() => navigate('/kitchen/audits')}
                 >
-                  菜品上架
+                  菜品审核
                 </Tag>
                 <Tag
                   style={{ cursor: 'pointer', padding: '6px 12px' }}

@@ -1,7 +1,6 @@
 package cn.miyf.kitchen.bean.entity;
 
 import cn.miyf.bean.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -34,6 +33,10 @@ public class CategoryEntity extends BaseEntity {
 
     @Serial
     private static final long serialVersionUID = 1L;
+
+    @TableField("kitchen_id")
+    @Schema(description = "所属厨房 ID；空表示历史全局分类")
+    private Long kitchenId;
 
     @TableField("name")
     @Schema(description = "分类名称")

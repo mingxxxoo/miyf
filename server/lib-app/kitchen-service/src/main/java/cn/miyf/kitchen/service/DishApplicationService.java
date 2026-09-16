@@ -409,7 +409,7 @@ public class DishApplicationService extends BaseApplicationService {
     public DishVo createChef(DishSaveDto dto) {
         Long kitchenId = kitchenAccessService.requireOwnedKitchen().getId();
         Long userId = SecurityUtils.currentUserId();
-        validateCategory(dto.getCategoryId());
+        validateCategory(dto.getCategoryId(), kitchenId);
         validateStock(dto.getStockType(), dto.getStock());
         Dish dish = new Dish();
         applyDto(dish, dto, true);
@@ -440,7 +440,7 @@ public class DishApplicationService extends BaseApplicationService {
             throw new BusinessException(ErrorCode.CONFLICT, "审核中不可编辑");
         }
         boolean keyChanged = isKeyFieldChanged(dish, dto);
-        validateCategory(dto.getCategoryId());
+        validateCategory(dto.getCategoryId(), dish.getKitchenId());
         validateStock(dto.getStockType(), dto.getStock());
         applyDto(dish, dto, false);
         if (dto.getImages() == null) {
@@ -753,17 +753,30 @@ public class DishApplicationService extends BaseApplicationService {
     }
 
     /**
+     * 校验分类存在且启用；厨房场景下须归属同一厨房。
+     *
+     * @param categoryId 分类 ID，可空（草稿允许暂不绑分类）
+     * @param kitchenId  厨房 ID，可空表示不校验归属
+     */
+    private void validateCategory(Long categoryId, Long kitchenId) {
+        if (categoryId == null) {
+            return;
+        }
+        CategoryEntity category = requireById(categoryRepository, categoryId, "分类不存在");
+        requireTrue("ENABLED".equals(category.getStatus()), ErrorCode.BAD_REQUEST, "分类已停用");
+        if (kitchenId != null) {
+            requireTrue(kitchenId.equals(category.getKitchenId()), ErrorCode.BAD_REQUEST, "分类不属于本厨房");
+        }
+    }
+
+    /**
      * 校验分类存在且启用。
      *
      * @param categoryId 分类 ID，可空（草稿允许暂不绑分类）
      * @history 1.00 2026-09-04 XieMingJie Created.
      */
     private void validateCategory(Long categoryId) {
-        if (categoryId == null) {
-            return;
-        }
-        CategoryEntity category = requireById(categoryRepository, categoryId, "分类不存在");
-        requireTrue("ENABLED".equals(category.getStatus()), ErrorCode.BAD_REQUEST, "分类已停用");
+        validateCategory(categoryId, null);
     }
 
     /**

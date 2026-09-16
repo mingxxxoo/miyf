@@ -9,12 +9,6 @@ import LegalPage from '@/pages/legal/LegalPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import { usePermissionStore } from '@/stores/permissionStore';
 
-/** 旧路径 /dishes/:id/edit → /kitchen/dishes/:id/edit */
-function LegacyDishEditRedirect() {
-  const { id } = useParams();
-  return <Navigate to={`/kitchen/dishes/${id}/edit`} replace />;
-}
-
 /** 旧路径 /orders/:id → /kitchen/orders/:id */
 function LegacyOrderDetailRedirect() {
   const { id } = useParams();
@@ -63,12 +57,17 @@ export default function AppRoutes() {
 
         <Route path="/iam/org-units" element={<Navigate to="/system/org-units" replace />} />
 
-        {/* 兼容旧路径 */}
-        <Route path="/categories" element={<Navigate to="/kitchen/categories" replace />} />
-        <Route path="/dishes" element={<Navigate to="/kitchen/dishes" replace />} />
-        <Route path="/dishes/create" element={<Navigate to="/kitchen/dishes/create" replace />} />
-        <Route path="/dishes/:id/edit" element={<LegacyDishEditRedirect />} />
-        <Route path="/recipes" element={<Navigate to="/kitchen/recipes" replace />} />
+        {/* 分类/菜品/菜谱已交厨师自管，旧路径回仪表盘 */}
+        <Route path="/categories" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/kitchen/categories" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dishes" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dishes/create" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dishes/:id/edit" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/kitchen/dishes" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/kitchen/dishes/create" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/kitchen/dishes/:id/edit" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/recipes" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/kitchen/recipes" element={<Navigate to="/dashboard" replace />} />
         <Route path="/orders" element={<Navigate to="/kitchen/orders" replace />} />
         <Route path="/orders/:id" element={<LegacyOrderDetailRedirect />} />
         <Route path="/comments" element={<Navigate to="/kitchen/comments" replace />} />

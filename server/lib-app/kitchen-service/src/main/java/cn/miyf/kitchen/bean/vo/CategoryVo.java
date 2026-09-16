@@ -1,7 +1,6 @@
 package cn.miyf.kitchen.bean.vo;
 
 import cn.miyf.bean.vo.BaseVo;
-
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -38,6 +37,10 @@ public class CategoryVo extends BaseVo {
     @JsonSerialize(using = ToStringSerializer.class)
     @Schema(description = "分类 ID", type = "string")
     private Long id;
+
+    @JsonSerialize(using = ToStringSerializer.class)
+    @Schema(description = "所属厨房 ID", type = "string")
+    private Long kitchenId;
 
     @Schema(description = "名称")
     private String name;

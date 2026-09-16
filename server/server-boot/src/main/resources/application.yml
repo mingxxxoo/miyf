@@ -177,6 +177,7 @@ wx:
     app-id: ${WX_APP_ID:}
     app-secret: ${WX_APP_SECRET:}
     mock-enabled: ${WX_AUTH_MOCK_ENABLED:false}
+  # 订阅消息开关/模板/跳转页/版本态均在「基础设置」sys_config（wx.subscribe.*）热改，不在此配置
 
 springdoc:
   api-docs:
