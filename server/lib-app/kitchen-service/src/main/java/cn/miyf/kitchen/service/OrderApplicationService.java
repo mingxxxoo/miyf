@@ -30,16 +30,20 @@ import cn.miyf.service.BaseApplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -110,11 +114,36 @@ public class OrderApplicationService extends BaseApplicationService {
         order.setRemark(dto.getRemark());
         order.setItems(items);
         Order saved = insertWithItems(order);
-        // 推送失败不影响下单；厨师须先授权订阅消息模板
-        orderChefWxNotifyService.notifyNewOrder(saved);
         OrderVo vo = toVo(saved);
         vo.setDisplayTip("厨房收到啦");
+        // 事务提交后再异步推送，避免占用 DB 连接且防止回滚后误推
+        scheduleChefWxNotifyAfterCommit(saved);
         return vo;
+    }
+
+    /**
+     * 事务提交后异步通知厨师；无事务时直接异步发送。
+     *
+     * @param order 已落库预约（含明细）
+     */
+    private void scheduleChefWxNotifyAfterCommit(Order order) {
+        Runnable send = () -> {
+            try {
+                orderChefWxNotifyService.notifyNewOrder(order);
+            } catch (Exception ignored) {
+                // notifyNewOrder 内部已吞异常；此处兜底避免异步线程中断
+            }
+        };
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            CompletableFuture.runAsync(send);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                CompletableFuture.runAsync(send);
+            }
+        });
     }
 
     /**
@@ -131,9 +160,10 @@ public class OrderApplicationService extends BaseApplicationService {
             long page = pageOf(qo);
             long pageSize = pageSizeOf(qo);
             long off = offset(page, pageSize);
-            List<OrderVo> records = orderRepository.selectUserPage(userId, status, off, pageSize).stream()
-                    .map(e -> toVo(enrichItems(EntityConverters.toOrder(e, null))))
+            List<Order> orders = orderRepository.selectUserPage(userId, status, off, pageSize).stream()
+                    .map(e -> enrichItems(EntityConverters.toOrder(e, null)))
                     .toList();
+            List<OrderVo> records = toVoList(orders);
             long total = orderRepository.countUserPage(userId, status);
             return PageResult.of(records, total, page, pageSize);
         });
@@ -187,10 +217,11 @@ public class OrderApplicationService extends BaseApplicationService {
             String status = normalizeStatusFilter(qo.getStatus());
             long page = pageOf(qo);
             long pageSize = pageSizeOf(qo);
-            List<OrderVo> records = orderRepository.selectChefPage(kitchenId, status, offset(page, pageSize), pageSize)
+            List<Order> orders = orderRepository.selectChefPage(kitchenId, status, offset(page, pageSize), pageSize)
                     .stream()
-                    .map(e -> toVo(enrichItems(EntityConverters.toOrder(e, null))))
+                    .map(e -> enrichItems(EntityConverters.toOrder(e, null)))
                     .toList();
+            List<OrderVo> records = toVoList(orders);
             long total = orderRepository.countChefPage(kitchenId, status);
             return PageResult.of(records, total, page, pageSize);
         });
@@ -244,10 +275,11 @@ public class OrderApplicationService extends BaseApplicationService {
             long page = pageOf(qo);
             long pageSize = pageSizeOf(qo);
             long off = offset(page, pageSize);
-            List<OrderVo> records = orderRepository.selectAdminPage(
+            List<Order> orders = orderRepository.selectAdminPage(
                             status, qo.getOrderNo(), qo.getUserId(), off, pageSize).stream()
-                    .map(e -> toVo(enrichItems(EntityConverters.toOrder(e, null))))
+                    .map(e -> enrichItems(EntityConverters.toOrder(e, null)))
                     .toList();
+            List<OrderVo> records = toVoList(orders);
             long total = orderRepository.countAdminPage(status, qo.getOrderNo(), qo.getUserId());
             return PageResult.of(records, total, page, pageSize);
         });
@@ -431,6 +463,15 @@ public class OrderApplicationService extends BaseApplicationService {
     }
 
     private OrderVo toVo(Order order) {
+        return toVo(order, resolveNicknameMap(order == null ? List.of() : List.of(order)));
+    }
+
+    private List<OrderVo> toVoList(List<Order> orders) {
+        Map<Long, String> nicknames = resolveNicknameMap(orders);
+        return orders.stream().map(o -> toVo(o, nicknames)).toList();
+    }
+
+    private OrderVo toVo(Order order, Map<Long, String> nicknames) {
         Map<Long, String> coverByDishId = resolveCoverImages(order.getItems());
         List<OrderItemVo> items = order.getItems() == null ? List.of() : order.getItems().stream()
                 .map(item -> new OrderItemVo()
@@ -447,7 +488,7 @@ public class OrderApplicationService extends BaseApplicationService {
                 .setId(order.getId())
                 .setOrderNo(order.getOrderNo())
                 .setUserId(order.getUserId())
-                .setUserNickname(resolveUserNickname(order.getUserId()))
+                .setUserNickname(order.getUserId() == null ? null : nicknames.get(order.getUserId()))
                 .setKitchenId(order.getKitchenId())
                 .setStatus(order.getStatus())
                 .setRemark(order.getRemark())
@@ -456,12 +497,24 @@ public class OrderApplicationService extends BaseApplicationService {
                 .setItems(items);
     }
 
-    private String resolveUserNickname(Long userId) {
-        if (userId == null) {
-            return null;
+    private Map<Long, String> resolveNicknameMap(Collection<Order> orders) {
+        if (orders == null || orders.isEmpty()) {
+            return Map.of();
         }
-        UserEntity user = userRepository.selectById(userId);
-        return user == null ? null : user.getNickname();
+        Set<Long> userIds = orders.stream()
+                .map(Order::getUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, String> nicknames = new LinkedHashMap<>();
+        for (UserEntity user : userRepository.selectBatchIds(userIds)) {
+            if (user != null && user.getId() != null) {
+                nicknames.put(user.getId(), user.getNickname());
+            }
+        }
+        return nicknames;
     }
 
     /**

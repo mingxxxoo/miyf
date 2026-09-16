@@ -1,7 +1,6 @@
 package cn.miyf.kitchen.bean.dto;
 
 import cn.miyf.bean.dto.BaseDto;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -39,6 +38,9 @@ public class CategorySaveDto extends BaseDto {
 
     @Schema(description = "图标")
     private String icon;
+
+    @Schema(description = "所属厨房 ID（管理端创建必填；厨师端忽略，取自有厨）")
+    private Long kitchenId;
 
     @Schema(description = "排序值，越小越靠前")
     private Integer sortOrder;

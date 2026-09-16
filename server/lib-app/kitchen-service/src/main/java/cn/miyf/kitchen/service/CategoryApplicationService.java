@@ -174,7 +174,7 @@ public class CategoryApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 管理端：创建分类。
+     * 管理端：创建分类（必须指定厨房）。
      *
      * @param dto 请求
      * @return 新建分类
@@ -182,7 +182,10 @@ public class CategoryApplicationService extends BaseApplicationService {
      */
     @Transactional
     public CategoryVo create(CategorySaveDto dto) {
+        requireTrue(dto.getKitchenId() != null, ErrorCode.BAD_REQUEST, "请指定所属厨房");
+        requireById(kitchenRepository, dto.getKitchenId(), "厨房不存在");
         Category category = new Category();
+        category.setKitchenId(dto.getKitchenId());
         applyDto(category, dto, true);
         CategoryEntity entity = EntityConverters.toCategoryEntity(category);
         insert(categoryRepository, entity);

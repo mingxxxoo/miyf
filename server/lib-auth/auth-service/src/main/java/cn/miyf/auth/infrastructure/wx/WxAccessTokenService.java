@@ -11,14 +11,13 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 微信小程序 access_token 获取与短缓存。
- * Redis 可用时跨实例共享；否则进程内缓存。失败不抛业务异常给调用方以外的路径——由发送方决定。
+ * Redis 可用时跨实例共享；进程内 synchronized + Redis 锁降低并发刷新。
  *
  * @author XieMingJie
  * @since 2026-09-16
@@ -29,6 +28,7 @@ public class WxAccessTokenService {
 
     private static final String TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/token";
     private static final String REDIS_KEY = "miyf:wx:mini:access_token";
+    private static final String REDIS_LOCK_KEY = "miyf:wx:mini:access_token:lock";
     /** 提前 5 分钟刷新，避免临界过期 */
     private static final long REFRESH_SKEW_SECONDS = 300L;
 
@@ -38,6 +38,7 @@ public class WxAccessTokenService {
     private final ObjectProvider<StringRedisTemplate> redisProvider;
 
     private final AtomicReference<CachedToken> local = new AtomicReference<>();
+    private final Object refreshLock = new Object();
 
     public WxAccessTokenService(WxAuthProperties authProperties,
                                 @Qualifier("wxRestClient") RestClient restClient,
@@ -59,7 +60,54 @@ public class WxAccessTokenService {
         if (StringUtils.hasText(cached)) {
             return cached;
         }
-        return refreshAndCache();
+        synchronized (refreshLock) {
+            cached = readCache();
+            if (StringUtils.hasText(cached)) {
+                return cached;
+            }
+            return refreshWithDistributedLock();
+        }
+    }
+
+    private String refreshWithDistributedLock() {
+        StringRedisTemplate redis = redisProvider.getIfAvailable();
+        if (redis == null) {
+            return refreshAndCache();
+        }
+        boolean locked = false;
+        try {
+            Boolean ok = redis.opsForValue().setIfAbsent(REDIS_LOCK_KEY, "1", Duration.ofSeconds(15));
+            locked = Boolean.TRUE.equals(ok);
+            if (!locked) {
+                // 其他实例正在刷新：短暂等待后读缓存
+                for (int i = 0; i < 10; i++) {
+                    try {
+                        Thread.sleep(100L);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                    String cached = readCache();
+                    if (StringUtils.hasText(cached)) {
+                        return cached;
+                    }
+                }
+                // 仍无缓存则本实例刷新兜底
+            }
+            String cached = readCache();
+            if (StringUtils.hasText(cached)) {
+                return cached;
+            }
+            return refreshAndCache();
+        } finally {
+            if (locked) {
+                try {
+                    redis.delete(REDIS_LOCK_KEY);
+                } catch (Exception ex) {
+                    log.debug("wx access_token lock release failed: {}", ex.toString());
+                }
+            }
+        }
     }
 
     private String readCache() {
@@ -85,13 +133,15 @@ public class WxAccessTokenService {
         if (!StringUtils.hasText(authProperties.getAppId()) || !StringUtils.hasText(authProperties.getAppSecret())) {
             throw new BusinessException(ErrorCode.WX_AUTH_FAILED, "未配置微信 AppId/AppSecret，无法获取 access_token");
         }
-        String uri = UriComponentsBuilder.fromUriString(TOKEN_URL)
-                .queryParam("grant_type", "client_credential")
-                .queryParam("appid", authProperties.getAppId())
-                .queryParam("secret", authProperties.getAppSecret())
-                .toUriString();
+        // 使用 URI 变量，避免 secret 进入 toUriString 日志/异常文本
         try {
-            String body = restClient.get().uri(uri).retrieve().body(String.class);
+            String body = restClient.get()
+                    .uri(TOKEN_URL + "?grant_type={grantType}&appid={appId}&secret={secret}",
+                            "client_credential",
+                            authProperties.getAppId(),
+                            authProperties.getAppSecret())
+                    .retrieve()
+                    .body(String.class);
             if (!StringUtils.hasText(body)) {
                 throw new BusinessException(ErrorCode.WX_AUTH_FAILED, "获取微信 access_token 无响应");
             }
@@ -113,7 +163,7 @@ public class WxAccessTokenService {
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {
-            log.error("WeChat access_token error", ex);
+            log.error("WeChat access_token error: {}", ex.toString());
             throw new BusinessException(ErrorCode.WX_AUTH_FAILED, "获取微信 access_token 异常");
         }
     }

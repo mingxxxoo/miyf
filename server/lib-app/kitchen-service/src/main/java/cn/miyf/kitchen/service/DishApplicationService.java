@@ -269,6 +269,7 @@ public class DishApplicationService extends BaseApplicationService {
         Dish dish = requireDish(id);
         requireTrue(dish.getKitchenId() != null, ErrorCode.BAD_REQUEST, "菜品未归属厨房");
         requireTrue(dish.getCategoryId() != null, ErrorCode.BAD_REQUEST, "提交审核前请先选择分类");
+        validateCategory(dish.getCategoryId(), dish.getKitchenId());
         DishEntity entity = requireById(dishRepository, id, "菜品不存在");
         dishAuditWorkflowService.submit(entity);
         kitchenCacheEvictService.evictDishBrowse();
@@ -288,7 +289,7 @@ public class DishApplicationService extends BaseApplicationService {
         requireTrue("APPROVED".equals(dish.getAuditStatus()), ErrorCode.INVALID_STATUS, "审核通过后才能上架");
         requireTrue(!"ON_SALE".equals(dish.getStatus()), ErrorCode.INVALID_STATUS, "菜品已上架");
         requireTrue(dish.getCategoryId() != null, ErrorCode.BAD_REQUEST, "上架前请先选择分类");
-        validateCategory(dish.getCategoryId());
+        validateCategory(dish.getCategoryId(), dish.getKitchenId());
         if ("LIMITED".equals(dish.getStockType())) {
             requireTrue(dish.getStock() >= 0, ErrorCode.BAD_REQUEST, "可提供份数无效");
         }
@@ -469,6 +470,7 @@ public class DishApplicationService extends BaseApplicationService {
     public DishVo submitChefAudit(Long id) {
         Dish dish = requireChefDish(id);
         requireTrue(dish.getCategoryId() != null, ErrorCode.BAD_REQUEST, "提交审核前请先选择分类");
+        validateCategory(dish.getCategoryId(), dish.getKitchenId());
         DishEntity entity = requireById(dishRepository, id, "菜品不存在");
         dishAuditWorkflowService.submit(entity);
         kitchenCacheEvictService.evictDishBrowse();
@@ -519,6 +521,8 @@ public class DishApplicationService extends BaseApplicationService {
         Dish dish = requireChefDish(id);
         requireTrue("APPROVED".equals(dish.getAuditStatus()), ErrorCode.INVALID_STATUS, "审核通过后才能上架");
         requireTrue(!"ON_SALE".equals(dish.getStatus()), ErrorCode.INVALID_STATUS, "菜品已上架");
+        requireTrue(dish.getCategoryId() != null, ErrorCode.BAD_REQUEST, "上架前请先选择分类");
+        validateCategory(dish.getCategoryId(), dish.getKitchenId());
         dish.setStatus("ON_SALE");
         dish.setUpdatedBy(SecurityUtils.currentUserId());
         dish.setImages(null);

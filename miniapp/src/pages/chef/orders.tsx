@@ -5,7 +5,7 @@ import { fetchChefOrders, updateChefOrderStatus, type ChefOrder } from '@/api/ki
 import EmptyState from '@/components/EmptyState'
 import StatusBadge from '@/components/StatusBadge'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
-import { requestChefOrderSubscribe } from '@/utils/wxSubscribe'
+import { prefetchChefWxSubscribeConfig, requestChefOrderSubscribe } from '@/utils/wxSubscribe'
 import './chef.scss'
 
 const TABS: { key: string; label: string }[] = [
@@ -52,11 +52,21 @@ export default function ChefOrdersPage() {
   }
 
   useDidShow(() => {
-    void requestChefOrderSubscribe()
+    // 预取模板；授权改由「开启提醒」按钮在用户手势内触发
+    void prefetchChefWxSubscribeConfig()
     void load().catch(() => {
       Taro.showToast({ title: '请先创建厨房', icon: 'none' })
     })
   })
+
+  const enableNotify = () => {
+    void requestChefOrderSubscribe().then((ok) => {
+      Taro.showToast({
+        title: ok ? '已开启新预约提醒' : '未获得提醒授权',
+        icon: 'none'
+      })
+    })
+  }
 
   const switchTab = (key: string) => {
     setTab(key)
@@ -88,6 +98,9 @@ export default function ChefOrdersPage() {
       <View className='chef-page__hero'>
         <Text className='chef-page__title'>处理预约</Text>
         <Text className='chef-page__sub'>按流程推进：确认 → 备餐 → 取餐 → 完成</Text>
+        <Button className='chef-page__btn-ghost' size='mini' onClick={enableNotify}>
+          开启新预约提醒
+        </Button>
       </View>
 
       <ScrollView scrollX className='chef-page__tabs'>

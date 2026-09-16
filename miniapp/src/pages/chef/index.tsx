@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { fetchMyKitchen } from '@/api/kitchen'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
 import { useUserStore } from '@/stores/userStore'
-import { requestChefOrderSubscribe } from '@/utils/wxSubscribe'
+import { prefetchChefWxSubscribeConfig, requestChefOrderSubscribe } from '@/utils/wxSubscribe'
 import './chef.scss'
 
 const MENUS = [
@@ -26,8 +26,8 @@ export default function ChefHomePage() {
     void fetchMyKitchen().then((k) => {
       if (k?.name) setKitchenName(k.name)
     })
-    // 进入工作台时尝试补充「新预约」订阅额度（用户曾拒绝则静默失败）
-    void requestChefOrderSubscribe()
+    // 仅预取模板 ID；真正授权须在点击手势内同步发起
+    void prefetchChefWxSubscribeConfig()
   })
 
   return (
@@ -45,7 +45,7 @@ export default function ChefHomePage() {
             className='chef-page__nav-card ck-pressable'
             onClick={() => {
               const go = () => Taro.navigateTo({ url: m.url })
-              // 点「处理预约」时顺带用用户手势拉起订阅授权
+              // 点「处理预约」：用缓存模板 ID 在手势链路内拉起订阅，再跳转
               if (m.url.includes('/chef/orders')) {
                 void requestChefOrderSubscribe().finally(go)
               } else {
