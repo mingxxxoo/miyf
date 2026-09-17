@@ -1,6 +1,6 @@
 page {
   background-color: $ck-bg;
-  color: $ck-text;
+  color: $ck-ink;
   font-size: $ck-font-body;
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
 }
@@ -9,20 +9,21 @@ page {
   min-height: 100vh;
   padding: 32px;
   box-sizing: border-box;
+  background: $ck-bg;
 }
 
 .ck-section-title {
   font-size: $ck-font-title;
-  font-weight: 600;
-  color: $ck-text;
+  font-weight: 700;
+  color: $ck-ink;
   margin-bottom: 24px;
 }
 
 .ck-card {
   background: #fff;
   border-radius: $ck-radius-md;
-  border: 1px solid $ck-border;
-  box-shadow: $ck-shadow-soft;
+  border: 1px solid $ck-line;
+  box-shadow: $ck-shadow-card;
   padding: 28px;
 }
 
@@ -31,17 +32,52 @@ page {
   font-size: $ck-font-caption;
 }
 
+.ck-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 16px;
+  border-radius: $ck-radius-pill;
+  font-size: $ck-font-mini;
+  font-weight: 500;
+}
+
+.ck-chip--ok {
+  background: $ck-hg-soft;
+  color: $ck-hg;
+}
+
+.ck-chip--warn {
+  background: $ck-amber-soft;
+  color: $ck-amber;
+}
+
+.ck-chip--bad {
+  background: $ck-red-soft;
+  color: $ck-red;
+}
+
+.ck-chip--info {
+  background: $ck-blue-soft;
+  color: $ck-blue;
+}
+
+.ck-chip--none {
+  background: #f4f0e9;
+  color: $ck-faint;
+}
+
 .ck-btn-primary {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 88px;
-  border-radius: $ck-radius-lg;
-  background: linear-gradient(135deg, $ck-primary 0%, $ck-primary-d6 100%);
+  border-radius: 16px;
+  background: linear-gradient(135deg, $ck-primary 0%, $ck-primary-deep 100%);
   color: #fff;
   font-size: 30px;
-  font-weight: 500;
+  font-weight: 600;
   border: none;
+  box-shadow: 0 8px 20px rgba(240, 123, 31, 0.28);
 
   &::after {
     border: none;
@@ -53,11 +89,11 @@ page {
   align-items: center;
   justify-content: center;
   height: 88px;
-  border-radius: $ck-radius-lg;
+  border-radius: 16px;
   background: #fff;
-  color: $ck-primary;
+  color: $ck-primary-deep;
   font-size: 30px;
-  font-weight: 500;
+  font-weight: 600;
   border: 2px solid $ck-primary;
 
   &::after {
@@ -70,11 +106,11 @@ page {
   align-items: center;
   justify-content: center;
   height: 88px;
-  border-radius: $ck-radius-lg;
-  background: linear-gradient(135deg, $ck-health 0%, $ck-health-d8 100%);
+  border-radius: 16px;
+  background: linear-gradient(135deg, $ck-hg2 0%, $ck-hg 100%);
   color: #fff;
   font-size: 30px;
-  font-weight: 500;
+  font-weight: 600;
   border: none;
 
   &::after {

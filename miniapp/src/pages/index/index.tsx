@@ -1,6 +1,6 @@
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import DishCard from '@/components/DishCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
@@ -26,6 +26,11 @@ export default function IndexPage() {
   const [pending, setPending] = useState(false)
   const [rejected, setRejected] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
+
+  const recommended = useMemo(
+    () => dishes.filter((d) => d.recommend).slice(0, 6),
+    [dishes]
+  )
 
   useDidShow(() => {
     setProduct('kitchen')
@@ -160,20 +165,41 @@ export default function IndexPage() {
       <View className='index-page__hero'>
         <ServiceSwitcher compact className='index-page__switch' />
         <Text className='index-page__brand'>胡闹厨房</Text>
-        <Text className='index-page__greeting'>{kitchenName || '我的厨房'}</Text>
         <Text className='index-page__subtitle'>专属菜单 · 无价格无支付</Text>
+        {kitchenName ? (
+          <Text className='index-page__kitchen-chip'>🏠 {kitchenName}</Text>
+        ) : null}
       </View>
-      {dishes.length === 0 ? (
-        <EmptyState emoji='🥘' title='厨房还没上菜' description='等厨师审核通过并上架后再来' />
-      ) : (
+
+      {recommended.length > 0 ? (
         <View className='index-page__section'>
-          <ScrollView scrollY>
-            {dishes.map((d) => (
-              <DishCard key={d.id} dish={d} />
+          <Text className='index-page__section-title'>今日推荐</Text>
+          <ScrollView scrollX className='index-page__rec-scroll'>
+            {recommended.map((d, i) => (
+              <View
+                key={d.id}
+                className={`index-page__rec-card ck-pressable ${i % 2 === 1 ? 'index-page__rec-card--alt' : ''}`}
+                onClick={() => Taro.navigateTo({ url: `/pages/dish/detail?id=${d.id}` })}
+              >
+                <Text className='index-page__rec-emoji'>🍽️</Text>
+                <Text className='index-page__rec-name'>{d.name}</Text>
+                <Text className='index-page__rec-meta'>
+                  {d.rating != null ? `评分 ${d.rating}` : '厨师力荐'}
+                </Text>
+              </View>
             ))}
           </ScrollView>
         </View>
-      )}
+      ) : null}
+
+      <View className='index-page__section'>
+        <Text className='index-page__section-title'>全部菜品</Text>
+        {dishes.length === 0 ? (
+          <EmptyState emoji='🥘' title='厨房还没上菜' description='等厨师审核通过并上架后再来' />
+        ) : (
+          dishes.map((d) => <DishCard key={d.id} dish={d} />)
+        )}
+      </View>
     </View>
   )
 }

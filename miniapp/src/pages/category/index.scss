@@ -29,18 +29,18 @@
   &__tab {
     display: inline-flex;
     align-items: center;
-    padding: 16px 32px;
-    margin-right: 16px;
-    border-radius: 999px;
-    font-size: 28px;
+    padding: 14px 28px;
+    margin-right: 12px;
+    border-radius: 99px;
+    font-size: 26px;
     color: $ck-muted;
     background: #fff;
     border: 1px solid $ck-border;
 
     &--active {
-      background: rgba($ck-primary, 0.15);
-      color: $ck-primary-d12;
-      border-color: rgba($ck-primary, 0.4);
+      background: $ck-ink;
+      color: $ck-bg;
+      border-color: $ck-ink;
       font-weight: 600;
     }
   }

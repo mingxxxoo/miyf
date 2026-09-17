@@ -1,4 +1,4 @@
-import { View, Text, Input, Textarea, Button, Image, Switch, Picker } from '@tarojs/components'
+import { View, Text, Input, Textarea, Button, Image, Switch, Picker, ScrollView } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useMemo, useState } from 'react'
 import { fetchCategories } from '@/api/category'
@@ -73,14 +73,43 @@ export default function ChefDishesPage() {
   const [description, setDescription] = useState('')
   const [images, setImages] = useState<string[]>([])
 
+  const [keyword, setKeyword] = useState('')
+  const [tab, setTab] = useState<'ALL' | 'ON_SALE' | 'PENDING' | 'OFF'>('ALL')
+  const [creating, setCreating] = useState(false)
+
   const categoryNames = useMemo(() => categories.map((c) => c.name), [categories])
   const categoryIndex = Math.max(
     0,
     categories.findIndex((c) => c.id === categoryId)
   )
 
+  const counts = useMemo(() => {
+    const all = list.length
+    const onSale = list.filter((d) => d.status === 'ON_SALE').length
+    const pending = list.filter((d) => d.auditStatus === 'PENDING_REVIEW').length
+    const off = list.filter((d) => d.status === 'OFF_SALE' || d.status === 'DRAFT').length
+    return { all, onSale, pending, off }
+  }, [list])
+
+  const filtered = useMemo(() => {
+    const q = keyword.trim().toLowerCase()
+    return list.filter((d) => {
+      if (tab === 'ON_SALE' && d.status !== 'ON_SALE') return false
+      if (tab === 'PENDING' && d.auditStatus !== 'PENDING_REVIEW') return false
+      if (tab === 'OFF' && d.status !== 'OFF_SALE' && d.status !== 'DRAFT') return false
+      if (!q) return true
+      return (
+        (d.name || '').toLowerCase().includes(q) ||
+        (d.categoryName || '').toLowerCase().includes(q)
+      )
+    })
+  }, [list, tab, keyword])
+
+  const showForm = creating || editingId != null || list.length === 0
+
   const resetForm = () => {
     setEditingId(null)
+    setCreating(false)
     setName('')
     setCategoryId(categories[0]?.id || '')
     setStockType('UNLIMITED')
@@ -135,6 +164,7 @@ export default function ChefDishesPage() {
       Taro.showToast({ title: '审核中不可编辑，请先撤回', icon: 'none' })
       return
     }
+    setCreating(false)
     setEditingId(d.id)
     setName(d.name || '')
     setCategoryId(d.categoryId || categories[0]?.id || '')
@@ -221,10 +251,56 @@ export default function ChefDishesPage() {
 
   return (
     <View className='chef-page'>
-      <Text className='chef-page__tip'>
-        流程：保存草稿 → 提交审核 → 通过后由你控制上架/下架（下架无需再审）。草稿与已下架可删除；改菜名或图片会重新审核。
-      </Text>
+      <View className='chef-page__search'>
+        <Input
+          className='chef-page__search-input'
+          value={keyword}
+          placeholder='搜索菜品名 / 分类'
+          onInput={(e) => setKeyword(e.detail.value)}
+        />
+        <Text
+          className='chef-page__search-add'
+          onClick={() => {
+            setEditingId(null)
+            setCreating(true)
+            setName('')
+            setCategoryId(categories[0]?.id || '')
+            setStockType('UNLIMITED')
+            setStock('')
+            setUnit('份')
+            setRecommend(false)
+            setDescription('')
+            setImages([])
+            Taro.pageScrollTo({ scrollTop: 0, duration: 200 })
+          }}
+        >
+          ＋ 新菜品
+        </Text>
+      </View>
 
+      <ScrollView scrollX className='chef-page__tabs'>
+        <View className='chef-page__tabs-inner'>
+          {(
+            [
+              { key: 'ALL', label: '全部', n: counts.all },
+              { key: 'ON_SALE', label: '在售', n: counts.onSale },
+              { key: 'PENDING', label: '提审中', n: counts.pending },
+              { key: 'OFF', label: '已下架', n: counts.off }
+            ] as const
+          ).map((t) => (
+            <Text
+              key={t.key}
+              className={`chef-page__tab ${tab === t.key ? 'chef-page__tab--on' : ''}`}
+              onClick={() => setTab(t.key)}
+            >
+              {t.label}
+              <Text className='chef-page__tab-count'>{t.n}</Text>
+            </Text>
+          ))}
+        </View>
+      </ScrollView>
+
+      {(showForm || editingId) && (
       <View className='chef-page__card'>
         <Text className='chef-dish__form-title'>{editingId ? '编辑菜品' : '新增菜品'}</Text>
 
@@ -357,14 +433,15 @@ export default function ChefDishesPage() {
           </Button>
         )}
       </View>
+      )}
 
-      <Text className='chef-page__section-title'>我的菜品（{list.length}）</Text>
-      {list.length === 0 ? (
+      <Text className='chef-page__section-title'>我的菜品（{filtered.length}）</Text>
+      {filtered.length === 0 ? (
         <View className='chef-page__empty'>
-          <EmptyState title='还没有菜品' description='在上方填写信息并添加图片后保存' />
+          <EmptyState title='没有匹配的菜品' description='换个筛选条件，或点右上角新建' />
         </View>
       ) : (
-        list.map((d) => {
+        filtered.map((d) => {
           const audit = AUDIT_LABEL[d.auditStatus || ''] || { text: d.auditStatus || '', tone: '' }
           return (
             <View key={d.id} className='chef-page__card'>
@@ -389,7 +466,7 @@ export default function ChefDishesPage() {
                   </View>
                   <Text className='chef-dish__desc'>
                     {d.categoryName ? `${d.categoryName} · ` : ''}
-                    {d.stockType === 'LIMITED' ? `${d.stock ?? 0}${d.unit || '份'}` : '不限量'}
+                    {d.stockType === 'LIMITED' ? `库存 ${d.stock ?? 0}${d.unit || '份'}` : '不限量'}
                     {d.rejectReason ? ` · 驳回：${d.rejectReason}` : ''}
                   </Text>
                 </View>
@@ -398,18 +475,25 @@ export default function ChefDishesPage() {
                 <Button className='chef-page__action chef-page__action--ghost' size='mini' onClick={() => startEdit(d)}>
                   编辑
                 </Button>
+                <Button
+                  className='chef-page__action chef-page__action--ghost'
+                  size='mini'
+                  onClick={() => Taro.navigateTo({ url: `/pages/chef/recipes?dishId=${d.id}` })}
+                >
+                  菜谱
+                </Button>
                 {d.auditStatus === 'PENDING_REVIEW' && (
                   <Button
-                    className='chef-page__action chef-page__action--ghost'
+                    className='chef-page__action chef-page__action--danger'
                     size='mini'
                     onClick={() => void runAction(() => withdrawChefDish(d.id))}
                   >
-                    撤回审核
+                    撤回
                   </Button>
                 )}
                 {(d.auditStatus === 'DRAFT' || d.auditStatus === 'REJECTED' || !d.auditStatus) && (
                   <Button
-                    className='chef-page__action'
+                    className='chef-page__action chef-page__action--ok'
                     size='mini'
                     onClick={() =>
                       void runAction(async () => {
@@ -418,12 +502,12 @@ export default function ChefDishesPage() {
                       })
                     }
                   >
-                    提交审核
+                    提审
                   </Button>
                 )}
                 {d.auditStatus === 'APPROVED' && d.status !== 'ON_SALE' && (
                   <Button
-                    className='chef-page__action'
+                    className='chef-page__action chef-page__action--ok'
                     size='mini'
                     onClick={() =>
                       void runAction(async () => {
@@ -432,12 +516,12 @@ export default function ChefDishesPage() {
                       })
                     }
                   >
-                    上架售卖
+                    上架
                   </Button>
                 )}
                 {d.auditStatus === 'APPROVED' && d.status === 'ON_SALE' && (
                   <Button
-                    className='chef-page__action chef-page__action--ghost'
+                    className='chef-page__action chef-page__action--danger'
                     size='mini'
                     onClick={() =>
                       void runAction(async () => {

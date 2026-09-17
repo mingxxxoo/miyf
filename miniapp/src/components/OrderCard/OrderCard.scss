@@ -1,10 +1,10 @@
 .order-card {
   background: #fff;
-  border-radius: $ck-radius-md;
-  border: 1px solid $ck-border;
+  border-radius: 20px;
+  border: 1px solid $ck-line;
   padding: 28px;
   margin-bottom: 24px;
-  box-shadow: $ck-shadow-soft;
+  box-shadow: $ck-shadow-card;
 
   &__header {
     display: flex;
@@ -15,7 +15,7 @@
 
   &__no {
     font-size: $ck-font-caption;
-    color: $ck-muted;
+    color: $ck-faint;
   }
 
   &__body {
@@ -26,9 +26,9 @@
   &__cover {
     width: 120px;
     height: 120px;
-    border-radius: $ck-radius-sm;
+    border-radius: 14px;
     flex-shrink: 0;
-    background: $ck-border-l4;
+    background: linear-gradient(135deg, #ffd9ae, #ff9a3e);
   }
 
   &__info {
@@ -40,7 +40,7 @@
     display: block;
     font-size: 30px;
     font-weight: 600;
-    color: $ck-text;
+    color: $ck-ink;
     margin-bottom: 8px;
   }
 

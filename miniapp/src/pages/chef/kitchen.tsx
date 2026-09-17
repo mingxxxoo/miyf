@@ -1,7 +1,7 @@
 import { View, Text, Input, Textarea, Button } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
-import { fetchMyKitchen, saveMyKitchen } from '@/api/kitchen'
+import { fetchInvite, fetchMyKitchen, saveMyKitchen, type InviteVo } from '@/api/kitchen'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
 import './chef.scss'
 
@@ -9,6 +9,7 @@ export default function ChefKitchenPage() {
   useChefWorkbench()
   const [name, setName] = useState('')
   const [intro, setIntro] = useState('')
+  const [invite, setInvite] = useState<InviteVo | null>(null)
   const [saving, setSaving] = useState(false)
 
   useDidShow(() => {
@@ -17,6 +18,9 @@ export default function ChefKitchenPage() {
       setName(k.name || '')
       setIntro(k.intro || '')
     })
+    void fetchInvite()
+      .then(setInvite)
+      .catch(() => setInvite(null))
   })
 
   const save = async () => {
@@ -36,10 +40,12 @@ export default function ChefKitchenPage() {
 
   return (
     <View className='chef-page'>
-      <View className='chef-page__hero'>
-        <Text className='chef-page__title'>厨房资料</Text>
-        <Text className='chef-page__sub'>食客加入后会看到这些介绍</Text>
+      <View className='chef-page__cover'>
+        <View className='chef-page__big-avatar'>
+          <Text>🍳</Text>
+        </View>
       </View>
+
       <View className='chef-page__card'>
         <View className='chef-page__field'>
           <Text className='chef-page__label'>厨房名称</Text>
@@ -61,9 +67,27 @@ export default function ChefKitchenPage() {
           />
         </View>
         <Button className='ck-btn-primary chef-page__btn' loading={saving} onClick={() => void save()}>
-          保存
+          保存资料
         </Button>
       </View>
+
+      {invite?.code ? (
+        <View className='chef-page__invite-mini'>
+          <View style={{ flex: 1 }}>
+            <Text className='chef-page__invite-code'>{invite.code}</Text>
+            <Text className='chef-page__oc-time' style={{ display: 'block', marginTop: '6px' }}>
+              邀请码 · 可复制分享给食客
+            </Text>
+          </View>
+          <Button
+            className='chef-page__btn-xs chef-page__btn-xs--solid'
+            size='mini'
+            onClick={() => void Taro.setClipboardData({ data: invite.code })}
+          >
+            复制
+          </Button>
+        </View>
+      ) : null}
     </View>
   )
 }

@@ -1,38 +1,38 @@
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 8px 20px;
-  border-radius: 999px;
+  padding: 6px 16px;
+  border-radius: 99px;
   font-size: 22px;
   font-weight: 500;
 
   &--warm {
-    background: rgba($ck-primary, 0.18);
-    color: $ck-primary-d18;
+    background: $ck-amber-soft;
+    color: $ck-amber;
   }
 
   &--mint {
-    background: rgba($ck-secondary, 0.35);
-    color: $ck-secondary-d28;
+    background: $ck-hg-soft;
+    color: $ck-hg;
   }
 
   &--cooking {
-    background: #FFF3E0;
-    color: #E65100;
+    background: $ck-blue-soft;
+    color: $ck-blue;
   }
 
   &--ready {
-    background: #E8F5E9;
-    color: #2E7D32;
+    background: $ck-hg-soft;
+    color: $ck-hg;
   }
 
   &--done {
-    background: $ck-border;
+    background: #f4f0e9;
     color: $ck-muted;
   }
 
   &--muted {
-    background: #F5F5F5;
-    color: $ck-muted;
+    background: #f4f0e9;
+    color: $ck-faint;
   }
 }

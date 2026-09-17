@@ -136,16 +136,16 @@
     align-items: center;
     padding: 14px 24px;
     margin-right: 12px;
-    border-radius: 999px;
+    border-radius: 99px;
     background: #fff;
     border: 1px solid $ck-border;
     font-size: 24px;
     color: $ck-muted;
 
     &--active {
-      background: rgba($ck-primary, 0.18);
-      border-color: rgba($ck-primary, 0.4);
-      color: $ck-primary-d12;
+      background: $ck-ink;
+      border-color: $ck-ink;
+      color: $ck-bg;
       font-weight: 600;
     }
   }

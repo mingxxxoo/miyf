@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>miyf 小程序 · 厨房 & 健康模块 界面重设计</title>
+<style>
+  /* ============ 展示画布（深色，贴合 IDE 主题） ============ */
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#15171c; color:#e8e6e3;
+    font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue','Microsoft YaHei',sans-serif;
+    padding:56px 48px 120px;
+  }
+  .doc-head { max-width:1280px; margin:0 auto 8px; }
+  .doc-head h1 { font-size:34px; font-weight:700; letter-spacing:.5px; }
+  .doc-head h1 em { font-style:normal; color:#FFB36B; }
+  .doc-head p { margin-top:12px; color:#9a978f; font-size:15px; line-height:1.8; max-width:860px; }
+  .doc-meta { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+  .doc-meta span { font-size:12px; color:#c9c6c0; background:#23262d; border:1px solid #33363f; padding:6px 14px; border-radius:99px; }
+
+  .toc { position:sticky; top:0; z-index:50; display:flex; gap:10px; padding:16px 0; margin:26px auto 0; max-width:1280px;
+    background:rgba(21,23,28,.92); backdrop-filter:blur(8px); }
+  .toc a { color:#c9c6c0; text-decoration:none; font-size:13px; padding:8px 18px; border-radius:99px; background:#23262d; border:1px solid #33363f; transition:.2s; }
+  .toc a:hover { color:#FFB36B; border-color:#FFB36B; }
+
+  section { max-width:1280px; margin:72px auto 0; }
+  .sec-title { display:flex; align-items:baseline; gap:14px; margin-bottom:8px; }
+  .sec-title .num { font-size:13px; color:#FFB36B; font-weight:700; letter-spacing:2px; }
+  .sec-title h2 { font-size:24px; font-weight:700; }
+  .sec-desc { color:#9a978f; font-size:14px; line-height:1.8; max-width:860px; margin-bottom:34px; }
+
+  /* ============ 手机壳 ============ */
+  .screens { display:flex; flex-wrap:wrap; gap:44px; }
+  .shot { width:399px; flex:none; }
+  .phone {
+    width:375px; height:812px; border-radius:52px; background:#FFFDF8; color:#2B2622;
+    border:11px solid #0b0c0e; box-shadow:0 30px 80px rgba(0,0,0,.55), 0 0 0 1px #33363f;
+    overflow:hidden; position:relative;
+  }
+  .notch { position:absolute; top:11px; left:50%; transform:translateX(-50%); width:120px; height:26px; background:#0b0c0e; border-radius:20px; z-index:9; }
+  .screen { position:absolute; inset:0; overflow-y:auto; scrollbar-width:none; }
+  .screen::-webkit-scrollbar { display:none; }
+  .caption { margin-top:20px; padding:0 4px; }
+  .caption h3 { font-size:15px; color:#e8e6e3; margin-bottom:8px; }
+  .caption h3 b { color:#FFB36B; font-weight:700; margin-right:8px; }
+  .caption ul { list-style:none; }
+  .caption li { font-size:12.5px; color:#9a978f; line-height:1.7; padding-left:16px; position:relative; }
+  .caption li::before { content:''; position:absolute; left:0; top:8px; width:6px; height:6px; border-radius:2px; background:#4a4e58; }
+  .caption li.hl::before { background:#FFB36B; }
+  .caption li.hl { color:#c9c6c0; }
+
+  /* ============ 屏内设计 Token ============ */
+  .screen {
+    --cream:#FFFDF8; --ink:#2B2622; --muted:#8A8178; --faint:#B5AC9F; --line:#F1E9DD;
+    --ko:#F07B1F; --ko2:#FFB36B; --ko-soft:#FFF1E2; --ko-softer:#FFF8EF;
+    --hg:#18A885; --hg2:#5FCFAE; --hg-soft:#E7F7F0; --hg-softer:#F4FBF8;
+    --red:#E15A4B; --red-soft:#FCEEEA; --amber:#D99426; --amber-soft:#FBF3E0;
+    --blue:#4A90D9; --blue-soft:#EBF3FB;
+  }
+  .statusbar { display:flex; justify-content:space-between; align-items:center; padding:18px 28px 6px; font-size:13px; font-weight:600; }
+  .statusbar .sicons { display:flex; gap:5px; align-items:center; }
+  .navbar { display:flex; align-items:center; justify-content:center; position:relative; padding:10px 16px 12px; font-size:16px; font-weight:600; }
+  .navbar .back { position:absolute; left:16px; font-size:20px; color:var(--ink); font-weight:400; }
+  .navbar .more { position:absolute; right:20px; font-size:18px; letter-spacing:2px; }
+  .pad { padding:0 18px; }
+
+  /* 通用小组件 */
+  .chip { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:3px 10px; border-radius:99px; font-weight:500; }
+  .btn { display:flex; align-items:center; justify-content:center; border-radius:14px; font-weight:600; }
+  .ico-tile { display:flex; align-items:center; justify-content:center; border-radius:14px; flex:none; }
+  .spacer { height:14px; }
+  .home-indicator { position:sticky; bottom:8px; margin:14px auto 0; width:134px; height:5px; border-radius:99px; background:#2B2622; opacity:.85; }
+
+  /* ============ 厨房 K1 工作台 ============ */
+  .k-hero { margin:6px 18px 0; border-radius:24px; padding:22px 20px; position:relative; overflow:hidden;
+    background:linear-gradient(135deg,#FF9A3E 0%,#F07B1F 58%,#E56A12 100%); color:#fff; }
+  .k-hero::after { content:''; position:absolute; right:-40px; top:-46px; width:170px; height:170px; border-radius:50%; background:rgba(255,255,255,.12); }
+  .k-hero::before { content:''; position:absolute; right:38px; bottom:-64px; width:130px; height:130px; border-radius:50%; background:rgba(255,255,255,.09); }
+  .k-hero .hello { font-size:13px; opacity:.85; }
+  .k-hero .kname { display:flex; align-items:center; gap:10px; margin-top:6px; position:relative; z-index:1; }
+  .k-hero .kname h2 { font-size:22px; font-weight:700; }
+  .k-hero .kname .verify { font-size:10px; background:rgba(255,255,255,.25); padding:3px 8px; border-radius:99px; font-weight:500; }
+  .k-stats { display:flex; margin-top:18px; background:rgba(255,255,255,.16); border-radius:16px; padding:14px 0; position:relative; z-index:1; backdrop-filter:blur(4px); }
+  .k-stats .st { flex:1; text-align:center; position:relative; }
+  .k-stats .st + .st::before { content:''; position:absolute; left:0; top:15%; height:70%; width:1px; background:rgba(255,255,255,.25); }
+  .k-stats .st b { font-size:20px; font-weight:700; display:block; }
+  .k-stats .st span { font-size:11px; opacity:.85; }
+
+  .sec-row { display:flex; justify-content:space-between; align-items:center; margin:22px 18px 12px; }
+  .sec-row h4 { font-size:16px; font-weight:700; }
+  .sec-row a { font-size:12px; color:var(--faint); text-decoration:none; }
+
+  .grid8 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px 8px; padding:4px 18px 0; }
+  .g8 { display:flex; flex-direction:column; align-items:center; gap:8px; position:relative; }
+  .g8 .ico-tile { width:52px; height:52px; border-radius:17px; font-size:24px; }
+  .g8 span { font-size:11.5px; color:var(--ink); }
+  .g8 .dot-badge { position:absolute; top:-4px; right:calc(50% - 30px); min-width:18px; height:18px; padding:0 5px; border-radius:99px;
+    background:var(--red); color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; font-weight:600; box-shadow:0 0 0 2px #FFFDF8; }
+
+  .order-card { margin:0 18px 12px; background:#fff; border:1px solid var(--line); border-radius:20px; padding:16px; }
+  .order-card .oc-top { display:flex; justify-content:space-between; align-items:center; }
+  .order-card .oc-user { display:flex; align-items:center; gap:10px; }
+  .avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:#fff; }
+  .order-card .oc-name { font-size:14px; font-weight:600; }
+  .order-card .oc-time { font-size:11px; color:var(--faint); margin-top:2px; }
+  .order-card .oc-dishes { margin-top:12px; font-size:13px; color:var(--ink); line-height:1.6; background:var(--ko-softer); border-radius:12px; padding:10px 12px; }
+  .order-card .oc-foot { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+  .order-card .oc-meal { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; }
+  .oc-actions { display:flex; gap:8px; }
+  .btn-xs { height:30px; padding:0 14px; font-size:12px; border-radius:10px; }
+  .btn-ghost { border:1px solid var(--line); color:var(--muted); background:#fff; }
+  .btn-solid-o { background:linear-gradient(135deg,var(--ko2),var(--ko)); color:#fff; }
+
+  /* ============ 厨房 K2 菜品管理 ============ */
+  .searchbar { margin:4px 18px 0; display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:10px 14px; }
+  .searchbar input { border:none; outline:none; flex:1; font-size:13px; color:var(--ink); background:transparent; }
+  .searchbar .s-ico { color:var(--faint); font-size:14px; }
+  .searchbar .s-add { background:linear-gradient(135deg,var(--ko2),var(--ko)); color:#fff; font-size:12px; font-weight:600; padding:6px 12px; border-radius:10px; flex:none; }
+  .tabs { display:flex; gap:8px; padding:14px 18px 4px; }
+  .tab { font-size:12.5px; padding:7px 14px; border-radius:99px; color:var(--muted); background:#fff; border:1px solid var(--line); }
+  .tab.on { background:var(--ink); color:#FFFDF8; border-color:var(--ink); font-weight:600; }
+  .tab i { font-style:normal; font-size:11px; opacity:.7; margin-left:2px; }
+
+  .dish-card { display:flex; gap:12px; margin:12px 18px 0; background:#fff; border:1px solid var(--line); border-radius:20px; padding:14px; }
+  .dish-img { width:86px; height:86px; border-radius:14px; flex:none; display:flex; align-items:center; justify-content:center; font-size:34px; position:relative; overflow:hidden; }
+  .dish-img .rec { position:absolute; top:0; left:0; font-size:9px; background:linear-gradient(135deg,var(--ko2),var(--ko)); color:#fff; padding:2px 7px; border-radius:0 0 10px 0; font-weight:600; }
+  .dish-body { flex:1; min-width:0; }
+  .dish-body .d-name { display:flex; align-items:center; gap:6px; font-size:14.5px; font-weight:600; }
+  .dish-body .d-meta { font-size:11.5px; color:var(--faint); margin-top:5px; }
+  .dish-body .d-foot { display:flex; justify-content:space-between; align-items:center; margin-top:10px; }
+  .d-stock { font-size:11px; color:var(--muted); }
+  .d-stock b { color:var(--ink); font-size:13px; }
+  .d-ops { display:flex; gap:6px; }
+  .op-pill { font-size:11px; padding:5px 11px; border-radius:9px; border:1px solid var(--line); color:var(--muted); background:#fff; }
+  .op-pill.warn { color:var(--red); border-color:#F3D3CE; background:var(--red-soft); }
+  .op-pill.ok { color:var(--hg); border-color:#CBEBDD; background:var(--hg-soft); }
+
+  /* ============ 厨房 K3 处理预约 ============ */
+  .sum-strip { display:flex; gap:10px; padding:6px 18px 0; }
+  .sum-cell { flex:1; border-radius:18px; padding:14px 12px; }
+  .sum-cell b { font-size:22px; font-weight:700; display:block; }
+  .sum-cell span { font-size:11px; }
+  .flow { display:flex; align-items:center; gap:4px; margin-top:12px; }
+  .flow .fstep { display:flex; flex-direction:column; align-items:center; gap:4px; flex:none; }
+  .flow .fdot { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff; background:#D8CFC2; }
+  .flow .fdot.done { background:var(--hg); }
+  .flow .fdot.cur { background:linear-gradient(135deg,var(--ko2),var(--ko)); box-shadow:0 0 0 4px var(--ko-soft); }
+  .flow .fline { flex:1; height:2px; background:var(--line); margin-bottom:16px; }
+  .flow .fline.done { background:var(--hg); }
+  .flow .fstep span { font-size:10px; color:var(--faint); }
+  .flow .fstep.cur span { color:var(--ko); font-weight:600; }
+
+  /* ============ 厨房 K4 厨房资料 ============ */
+  .cover { height:150px; margin:0; background:linear-gradient(120deg,#FFD9AE,#FFB36B 55%,#F08A2E); position:relative; display:flex; align-items:flex-end; }
+  .cover .edit-cover { position:absolute; right:14px; top:14px; font-size:11px; background:rgba(0,0,0,.28); color:#fff; padding:5px 12px; border-radius:99px; }
+  .cover .big-avatar { position:absolute; left:20px; bottom:-26px; width:68px; height:68px; border-radius:20px; background:#fff; border:3px solid #FFFDF8;
+    display:flex; align-items:center; justify-content:center; font-size:30px; box-shadow:0 6px 16px rgba(80,50,10,.18); }
+  .form-card { margin:0 18px 14px; background:#fff; border:1px solid var(--line); border-radius:20px; padding:18px 16px; }
+  .f-field + .f-field { margin-top:16px; }
+  .f-label { font-size:12.5px; color:var(--muted); margin-bottom:8px; display:flex; justify-content:space-between; }
+  .f-label i { font-style:normal; color:var(--faint); font-size:11px; }
+  .f-input { border:1px solid var(--line); border-radius:12px; padding:11px 13px; font-size:14px; background:var(--ko-softer); }
+  .f-input.area { height:84px; line-height:1.6; }
+  .invite-mini { display:flex; align-items:center; gap:12px; background:linear-gradient(135deg,#FFF6EA,#FFEFD8); border:1px dashed #EFCB9C; border-radius:16px; padding:14px; }
+  .invite-mini .code { font-size:20px; font-weight:700; letter-spacing:3px; color:var(--ko); }
+  .btn-block { margin:6px 18px 0; height:48px; border-radius:16px; font-size:15px; background:linear-gradient(135deg,var(--ko2),var(--ko)); color:#fff; box-shadow:0 8px 20px rgba(240,123,31,.28); }
+
+  /* ============ 健康 H1 总览 ============ */
+  .h-head { padding:6px 18px 0; display:flex; justify-content:space-between; align-items:center; }
+  .switcher { display:flex; align-items:center; gap:6px; background:#fff; border:1px solid var(--line); border-radius:99px; padding:6px 14px; font-size:12.5px; font-weight:600; }
+  .switcher .sw-dot { width:8px; height:8px; border-radius:50%; background:var(--hg); }
+  .score-card { margin:14px 18px 0; border-radius:24px; background:linear-gradient(135deg,#1FBF92,#0E9E77); color:#fff; padding:20px; display:flex; align-items:center; gap:18px; position:relative; overflow:hidden; }
+  .score-card::after { content:''; position:absolute; right:-34px; top:-40px; width:150px; height:150px; border-radius:50%; background:rgba(255,255,255,.12); }
+  .ring { position:relative; width:104px; height:104px; flex:none; }
+  .ring svg { transform:rotate(-90deg); }
+  .ring .ring-val { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ring .ring-val b { font-size:27px; font-weight:700; }
+  .ring .ring-val span { font-size:10px; opacity:.85; }
+  .score-info h3 { font-size:17px; font-weight:700; }
+  .score-info p { font-size:11.5px; opacity:.88; margin-top:6px; line-height:1.6; }
+  .score-info .score-tags { display:flex; gap:6px; margin-top:10px; }
+  .score-info .score-tags span { font-size:10px; background:rgba(255,255,255,.22); padding:3px 9px; border-radius:99px; }
+
+  .alert-banner { margin:14px 18px 0; display:flex; align-items:center; gap:10px; background:var(--amber-soft); border:1px solid #F0DDB4; border-radius:16px; padding:12px 14px; }
+  .alert-banner .ab-ico { width:32px; height:32px; border-radius:10px; background:#F5DFAF; display:flex; align-items:center; justify-content:center; font-size:16px; flex:none; }
+  .alert-banner .ab-txt { flex:1; font-size:12px; color:#8A6A1F; line-height:1.5; }
+  .alert-banner .ab-txt b { font-size:12.5px; }
+  .alert-banner .ab-go { font-size:11px; color:var(--amber); font-weight:600; }
+
+  .metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:14px 18px 0; }
+  .m-card { background:#fff; border:1px solid var(--line); border-radius:20px; padding:14px; }
+  .m-card .m-top { display:flex; align-items:center; gap:8px; }
+  .m-card .m-ico { width:30px; height:30px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .m-card .m-name { font-size:12.5px; color:var(--muted); flex:1; }
+  .m-card .m-val { margin-top:10px; display:flex; align-items:baseline; gap:4px; }
+  .m-card .m-val b { font-size:23px; font-weight:700; letter-spacing:-.5px; }
+  .m-card .m-val span { font-size:11px; color:var(--faint); }
+  .m-card .m-foot { display:flex; justify-content:space-between; align-items:flex-end; margin-top:8px; }
+  .m-card .m-time { font-size:10px; color:var(--faint); }
+  .spark { width:74px; height:26px; }
+  .pill { font-size:10px; padding:2px 8px; border-radius:99px; font-weight:600; }
+  .pill-ok { background:var(--hg-soft); color:var(--hg); }
+  .pill-warn { background:var(--amber-soft); color:var(--amber); }
+  .pill-bad { background:var(--red-soft); color:var(--red); }
+  .pill-none { background:#F4F0E9; color:var(--faint); }
+
+  /* ============ 健康 H2 指标详情 ============ */
+  .hero-metric { padding:8px 18px 0; display:flex; justify-content:space-between; align-items:flex-end; }
+  .hero-metric .hm-val b { font-size:44px; font-weight:700; letter-spacing:-1px; }
+  .hero-metric .hm-val span { font-size:13px; color:var(--faint); margin-left:6px; }
+  .hero-metric .hm-sub { font-size:11px; color:var(--faint); margin-top:6px; }
+  .range-tabs { display:flex; gap:6px; background:#F6F1E8; margin:16px 18px 0; border-radius:12px; padding:4px; }
+  .range-tabs span { flex:1; text-align:center; font-size:12px; padding:7px 0; border-radius:9px; color:var(--muted); }
+  .range-tabs span.on { background:#fff; color:var(--ink); font-weight:600; box-shadow:0 2px 6px rgba(60,45,20,.08); }
+  .chart-card { margin:14px 18px 0; background:#fff; border:1px solid var(--line); border-radius:20px; padding:16px 14px 10px; }
+  .stat-row { display:flex; margin:14px 18px 0; background:#fff; border:1px solid var(--line); border-radius:20px; padding:16px 0; }
+  .stat-row .sr { flex:1; text-align:center; position:relative; }
+  .stat-row .sr + .sr::before { content:''; position:absolute; left:0; top:12%; height:76%; width:1px; background:var(--line); }
+  .stat-row .sr b { font-size:18px; display:block; }
+  .stat-row .sr span { font-size:11px; color:var(--faint); }
+  .sample-item { display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid #F7F2E9; }
+  .sample-item:last-child { border-bottom:none; }
+  .sample-item .si-dot { width:8px; height:8px; border-radius:50%; flex:none; }
+  .sample-item .si-val { font-size:15px; font-weight:600; width:86px; }
+  .sample-item .si-val span { font-size:10px; color:var(--faint); font-weight:400; }
+  .sample-item .si-time { flex:1; font-size:11.5px; color:var(--faint); }
+
+  /* ============ 健康 H3 数据源 ============ */
+  .src-card { margin:12px 18px 0; background:#fff; border:1px solid var(--line); border-radius:20px; padding:16px; }
+  .src-card .sc-top { display:flex; align-items:center; gap:12px; }
+  .src-card .sc-ico { width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex:none; }
+  .src-card .sc-name { font-size:14.5px; font-weight:600; display:flex; align-items:center; gap:7px; }
+  .src-card .sc-desc { font-size:11.5px; color:var(--faint); margin-top:4px; }
+  .src-card .sc-body { flex:1; min-width:0; }
+  .src-card .sc-actions { display:flex; gap:8px; margin-top:14px; }
+  .btn-md { height:36px; border-radius:12px; font-size:12.5px; flex:1; }
+  .btn-solid-g { background:linear-gradient(135deg,var(--hg2),var(--hg)); color:#fff; }
+  .btn-line { border:1px solid var(--line); color:var(--muted); background:#fff; }
+  .btn-line.danger { color:var(--red); border-color:#F3D3CE; }
+  .sync-row { display:flex; align-items:center; gap:8px; margin-top:12px; background:var(--hg-softer); border-radius:12px; padding:9px 12px; font-size:11px; color:var(--muted); }
+  .sync-row .ok-dot { width:7px; height:7px; border-radius:50%; background:var(--hg); flex:none; }
+  .src-card.off { opacity:.62; }
+  .soon-tag { font-size:9px; background:#F4F0E9; color:var(--faint); padding:2px 7px; border-radius:99px; font-weight:500; }
+
+  /* ============ 设计规范区 ============ */
+  .spec-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:22px; }
+  .spec-card { background:#1d2026; border:1px solid #2c3038; border-radius:20px; padding:24px; }
+  .spec-card h4 { font-size:15px; margin-bottom:18px; color:#e8e6e3; }
+  .spec-card h4 small { color:#77797f; font-weight:400; margin-left:8px; font-size:11px; }
+  .sw-row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+  .sw { width:44px; height:44px; border-radius:12px; flex:none; border:1px solid rgba(255,255,255,.08); }
+  .sw-row .sw-info b { font-size:13px; display:block; }
+  .sw-row .sw-info span { font-size:11px; color:#8b8d93; font-family:Consolas,monospace; }
+  .sw-row .sw-use { margin-left:auto; font-size:11px; color:#6d7076; text-align:right; max-width:130px; line-height:1.5; }
+  .type-row { display:flex; align-items:baseline; gap:14px; padding:9px 0; border-bottom:1px dashed #2c3038; }
+  .type-row:last-child { border:none; }
+  .type-row code { font-size:10px; color:#77797f; width:96px; flex:none; font-family:Consolas,monospace; }
+  .cmp-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+  .cmp-row:last-child { margin-bottom:0; }
+  .note-strip { margin-top:26px; background:#1d2026; border:1px solid #2c3038; border-left:3px solid #FFB36B; border-radius:14px; padding:18px 22px; font-size:13px; color:#b7b4ad; line-height:1.9; }
+  .note-strip b { color:#e8e6e3; }
+
+  /* ============ 食客端 ============ */
+  .tabbar-mock { position:sticky; bottom:0; display:flex; background:rgba(255,255,255,.96); border-top:1px solid var(--line); padding:8px 0 14px; backdrop-filter:blur(8px); z-index:5; }
+  .tabbar-mock .tb { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10px; color:var(--faint); }
+  .tabbar-mock .tb .tb-ico { font-size:20px; line-height:1; filter:grayscale(1); opacity:.55; }
+  .tabbar-mock .tb.on { color:var(--ko); font-weight:600; }
+  .tabbar-mock .tb.on .tb-ico { filter:none; opacity:1; }
+  .tabbar-mock .tb .tb-badge { position:absolute; margin-left:22px; margin-top:-4px; min-width:15px; height:15px; padding:0 4px; border-radius:99px; background:var(--red); color:#fff; font-size:9px; display:flex; align-items:center; justify-content:center; font-weight:600; }
+
+  .d-hero { padding:4px 18px 0; }
+  .d-hero .d-brand-row { display:flex; align-items:center; gap:8px; }
+  .d-hero .d-switch { display:inline-flex; align-items:center; gap:5px; background:#fff; border:1px solid var(--line); border-radius:99px; padding:5px 12px; font-size:11.5px; font-weight:600; color:var(--ink); }
+  .d-hero .d-switch i { width:7px; height:7px; border-radius:50%; background:var(--ko); font-style:normal; }
+  .d-hero h2 { font-size:24px; font-weight:700; margin-top:14px; }
+  .d-hero .d-sub { font-size:12.5px; color:var(--faint); margin-top:6px; }
+  .kitchen-chip { display:inline-flex; align-items:center; gap:6px; margin-top:12px; background:var(--ko-soft); border:1px solid #F3D9B8; border-radius:99px; padding:6px 14px; font-size:12px; color:var(--ko); font-weight:600; }
+
+  .rec-scroll { display:flex; gap:12px; padding:14px 18px 0; overflow:hidden; }
+  .rec-card { width:200px; flex:none; border-radius:20px; padding:16px; color:#fff; position:relative; overflow:hidden; }
+  .rec-card .rc-emoji { font-size:44px; }
+  .rec-card .rc-name { font-size:15px; font-weight:700; margin-top:10px; }
+  .rec-card .rc-meta { font-size:11px; opacity:.88; margin-top:4px; }
+  .rec-card .rc-tag { position:absolute; top:12px; right:12px; font-size:9.5px; background:rgba(255,255,255,.25); padding:3px 9px; border-radius:99px; font-weight:600; }
+
+  .dish-big { margin:14px 18px 0; background:#fff; border:1px solid var(--line); border-radius:22px; overflow:hidden; }
+  .dish-big .db-img { height:130px; display:flex; align-items:center; justify-content:center; font-size:56px; position:relative; }
+  .dish-big .db-img .db-tag { position:absolute; left:12px; top:12px; font-size:10px; background:rgba(255,255,255,.92); color:var(--ko); padding:4px 10px; border-radius:99px; font-weight:700; }
+  .dish-big .db-body { padding:14px 16px 16px; }
+  .dish-big .db-name { font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .dish-big .db-desc { font-size:12px; color:var(--faint); margin-top:6px; line-height:1.6; }
+  .dish-big .db-foot { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+  .dish-big .db-info { display:flex; align-items:center; gap:10px; font-size:11.5px; color:var(--muted); }
+  .dish-big .db-info b { color:#E8A33D; }
+  .add-btn { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--ko2),var(--ko)); color:#fff; font-size:20px; display:flex; align-items:center; justify-content:center; font-weight:400; box-shadow:0 4px 12px rgba(240,123,31,.35); flex:none; }
+  .add-btn.disabled { background:#E8E2D8; box-shadow:none; color:#fff; }
+
+  .draft-bar { position:sticky; bottom:64px; margin:16px 18px 0; display:flex; align-items:center; gap:12px; background:var(--ink); color:#FFFDF8; border-radius:18px; padding:12px 14px; box-shadow:0 12px 28px rgba(43,38,34,.3); z-index:4; }
+  .draft-bar .dr-ico { width:38px; height:38px; border-radius:12px; background:rgba(255,255,255,.14); display:flex; align-items:center; justify-content:center; font-size:18px; position:relative; flex:none; }
+  .draft-bar .dr-ico i { position:absolute; top:-5px; right:-5px; min-width:16px; height:16px; padding:0 4px; border-radius:99px; background:var(--red); font-size:9.5px; font-style:normal; display:flex; align-items:center; justify-content:center; font-weight:700; }
+  .draft-bar .dr-txt { flex:1; }
+  .draft-bar .dr-txt b { font-size:13px; display:block; }
+  .draft-bar .dr-txt span { font-size:10.5px; opacity:.7; }
+  .draft-bar .dr-go { background:linear-gradient(135deg,var(--ko2),var(--ko)); font-size:12.5px; font-weight:700; padding:8px 16px; border-radius:12px; flex:none; }
+
+  .cat-scroll { display:flex; gap:8px; padding:12px 18px 0; overflow:hidden; flex-wrap:wrap; }
+  .menu2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:14px 18px 0; }
+  .m2-card { background:#fff; border:1px solid var(--line); border-radius:18px; overflow:hidden; }
+  .m2-card .m2-img { height:92px; display:flex; align-items:center; justify-content:center; font-size:40px; position:relative; }
+  .m2-card .m2-img .m2-stock { position:absolute; right:8px; top:8px; font-size:9px; padding:3px 8px; border-radius:99px; background:rgba(255,255,255,.92); color:var(--muted); font-weight:600; }
+  .m2-card .m2-img .m2-stock.hot { color:var(--ko); }
+  .m2-card .m2-body { padding:10px 12px 12px; }
+  .m2-card .m2-name { font-size:13.5px; font-weight:600; }
+  .m2-card .m2-foot { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
+  .m2-card .m2-rate { font-size:11px; color:#E8A33D; font-weight:600; }
+  .m2-card.soldout { opacity:.6; }
+  .m2-card.soldout .m2-img { filter:grayscale(.7); }
+  .soldout-tag { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+  .soldout-tag span { background:rgba(43,38,34,.75); color:#fff; font-size:10px; padding:4px 12px; border-radius:99px; font-weight:600; }
+
+  .d3-hero { height:210px; display:flex; align-items:center; justify-content:center; font-size:84px; background:linear-gradient(135deg,#FFD9AE,#FF9A3E); position:relative; }
+  .d3-hero .d3-back { position:absolute; left:14px; top:14px; width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,.92); display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--ink); }
+  .d3-panel { margin:-22px 18px 0; background:#fff; border:1px solid var(--line); border-radius:22px; padding:18px 16px; position:relative; z-index:2; }
+  .d3-panel .d3-title { display:flex; align-items:center; gap:8px; font-size:19px; font-weight:700; }
+  .d3-panel .d3-meta { display:flex; gap:12px; margin-top:10px; font-size:11.5px; color:var(--muted); }
+  .d3-panel .d3-meta b { color:#E8A33D; }
+  .d3-chips { display:flex; gap:8px; margin-top:14px; }
+  .d3-chips span { font-size:10.5px; padding:5px 11px; border-radius:99px; background:var(--ko-softer); color:var(--muted); border:1px solid var(--line); }
+  .d3-chips span.ok { background:var(--hg-soft); color:var(--hg); border-color:#CBEBDD; }
+  .ing-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+  .ing-grid span { font-size:11.5px; background:var(--ko-softer); border:1px solid var(--line); border-radius:10px; padding:6px 11px; color:var(--ink); }
+  .step-item { display:flex; gap:12px; padding:10px 0; }
+  .step-item .st-num { width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,var(--ko2),var(--ko)); color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; font-weight:700; flex:none; margin-top:1px; }
+  .step-item .st-txt { font-size:12.5px; line-height:1.7; color:var(--ink); }
+  .cmt-item { padding:12px 0; border-bottom:1px solid #F7F2E9; }
+  .cmt-item:last-child { border-bottom:none; }
+  .cmt-item .cmt-top { display:flex; align-items:center; gap:8px; }
+  .cmt-item .cmt-name { font-size:12.5px; font-weight:600; flex:1; }
+  .cmt-item .cmt-stars { color:#E8A33D; font-size:11px; letter-spacing:1px; }
+  .cmt-item .cmt-txt { font-size:12px; color:var(--muted); margin-top:6px; line-height:1.6; }
+  .bottom-bar { position:sticky; bottom:0; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.97); border-top:1px solid var(--line); padding:10px 18px 16px; z-index:5; }
+  .stepper { display:flex; align-items:center; gap:2px; background:var(--ko-softer); border:1px solid var(--line); border-radius:12px; padding:3px; }
+  .stepper span { width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--muted); }
+  .stepper b { min-width:26px; text-align:center; font-size:14px; }
+  .stepper span.op { background:#fff; border-radius:9px; color:var(--ko); font-weight:700; box-shadow:0 1px 4px rgba(60,45,20,.1); }
+
+  .draft-card { margin:12px 18px 0; background:#fff; border:1px solid var(--line); border-radius:20px; overflow:hidden; }
+  .draft-card .dc-head { display:flex; align-items:center; gap:8px; padding:14px 16px 10px; }
+  .draft-card .dc-head h5 { font-size:14px; font-weight:700; flex:1; }
+  .draft-card .dc-line { display:flex; align-items:center; gap:10px; padding:10px 16px; border-top:1px solid #F7F2E9; }
+  .draft-card .dc-line .dc-emoji { width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:19px; flex:none; }
+  .draft-card .dc-line .dc-name { flex:1; font-size:13px; font-weight:500; }
+  .draft-card .dc-line .dc-name small { display:block; font-size:10.5px; color:var(--faint); margin-top:2px; }
+  .meal-pick { display:flex; gap:8px; padding:12px 16px; }
+  .meal-pick span { flex:1; text-align:center; font-size:11.5px; padding:9px 0; border-radius:12px; background:var(--ko-softer); border:1px solid var(--line); color:var(--muted); }
+  .meal-pick span.on { background:var(--ko-soft); border-color:var(--ko2); color:var(--ko); font-weight:700; }
+
+  .mini-flow { display:flex; align-items:center; gap:4px; margin-top:10px; }
+  .mini-flow .mf { flex:1; height:4px; border-radius:99px; background:var(--line); }
+  .mini-flow .mf.done { background:var(--hg); }
+  .mini-flow .mf.cur { background:linear-gradient(90deg,var(--ko2),var(--ko)); }
+  .mini-flow-labels { display:flex; margin-top:5px; }
+  .mini-flow-labels span { flex:1; font-size:9.5px; color:var(--faint); text-align:center; }
+  .mini-flow-labels span.cur { color:var(--ko); font-weight:600; }
+
+  .me-card { margin:6px 18px 0; border-radius:24px; padding:20px; background:linear-gradient(135deg,#FF9A3E,#F07B1F); color:#fff; display:flex; align-items:center; gap:14px; position:relative; overflow:hidden; }
+  .me-card::after { content:''; position:absolute; right:-30px; top:-40px; width:130px; height:130px; border-radius:50%; background:rgba(255,255,255,.12); }
+  .me-card .me-avatar { width:58px; height:58px; border-radius:50%; background:rgba(255,255,255,.25); border:2px solid rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center; font-size:26px; flex:none; }
+  .me-card .me-name { font-size:17px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .me-card .me-role { font-size:10px; background:rgba(255,255,255,.25); padding:3px 9px; border-radius:99px; font-weight:500; }
+  .me-card .me-sub { font-size:11.5px; opacity:.85; margin-top:5px; }
+  .me-kitchen { margin:14px 18px 0; background:#fff; border:1px solid var(--line); border-radius:20px; padding:16px; display:flex; align-items:center; gap:12px; }
+  .me-kitchen .mk-ico { width:46px; height:46px; border-radius:14px; background:var(--ko-soft); display:flex; align-items:center; justify-content:center; font-size:22px; flex:none; }
+  .me-kitchen .mk-body { flex:1; }
+  .me-kitchen .mk-body b { font-size:14px; display:block; }
+  .me-kitchen .mk-body span { font-size:11px; color:var(--faint); }
+  .me-list { margin:14px 18px 0; background:#fff; border:1px solid var(--line); border-radius:20px; padding:4px 16px; }
+  .me-item { display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid #F7F2E9; }
+  .me-item:last-child { border-bottom:none; }
+  .me-item .mi-ico { width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:16px; flex:none; }
+  .me-item .mi-name { flex:1; font-size:13.5px; }
+  .me-item .mi-val { font-size:11.5px; color:var(--faint); }
+  .me-item .mi-arrow { color:var(--faint); font-size:15px; }
+</style>
+</head>
+<body>
+
+<header class="doc-head">
+  <h1>miyf 小程序 <em>厨房 · 健康</em> 双模块界面重设计</h1>
+  <p>在现有「暖色厨房风」基础上做一次系统升级：厨房模块强化暖橙的烟火气与经营效率，健康模块引入薄荷绿建立「安心感」，两模块共用同一套奶油底与设计 Token，保证产品气质统一。以下共 12 屏高保真设计稿 + 完整设计规范，覆盖厨师端、食客端与健康模块。</p>
+  <div class="doc-meta">
+    <span>版本 v2.0 设计提案</span><span>2026-09-17</span><span>375×812 (iPhone)</span><span>仅设计稿 · 未改动代码</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#spec">01 设计规范</a>
+  <a href="#kitchen">02 厨房模块 · 厨师端</a>
+  <a href="#diner">03 厨房模块 · 食客端</a>
+  <a href="#health">04 健康模块</a>
+  <a href="#notes">05 设计决策说明</a>
+</nav>
+
+<!-- ================= 01 设计规范 ================= -->
+<section id="spec">
+  <div class="sec-title"><span class="num">01</span><h2>设计规范 Design Tokens</h2></div>
+  <p class="sec-desc">双模块各拥有一个主题色，但都生长在奶油底之上：厨房是「灶火的暖橙」，健康是「呼吸的薄荷」。状态色、中性色、圆角、阴影完全共享。</p>
+  <div class="spec-grid">
+    <div class="spec-card">
+      <h4>品牌色 <small>双主题</small></h4>
+      <div class="sw-row"><div class="sw" style="background:linear-gradient(135deg,#FFB36B,#F07B1F)"></div>
+        <div class="sw-info"><b>灶橙 Kitchen Orange</b><span>#FFB36B → #F07B1F</span></div><div class="sw-use">厨房主色<br>按钮 / Hero / 强调</div></div>
+      <div class="sw-row"><div class="sw" style="background:linear-gradient(135deg,#5FCFAE,#18A885)"></div>
+        <div class="sw-info"><b>薄荷 Health Mint</b><span>#5FCFAE → #18A885</span></div><div class="sw-use">健康主色<br>正常态 / 按钮 / 评分</div></div>
+      <div class="sw-row"><div class="sw" style="background:#FFFDF8"></div>
+        <div class="sw-info"><b>奶油底 Cream</b><span>#FFFDF8</span></div><div class="sw-use">全局页面背景</div></div>
+      <div class="sw-row"><div class="sw" style="background:#2B2622"></div>
+        <div class="sw-info"><b>墨 Ink</b><span>#2B2622</span></div><div class="sw-use">主文案 / 选中态</div></div>
+      <div class="sw-row"><div class="sw" style="background:#8A8178"></div>
+        <div class="sw-info"><b>暖灰 Muted</b><span>#8A8178 / #B5AC9F</span></div><div class="sw-use">次级 / 辅助文案</div></div>
+    </div>
+    <div class="spec-card">
+      <h4>状态色 <small>双模块共享</small></h4>
+      <div class="sw-row"><div class="sw" style="background:#18A885"></div>
+        <div class="sw-info"><b>正常 / 完成</b><span>#18A885 · 底 #E7F7F0</span></div><div class="sw-use">指标正常、预约完成</div></div>
+      <div class="sw-row"><div class="sw" style="background:#D99426"></div>
+        <div class="sw-info"><b>待处理 / 需关注</b><span>#D99426 · 底 #FBF3E0</span></div><div class="sw-use">待确认预约、指标临界</div></div>
+      <div class="sw-row"><div class="sw" style="background:#E15A4B"></div>
+        <div class="sw-info"><b>异常 / 警示</b><span>#E15A4B · 底 #FCEEEA</span></div><div class="sw-use">指标超标、驳回、角标</div></div>
+      <div class="sw-row"><div class="sw" style="background:#4A90D9"></div>
+        <div class="sw-info"><b>信息 Info</b><span>#4A90D9 · 底 #EBF3FB</span></div><div class="sw-use">备餐中等进行态</div></div>
+    </div>
+    <div class="spec-card">
+      <h4>字体层级 <small>PingFang SC</small></h4>
+      <div class="type-row"><code>Display 44/700</code><span style="font-size:30px;font-weight:700">72</span></div>
+      <div class="type-row"><code>Hero 22/700</code><span style="font-size:19px;font-weight:700">老王的灶</span></div>
+      <div class="type-row"><code>Title 16/600</code><span style="font-size:15px;font-weight:600">今日预约</span></div>
+      <div class="type-row"><code>Body 14/500</code><span style="font-size:14px">红烧肉 ×2</span></div>
+      <div class="type-row"><code>Caption 12/400</code><span style="font-size:12px;color:#8A8178">上次同步 08:30</span></div>
+      <div class="type-row"><code>Mini 10/500</code><span style="font-size:10px;color:#B5AC9F">需关注</span></div>
+    </div>
+    <div class="spec-card">
+      <h4>圆角 · 阴影 · 组件 <small>8 的倍数体系</small></h4>
+      <div class="cmp-row">
+        <span style="background:#fff;color:#2B2622;font-size:12px;padding:8px 16px;border-radius:12px;border:1px solid #e5ddd0">圆角 12 · 输入框</span>
+        <span style="background:#fff;color:#2B2622;font-size:12px;padding:10px 18px;border-radius:20px;border:1px solid #e5ddd0">圆角 20 · 卡片</span>
+        <span style="background:#2B2622;color:#FFFDF8;font-size:12px;padding:8px 18px;border-radius:99px">圆角 99 · 胶囊 Tab</span>
+      </div>
+      <div class="cmp-row">
+        <span style="font-size:11px;padding:6px 14px;border-radius:10px;background:linear-gradient(135deg,#FFB36B,#F07B1F);color:#fff;font-weight:600">主按钮 · 厨房</span>
+        <span style="font-size:11px;padding:6px 14px;border-radius:10px;background:linear-gradient(135deg,#5FCFAE,#18A885);color:#fff;font-weight:600">主按钮 · 健康</span>
+        <span style="font-size:11px;padding:6px 14px;border-radius:10px;border:1px solid #d9d2c6;color:#8A8178">次按钮</span>
+      </div>
+      <div class="cmp-row">
+        <span style="font-size:10px;padding:3px 10px;border-radius:99px;background:#E7F7F0;color:#18A885;font-weight:600">● 正常</span>
+        <span style="font-size:10px;padding:3px 10px;border-radius:99px;background:#FBF3E0;color:#D99426;font-weight:600">● 需关注</span>
+        <span style="font-size:10px;padding:3px 10px;border-radius:99px;background:#FCEEEA;color:#E15A4B;font-weight:600">● 异常</span>
+        <span style="font-size:10px;padding:3px 10px;border-radius:99px;background:#F4F0E9;color:#B5AC9F;font-weight:600">暂无数据</span>
+      </div>
+      <div class="cmp-row" style="margin-bottom:0">
+        <span style="min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#E15A4B;color:#fff;font-size:10px;display:inline-flex;align-items:center;justify-content:center;font-weight:600">5</span>
+        <span style="font-size:11px;color:#8b8d93">消息角标 · 阴影统一 0 8px 24px rgba(80,50,10,.08)</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 02 厨房模块 ================= -->
+<section id="kitchen">
+  <div class="sec-title"><span class="num">02</span><h2>厨房模块 · 厨师端（工作台）</h2></div>
+  <p class="sec-desc">现状是「标题 + 7 个 emoji 列表项」的纯导航页，信息效率低。重设计把工作台升级为<strong style="color:#e8e6e3">经营驾驶舱</strong>：打开即见今日经营数据与待办角标，高频操作两步内可达。</p>
+
+  <div class="screens">
+    <!-- K1 工作台首页 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar">厨房工作台<span class="more">•••</span></div>
+
+        <div class="k-hero">
+          <div class="hello">下午好，老王 👋</div>
+          <div class="kname"><h2>老王的灶</h2><span class="verify">已认证厨房</span></div>
+          <div class="k-stats">
+            <div class="st"><b>5</b><span>待确认</span></div>
+            <div class="st"><b>3</b><span>备餐中</span></div>
+            <div class="st"><b>12</b><span>在售菜品</span></div>
+            <div class="st"><b>28</b><span>食客</span></div>
+          </div>
+        </div>
+
+        <div class="sec-row"><h4>厨房管理</h4></div>
+        <div class="grid8">
+          <div class="g8"><div class="ico-tile" style="background:#FFF1E2">🍽️</div><span>菜品</span></div>
+          <div class="g8"><div class="ico-tile" style="background:#E7F7F0">📖</div><span>菜谱</span></div>
+          <div class="g8"><div class="ico-tile" style="background:#FBF3E0">📂</div><span>分类</span></div>
+          <div class="g8"><div class="ico-tile" style="background:#EBF3FB">📋</div><span>预约</span><i class="dot-badge">5</i></div>
+          <div class="g8"><div class="ico-tile" style="background:#FCEEEA">👥</div><span>食客申请</span><i class="dot-badge">3</i></div>
+          <div class="g8"><div class="ico-tile" style="background:#FFF1E2">🔗</div><span>邀请码</span></div>
+          <div class="g8"><div class="ico-tile" style="background:#E7F7F0">🏠</div><span>厨房资料</span></div>
+          <div class="g8"><div class="ico-tile" style="background:#F4F0E9">📊</div><span>经营统计</span></div>
+        </div>
+
+        <div class="sec-row"><h4>最新预约</h4><a>全部 ›</a></div>
+        <div class="order-card">
+          <div class="oc-top">
+            <div class="oc-user">
+              <div class="avatar" style="background:#F07B1F">小</div>
+              <div><div class="oc-name">小林</div><div class="oc-time">10 分钟前提交</div></div>
+            </div>
+            <span class="chip" style="background:#FBF3E0;color:#D99426">待确认</span>
+          </div>
+          <div class="oc-dishes">红烧肉 ×1 · 清炒时蔬 ×1 · 米饭 ×2</div>
+          <div class="oc-foot">
+            <span class="oc-meal">🕐 今天 18:00 晚餐 · 2 人</span>
+            <div class="oc-actions"><span class="btn btn-xs btn-ghost">拒绝</span><span class="btn btn-xs btn-solid-o">确认</span></div>
+          </div>
+        </div>
+        <div class="order-card">
+          <div class="oc-top">
+            <div class="oc-user">
+              <div class="avatar" style="background:#18A885">阿</div>
+              <div><div class="oc-name">阿珍</div><div class="oc-time">1 小时前提交</div></div>
+            </div>
+            <span class="chip" style="background:#EBF3FB;color:#4A90D9">备餐中</span>
+          </div>
+          <div class="oc-dishes">番茄牛腩 ×1 · 米饭 ×1</div>
+          <div class="oc-foot">
+            <span class="oc-meal">🕐 今天 12:00 午餐 · 1 人</span>
+            <div class="oc-actions"><span class="btn btn-xs btn-solid-o">出餐完成</span></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div></div>
+      <div class="caption">
+        <h3><b>K1</b>工作台首页（pages/chef/index）</h3>
+        <ul>
+          <li class="hl">新增渐变 Hero 卡：问候语 + 厨房名 + 4 项核心经营数据，一屏掌握全局</li>
+          <li class="hl">列表导航改 8 宫格，彩色浅底图标区分业务；待办用红色角标前置（预约 5 / 申请 3）</li>
+          <li>新增「最新预约」流，待确认订单可直接在首页确认/拒绝，减少跳转</li>
+          <li>新增「经营统计」入口（预留，可看销量与评价趋势）</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- K2 菜品管理 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar"><span class="back">‹</span>菜品管理<span class="more">•••</span></div>
+        <div class="searchbar"><span class="s-ico">🔍</span><input placeholder="搜索菜品名 / 分类"><span class="s-add">＋ 新菜品</span></div>
+        <div class="tabs">
+          <span class="tab on">全部 <i>12</i></span><span class="tab">在售 <i>9</i></span><span class="tab">提审中 <i>2</i></span><span class="tab">已下架 <i>1</i></span>
+        </div>
+
+        <div class="dish-card">
+          <div class="dish-img" style="background:linear-gradient(135deg,#FFD9AE,#FF9A3E)">🍖<span class="rec">推荐</span></div>
+          <div class="dish-body">
+            <div class="d-name">红烧肉 <span class="pill pill-ok">在售</span></div>
+            <div class="d-meta">荤菜 · 本月被约 23 次 · 评分 4.9</div>
+            <div class="d-foot">
+              <span class="d-stock">今日库存 <b>8</b> 份</span>
+              <div class="d-ops"><span class="op-pill">编辑</span><span class="op-pill">菜谱</span><span class="op-pill warn">下架</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="dish-card">
+          <div class="dish-img" style="background:linear-gradient(135deg,#C9EDD9,#5FCFAE)">🥬</div>
+          <div class="dish-body">
+            <div class="d-name">清炒时蔬 <span class="pill pill-ok">在售</span></div>
+            <div class="d-meta">素菜 · 本月被约 15 次 · 评分 4.7</div>
+            <div class="d-foot">
+              <span class="d-stock">今日库存 <b>12</b> 份</span>
+              <div class="d-ops"><span class="op-pill">编辑</span><span class="op-pill">菜谱</span><span class="op-pill warn">下架</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="dish-card">
+          <div class="dish-img" style="background:linear-gradient(135deg,#FBE3A8,#E8A33D)">🍅</div>
+          <div class="dish-body">
+            <div class="d-name">番茄牛腩 <span class="pill pill-warn">提审中</span></div>
+            <div class="d-meta">荤菜 · 提交于昨天 21:08 · 等待管理员审核</div>
+            <div class="d-foot">
+              <span class="d-stock">审核通过自动上架</span>
+              <div class="d-ops"><span class="op-pill">编辑</span><span class="op-pill warn">撤回</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="dish-card">
+          <div class="dish-img" style="background:linear-gradient(135deg,#E8E2D8,#B5AC9F)">🐟</div>
+          <div class="dish-body">
+            <div class="d-name">清蒸鲈鱼 <span class="pill pill-none">已下架</span></div>
+            <div class="d-meta">荤菜 · 下架于 09-10 · 累计被约 41 次</div>
+            <div class="d-foot">
+              <span class="d-stock">重新上架需再次提审</span>
+              <div class="d-ops"><span class="op-pill">编辑</span><span class="op-pill ok">重新提审</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div></div>
+      <div class="caption">
+        <h3><b>K2</b>菜品管理（pages/chef/dishes）</h3>
+        <ul>
+          <li class="hl">状态 Tab 胶囊化并带数量徽标：全部 / 在售 / 提审中 / 已下架，一眼看清分布</li>
+          <li class="hl">菜品卡展示经营数据（被约次数、评分、库存），不只是名称列表</li>
+          <li>推荐标签做成图片角标，比文字更显眼；提审中给出「审核通过自动上架」预期</li>
+          <li>操作收敛为 3 个 pill 按钮，危险操作（下架/撤回）用红色弱样式</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- K3 处理预约 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar"><span class="back">‹</span>处理预约<span class="more">•••</span></div>
+        <div class="sum-strip">
+          <div class="sum-cell" style="background:#FBF3E0;color:#D99426"><b>5</b><span>待确认</span></div>
+          <div class="sum-cell" style="background:#EBF3FB;color:#4A90D9"><b>3</b><span>备餐中</span></div>
+          <div class="sum-cell" style="background:#E7F7F0;color:#18A885"><b>8</b><span>今日完成</span></div>
+        </div>
+        <div class="tabs">
+          <span class="tab on">待确认 <i>5</i></span><span class="tab">备餐中 <i>3</i></span><span class="tab">已完成</span><span class="tab">已取消</span>
+        </div>
+
+        <div class="order-card">
+          <div class="oc-top">
+            <div class="oc-user">
+              <div class="avatar" style="background:#F07B1F">小</div>
+              <div><div class="oc-name">小林 · 2 人餐</div><div class="oc-time">今天 18:00 晚餐</div></div>
+            </div>
+            <span class="chip" style="background:#FBF3E0;color:#D99426">待确认</span>
+          </div>
+          <div class="oc-dishes">红烧肉 ×1 · 清炒时蔬 ×1 · 米饭 ×2<div style="font-size:11px;color:#B5AC9F;margin-top:4px">备注：少辣，米饭一份打包</div></div>
+          <div class="flow">
+            <div class="fstep cur"><div class="fdot cur">1</div><span>确认</span></div><div class="fline"></div>
+            <div class="fstep"><div class="fdot">2</div><span>备餐</span></div><div class="fline"></div>
+            <div class="fstep"><div class="fdot">3</div><span>出餐</span></div><div class="fline"></div>
+            <div class="fstep"><div class="fdot">✓</div><span>完成</span></div>
+          </div>
+          <div class="oc-foot" style="margin-top:14px">
+            <span class="oc-meal">单号 #20260917012</span>
+            <div class="oc-actions"><span class="btn btn-xs btn-ghost">拒绝</span><span class="btn btn-xs btn-solid-o">确认接单</span></div>
+          </div>
+        </div>
+
+        <div class="order-card">
+          <div class="oc-top">
+            <div class="oc-user">
+              <div class="avatar" style="background:#18A885">阿</div>
+              <div><div class="oc-name">阿珍 · 1 人餐</div><div class="oc-time">今天 12:00 午餐</div></div>
+            </div>
+            <span class="chip" style="background:#EBF3FB;color:#4A90D9">备餐中</span>
+          </div>
+          <div class="oc-dishes">番茄牛腩 ×1 · 米饭 ×1</div>
+          <div class="flow">
+            <div class="fstep"><div class="fdot done">✓</div><span>确认</span></div><div class="fline done"></div>
+            <div class="fstep cur"><div class="fdot cur">2</div><span>备餐</span></div><div class="fline"></div>
+            <div class="fstep"><div class="fdot">3</div><span>出餐</span></div><div class="fline"></div>
+            <div class="fstep"><div class="fdot">✓</div><span>完成</span></div>
+          </div>
+          <div class="oc-foot" style="margin-top:14px">
+            <span class="oc-meal">单号 #20260917008</span>
+            <div class="oc-actions"><span class="btn btn-xs btn-solid-o">出餐完成</span></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div></div>
+      <div class="caption">
+        <h3><b>K3</b>处理预约（pages/chef/orders）</h3>
+        <ul>
+          <li class="hl">顶部三色汇总条：待确认 / 备餐中 / 今日完成，与状态色体系一致</li>
+          <li class="hl">每张订单卡内嵌 4 节点状态机（确认→备餐→出餐→完成），进度可视化</li>
+          <li>备注信息前置展示，避免漏看食客要求</li>
+          <li>主按钮文案随状态机变化：确认接单 → 出餐完成，操作路径唯一不纠结</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- K4 厨房资料 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar"><span class="back">‹</span>厨房资料<span class="more">•••</span></div>
+        <div class="cover">
+          <span class="edit-cover">更换封面</span>
+          <div class="big-avatar">🍳</div>
+        </div>
+        <div style="height:40px"></div>
+        <div class="form-card">
+          <div class="f-field">
+            <div class="f-label">厨房名称 <i>4/20</i></div>
+            <div class="f-input">老王的灶</div>
+          </div>
+          <div class="f-field">
+            <div class="f-label">厨房简介 <i>56/200</i></div>
+            <div class="f-input area" style="font-size:12.5px;color:#8A8178">主打家常菜，擅长红烧与清蒸。工作日供应午晚餐，周末可加订。取餐请提前 10 分钟到 3 栋楼下…</div>
+          </div>
+        </div>
+        <div class="form-card">
+          <div class="f-label" style="margin-bottom:10px">厨房邀请码 <i>分享给食客加入</i></div>
+          <div class="invite-mini">
+            <div style="flex:1"><div class="code">K8X2M9</div><div style="font-size:11px;color:#B5AC9F;margin-top:3px">已邀请 28 位食客</div></div>
+            <span class="btn btn-xs btn-solid-o" style="height:32px">复制</span>
+          </div>
+        </div>
+        <div class="btn btn-block">保存修改</div>
+        <div class="home-indicator"></div>
+      </div></div>
+      <div class="caption">
+        <h3><b>K4</b>厨房资料（pages/chef/kitchen）</h3>
+        <ul>
+          <li class="hl">从「白卡片表单」升级为「品牌页」：封面 + 厨房头像，让厨师有经营自己小店的仪式感</li>
+          <li>输入框带实时字数统计；简介给出填写示例方向</li>
+          <li class="hl">邀请码前置到资料页（原独立页面保留），复制一键完成</li>
+          <li>保存按钮全宽渐变，带投影强调主操作</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 03 食客端 ================= -->
+<section id="diner">
+  <div class="sec-title"><span class="num">03</span><h2>厨房模块 · 食客端</h2></div>
+  <p class="sec-desc">食客端是 tabBar 主界面（首页 / 菜品 / 预约 / 我的），现状只有基础列表。重设计围绕「<strong style="color:#e8e6e3">像翻家里冰箱一样点菜</strong>」展开：大图大卡、库存与评分前置、预约单常驻底部浮条，点菜路径从 5 步缩到 3 步。</p>
+
+  <div class="screens">
+    <!-- D1 食客首页 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar">胡闹厨房<span class="more">•••</span></div>
+        <div class="d-hero">
+          <div class="d-brand-row"><span class="d-switch"><i></i>胡闹厨房 ⌄</span></div>
+          <h2>小林，今天想吃点什么？</h2>
+          <div class="d-sub">专属菜单 · 无价格无支付 · 约到就是赚到</div>
+          <span class="kitchen-chip">🍳 老王的灶 · 营业中</span>
+        </div>
+
+        <div class="sec-row" style="margin-top:18px"><h4>厨师推荐</h4><a>换一批 ›</a></div>
+        <div class="rec-scroll">
+          <div class="rec-card" style="background:linear-gradient(135deg,#FF9A3E,#E56A12)">
+            <span class="rc-tag">招牌</span><div class="rc-emoji">🍖</div>
+            <div class="rc-name">红烧肉</div><div class="rc-meta">评分 4.9 · 本月被约 23 次</div>
+          </div>
+          <div class="rec-card" style="background:linear-gradient(135deg,#1FBF92,#0E9E77)">
+            <span class="rc-tag">清淡</span><div class="rc-emoji">🥬</div>
+            <div class="rc-name">清炒时蔬</div><div class="rc-meta">评分 4.7 · 今日剩 12 份</div>
+          </div>
+        </div>
+
+        <div class="sec-row"><h4>今日菜单</h4><a>全部 12 ›</a></div>
+        <div class="dish-big">
+          <div class="db-img" style="background:linear-gradient(135deg,#FFE3C2,#FFB36B)"><span class="db-tag">🔥 热门</span>🍅</div>
+          <div class="db-body">
+            <div class="db-name">番茄牛腩</div>
+            <div class="db-desc">慢炖两小时，汤汁拌饭一绝。供应午晚餐，可备注少辣。</div>
+            <div class="db-foot">
+              <div class="db-info"><span><b>★4.8</b></span><span>剩 6 份</span><span>约 40 分钟</span></div>
+              <span class="add-btn">＋</span>
+            </div>
+          </div>
+        </div>
+        <div class="dish-big">
+          <div class="db-img" style="background:linear-gradient(135deg,#D8F0E2,#9DD9C4)"><span class="db-tag">🌿 时令</span>🥗</div>
+          <div class="db-body">
+            <div class="db-name">凉拌黄瓜</div>
+            <div class="db-desc">蒜香爽口，解腻必备。今日新做，售完即止。</div>
+            <div class="db-foot">
+              <div class="db-info"><span><b>★4.6</b></span><span>剩 9 份</span><span>即取</span></div>
+              <span class="add-btn">＋</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="draft-bar">
+          <div class="dr-ico">🧺<i>3</i></div>
+          <div class="dr-txt"><b>预约单 · 3 样菜</b><span>今天 18:00 晚餐 · 2 人</span></div>
+          <span class="dr-go">去预约</span>
+        </div>
+        <div style="height:14px"></div>
+        <div class="tabbar-mock">
+          <div class="tb on"><span class="tb-ico">🏠</span>首页</div>
+          <div class="tb"><span class="tb-ico">🍽️</span>菜品</div>
+          <div class="tb"><span class="tb-ico">📋</span>预约<span class="tb-badge">1</span></div>
+          <div class="tb"><span class="tb-ico">👤</span>我的</div>
+        </div>
+      </div></div>
+      <div class="caption">
+        <h3><b>D1</b>食客首页（pages/index/index）</h3>
+        <ul>
+          <li class="hl">从「品牌名 + 平铺列表」升级为有温度的点餐首页：问候语 + 绑定厨房状态胶囊（营业中/休息）</li>
+          <li class="hl">新增「厨师推荐」横滑卡（对应后端推荐字段，现接口已返回）</li>
+          <li>菜品大卡：大图 + 评分 + 剩余库存 + 预计时长，点「＋」直接进预约单</li>
+          <li class="hl">预约单常驻底部浮条：随时可见已选菜品与取餐时间，一键去下单；tabBar 预约项带角标</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- D2 菜品页 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar">菜品<span class="more">•••</span></div>
+        <div class="searchbar"><span class="s-ico">🔍</span><input placeholder="想吃什么？搜搜看"></div>
+        <div class="cat-scroll">
+          <span class="tab on">全部</span><span class="tab">🥩 荤菜</span><span class="tab">🥬 素菜</span><span class="tab">🍲 汤羹</span><span class="tab">🍚 主食</span><span class="tab">🍰 甜品</span>
+        </div>
+
+        <div class="menu2">
+          <div class="m2-card">
+            <div class="m2-img" style="background:linear-gradient(135deg,#FFD9AE,#FF9A3E)"><span class="m2-stock hot">剩 8 份</span>🍖</div>
+            <div class="m2-body"><div class="m2-name">红烧肉</div>
+              <div class="m2-foot"><span class="m2-rate">★4.9 · 已约 23</span><span class="add-btn" style="width:28px;height:28px;font-size:16px">＋</span></div></div>
+          </div>
+          <div class="m2-card">
+            <div class="m2-img" style="background:linear-gradient(135deg,#C9EDD9,#5FCFAE)"><span class="m2-stock hot">剩 12 份</span>🥬</div>
+            <div class="m2-body"><div class="m2-name">清炒时蔬</div>
+              <div class="m2-foot"><span class="m2-rate">★4.7 · 已约 15</span><span class="add-btn" style="width:28px;height:28px;font-size:16px">＋</span></div></div>
+          </div>
+          <div class="m2-card">
+            <div class="m2-img" style="background:linear-gradient(135deg,#FBE3A8,#E8A33D)"><span class="m2-stock hot">剩 6 份</span>🍅</div>
+            <div class="m2-body"><div class="m2-name">番茄牛腩</div>
+              <div class="m2-foot"><span class="m2-rate">★4.8 · 已约 19</span><span class="add-btn" style="width:28px;height:28px;font-size:16px">＋</span></div></div>
+          </div>
+          <div class="m2-card soldout">
+            <div class="m2-img" style="background:linear-gradient(135deg,#E8E2D8,#C9C2B5)"><div class="soldout-tag"><span>今日售罄</span></div>🐟</div>
+            <div class="m2-body"><div class="m2-name">清蒸鲈鱼</div>
+              <div class="m2-foot"><span class="m2-rate">★4.9 · 已约 41</span><span class="add-btn disabled" style="width:28px;height:28px;font-size:16px">＋</span></div></div>
+          </div>
+          <div class="m2-card">
+            <div class="m2-img" style="background:linear-gradient(135deg,#F5E6D0,#D9B98A)"><span class="m2-stock">不限量</span>🍚</div>
+            <div class="m2-body"><div class="m2-name">米饭</div>
+              <div class="m2-foot"><span class="m2-rate">★4.5 · 已约 60</span><span class="add-btn" style="width:28px;height:28px;font-size:16px">＋</span></div></div>
+          </div>
+          <div class="m2-card">
+            <div class="m2-img" style="background:linear-gradient(135deg,#F0E0EE,#C9A8D9)"><span class="m2-stock hot">剩 4 份</span>🍮</div>
+            <div class="m2-body"><div class="m2-name">焦糖布丁</div>
+              <div class="m2-foot"><span class="m2-rate">★4.8 · 已约 11</span><span class="add-btn" style="width:28px;height:28px;font-size:16px">＋</span></div></div>
+          </div>
+        </div>
+        <div style="height:14px"></div>
+        <div class="tabbar-mock">
+          <div class="tb"><span class="tb-ico">🏠</span>首页</div>
+          <div class="tb on"><span class="tb-ico">🍽️</span>菜品</div>
+          <div class="tb"><span class="tb-ico">📋</span>预约<span class="tb-badge">1</span></div>
+          <div class="tb"><span class="tb-ico">👤</span>我的</div>
+        </div>
+      </div></div>
+      <div class="caption">
+        <h3><b>D2</b>菜品浏览（pages/category/index）</h3>
+        <ul>
+          <li class="hl">单列列表改双列瀑布卡，一屏多看一倍菜品；分类从下拉改横滑胶囊并带 emoji</li>
+          <li>每张卡显示库存徽章（剩 N 份 / 不限量）与评分、被约次数，制造「手慢无」的紧迫感</li>
+          <li class="hl">售罄菜品灰化 + 蒙层标签，＋ 按钮禁用，状态一眼可辨</li>
+          <li>「＋」快捷加入预约单，不必先进详情页（高频菜一步完成）</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- D3 菜品详情 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="d3-hero"><span class="d3-back">‹</span>🍖</div>
+        <div class="d3-panel">
+          <div class="d3-title">红烧肉 <span class="pill" style="background:linear-gradient(135deg,#FFB36B,#F07B1F);color:#fff">厨师推荐</span></div>
+          <div class="d3-meta"><span><b>★4.9</b>（38 条评价）</span><span>本月被约 23 次</span><span>约 40 分钟</span></div>
+          <div class="d3-chips"><span class="ok">今日剩 8 份</span><span>供应午/晚餐</span><span>可备注少辣</span></div>
+        </div>
+
+        <div class="form-card">
+          <div class="f-label" style="margin-bottom:10px">食材</div>
+          <div class="ing-grid"><span>五花肉 500g</span><span>冰糖</span><span>生抽</span><span>老抽</span><span>八角</span><span>姜片</span></div>
+        </div>
+        <div class="form-card">
+          <div class="f-label" style="margin-bottom:6px">做法步骤</div>
+          <div class="step-item"><span class="st-num">1</span><span class="st-txt">五花肉切方块，冷水下锅焯去血沫，捞出沥干</span></div>
+          <div class="step-item"><span class="st-num">2</span><span class="st-txt">冰糖小火炒出糖色，下肉块翻炒上色</span></div>
+          <div class="step-item"><span class="st-num">3</span><span class="st-txt">加热水没过肉面，放香料，小火慢炖 40 分钟收汁</span></div>
+        </div>
+        <div class="form-card">
+          <div class="f-label" style="margin-bottom:4px">食客评价 <i>38 条 ›</i></div>
+          <div class="cmt-item">
+            <div class="cmt-top"><div class="avatar" style="width:28px;height:28px;font-size:12px;background:#F07B1F">小</div><span class="cmt-name">小林</span><span class="cmt-stars">★★★★★</span></div>
+            <div class="cmt-txt">肥而不腻，拌饭能吃两碗！老王的手艺稳定发挥。</div>
+          </div>
+          <div class="cmt-item">
+            <div class="cmt-top"><div class="avatar" style="width:28px;height:28px;font-size:12px;background:#18A885">阿</div><span class="cmt-name">阿珍</span><span class="cmt-stars">★★★★☆</span></div>
+            <div class="cmt-txt">稍微有点甜，备注少糖后刚刚好。</div>
+          </div>
+        </div>
+        <div style="height:10px"></div>
+        <div class="bottom-bar">
+          <div class="stepper"><span class="op">−</span><b>2</b><span class="op">＋</span></div>
+          <span class="btn" style="flex:1;height:44px;border-radius:14px;font-size:14px;background:linear-gradient(135deg,#FFB36B,#F07B1F);color:#fff;box-shadow:0 6px 16px rgba(240,123,31,.3)">加入预约单</span>
+        </div>
+      </div></div>
+      <div class="caption">
+        <h3><b>D3</b>菜品详情（pages/dish/detail）</h3>
+        <ul>
+          <li class="hl">大图 Hero + 上叠信息面板，推荐徽章 / 评分 / 被约次数 / 库存全部前置到第一屏</li>
+          <li>菜谱区改为「食材胶囊 + 编号步骤」，比纯文本更易读，也符合做饭场景</li>
+          <li>评价区带头像、星级与场景化内容，建立信任感</li>
+          <li class="hl">底部固定操作栏：数量步进 + 主按钮常驻，任何时候都能加购；售罄时主按钮变「今日已约满」灰态</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- D4 预约页 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar">预约<span class="more">•••</span></div>
+
+        <div class="draft-card">
+          <div class="dc-head"><span style="font-size:16px">🧺</span><h5>预约单 · 3 样</h5><span style="font-size:11px;color:#E15A4B">清空</span></div>
+          <div class="dc-line">
+            <div class="dc-emoji" style="background:#FFF1E2">🍖</div>
+            <div class="dc-name">红烧肉<small>今日剩 8 份</small></div>
+            <div class="stepper" style="padding:2px"><span class="op" style="width:24px;height:24px;font-size:13px">−</span><b style="font-size:12px">1</b><span class="op" style="width:24px;height:24px;font-size:13px">＋</span></div>
+          </div>
+          <div class="dc-line">
+            <div class="dc-emoji" style="background:#E7F7F0">🥬</div>
+            <div class="dc-name">清炒时蔬<small>今日剩 12 份</small></div>
+            <div class="stepper" style="padding:2px"><span class="op" style="width:24px;height:24px;font-size:13px">−</span><b style="font-size:12px">1</b><span class="op" style="width:24px;height:24px;font-size:13px">＋</span></div>
+          </div>
+          <div class="dc-line">
+            <div class="dc-emoji" style="background:#FBF3E0">🍚</div>
+            <div class="dc-name">米饭<small>不限量</small></div>
+            <div class="stepper" style="padding:2px"><span class="op" style="width:24px;height:24px;font-size:13px">−</span><b style="font-size:12px">2</b><span class="op" style="width:24px;height:24px;font-size:13px">＋</span></div>
+          </div>
+          <div class="meal-pick"><span class="on">今天 · 晚餐</span><span>明天 · 午餐</span><span>明天 · 晚餐</span></div>
+          <div style="padding:0 16px 14px;display:flex;gap:10px">
+            <span style="flex:1;font-size:12px;color:#B5AC9F;background:#FFF8EF;border:1px solid #F1E9DD;border-radius:12px;padding:10px 12px">备注：少辣，一份米饭打包…</span>
+            <span class="btn" style="width:96px;border-radius:12px;font-size:13.5px;background:linear-gradient(135deg,#FFB36B,#F07B1F);color:#fff">提交预约</span>
+          </div>
+        </div>
+
+        <div class="sec-row"><h4>我的预约</h4></div>
+        <div class="tabs" style="padding-top:0">
+          <span class="tab on">进行中 <i>1</i></span><span class="tab">已完成</span><span class="tab">已取消</span>
+        </div>
+        <div class="order-card">
+          <div class="oc-top">
+            <div class="oc-user">
+              <div class="avatar" style="background:#4A90D9">今</div>
+              <div><div class="oc-name">今天 12:00 午餐</div><div class="oc-time">单号 #20260917008</div></div>
+            </div>
+            <span class="chip" style="background:#EBF3FB;color:#4A90D9">制作中</span>
+          </div>
+          <div class="oc-dishes">番茄牛腩 ×1 · 米饭 ×1</div>
+          <div class="mini-flow"><span class="mf done"></span><span class="mf done"></span><span class="mf cur"></span><span class="mf"></span></div>
+          <div class="mini-flow-labels"><span>已确认</span><span>备餐</span><span class="cur">制作中</span><span>取餐</span></div>
+          <div class="oc-foot" style="margin-top:12px">
+            <span class="oc-meal">🕐 预计 11:50 可取</span>
+            <div class="oc-actions"><span class="btn btn-xs btn-ghost">取消预约</span></div>
+          </div>
+        </div>
+        <div class="order-card">
+          <div class="oc-top">
+            <div class="oc-user">
+              <div class="avatar" style="background:#18A885">昨</div>
+              <div><div class="oc-name">昨天 18:30 晚餐</div><div class="oc-time">单号 #20260916021</div></div>
+            </div>
+            <span class="chip" style="background:#E7F7F0;color:#18A885">已完成</span>
+          </div>
+          <div class="oc-dishes">红烧肉 ×1 · 清炒时蔬 ×1</div>
+          <div class="oc-foot" style="margin-top:12px">
+            <span class="oc-meal">已完成 · 感谢喜欢</span>
+            <div class="oc-actions"><span class="btn btn-xs btn-solid-o">去评价</span></div>
+          </div>
+        </div>
+        <div style="height:14px"></div>
+        <div class="tabbar-mock">
+          <div class="tb"><span class="tb-ico">🏠</span>首页</div>
+          <div class="tb"><span class="tb-ico">🍽️</span>菜品</div>
+          <div class="tb on"><span class="tb-ico">📋</span>预约</div>
+          <div class="tb"><span class="tb-ico">👤</span>我的</div>
+        </div>
+      </div></div>
+      <div class="caption">
+        <h3><b>D4</b>预约页（pages/order/index）</h3>
+        <ul>
+          <li class="hl">预约单草稿升级为卡片：逐行调数量（库存实时提示）、取餐时段快捷选择、备注与提交同屏</li>
+          <li>时段选择器给「今天晚餐 / 明天午餐 / 明天晚餐」快捷项，代替两层 Picker</li>
+          <li class="hl">进行中订单带 4 段迷你进度条 + 预计可取时间，不用点进详情就知道到哪一步</li>
+          <li>已完成订单的「去评价」做成主按钮，引导评价闭环（厨师端评分数据来源）</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- D5 我的 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar">我的<span class="more">•••</span></div>
+        <div class="me-card">
+          <div class="me-avatar">🧑‍🍳</div>
+          <div style="position:relative;z-index:1">
+            <div class="me-name">小林 <span class="me-role">食客</span></div>
+            <div class="me-sub">加入老王的灶 42 天 · 已约 28 次</div>
+          </div>
+        </div>
+
+        <div class="me-kitchen">
+          <div class="mk-ico">🍳</div>
+          <div class="mk-body"><b>老王的灶</b><span>绑定中 · 厨师：老王</span></div>
+          <span class="btn btn-xs btn-ghost" style="color:#E15A4B;border-color:#F3D3CE">解绑</span>
+        </div>
+
+        <div class="me-list">
+          <div class="me-item"><div class="mi-ico" style="background:#FFF1E2">⭐</div><span class="mi-name">我的评价</span><span class="mi-val">12 条</span><span class="mi-arrow">›</span></div>
+          <div class="me-item"><div class="mi-ico" style="background:#EBF3FB">📋</div><span class="mi-name">历史预约</span><span class="mi-val"></span><span class="mi-arrow">›</span></div>
+          <div class="me-item"><div class="mi-ico" style="background:#E7F7F0">🌿</div><span class="mi-name">健康数据</span><span class="mi-val" style="color:#18A885">切换到健康模块</span><span class="mi-arrow">›</span></div>
+        </div>
+        <div class="me-list">
+          <div class="me-item"><div class="mi-ico" style="background:#FBF3E0">✏️</div><span class="mi-name">修改昵称</span><span class="mi-val">小林</span><span class="mi-arrow">›</span></div>
+          <div class="me-item"><div class="mi-ico" style="background:#F4F0E9">🔔</div><span class="mi-name">消息通知</span><span class="mi-val">已开启</span><span class="mi-arrow">›</span></div>
+          <div class="me-item"><div class="mi-ico" style="background:#F4F0E9">ℹ️</div><span class="mi-name">关于 miyf</span><span class="mi-val">v1.0.0</span><span class="mi-arrow">›</span></div>
+        </div>
+        <div style="margin:18px 18px 0;text-align:center;font-size:12px;color:#B5AC9F">退出登录</div>
+        <div style="height:14px"></div>
+        <div class="tabbar-mock">
+          <div class="tb"><span class="tb-ico">🏠</span>首页</div>
+          <div class="tb"><span class="tb-ico">🍽️</span>菜品</div>
+          <div class="tb"><span class="tb-ico">📋</span>预约<span class="tb-badge">1</span></div>
+          <div class="tb on"><span class="tb-ico">👤</span>我的</div>
+        </div>
+      </div></div>
+      <div class="caption">
+        <h3><b>D5</b>我的（pages/user/index · 食客视角）</h3>
+        <ul>
+          <li class="hl">顶部用户卡：头像 + 昵称 + 身份徽章 + 与厨房的关系统计（加入天数、预约次数），有归属感</li>
+          <li>绑定厨房独立成卡，解绑操作用红色弱样式并保留二次确认</li>
+          <li class="hl">「健康数据」入口显式标注切换模块，呼应 ServiceSwitcher，双产品跳转路径清晰</li>
+          <li>功能项分组（饮食相关 / 账号相关），退出登录降级为页面底部文字链</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 04 健康模块 ================= -->
+<section id="health">
+  <div class="sec-title"><span class="num">04</span><h2>健康模块</h2></div>
+  <p class="sec-desc">现状是「两行分组列表」，数据密度低、无图表、状态不直观。重设计以<strong style="color:#e8e6e3">健康评分 + 卡片网格 + 迷你趋势图</strong>重构总览，详情页补上参考区间可视化，数据源页把连接状态讲清楚。</p>
+
+  <div class="screens">
+    <!-- H1 健康总览 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar">健康<span class="more">•••</span></div>
+        <div class="h-head">
+          <div class="switcher"><span class="sw-dot"></span>健康助手 ⌄</div>
+          <span style="font-size:11px;color:#B5AC9F">数据更新至 08:30</span>
+        </div>
+
+        <div class="score-card">
+          <div class="ring">
+            <svg width="104" height="104" viewBox="0 0 104 104">
+              <circle cx="52" cy="52" r="44" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="10"/>
+              <circle cx="52" cy="52" r="44" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="38.7"/>
+            </svg>
+            <div class="ring-val"><b>86</b><span>健康评分</span></div>
+          </div>
+          <div class="score-info">
+            <h3>状态不错，继续保持 🌿</h3>
+            <p>6 项指标中 5 项正常，睡眠时长较上周提升 12%</p>
+            <div class="score-tags"><span>5 正常</span><span>1 需关注</span></div>
+          </div>
+        </div>
+
+        <div class="alert-banner">
+          <div class="ab-ico">⚠️</div>
+          <div class="ab-txt"><b>压力指数偏高</b><br>最新值 68，连续 3 天超出参考范围，注意放松</div>
+          <span class="ab-go">查看 ›</span>
+        </div>
+
+        <div class="sec-row"><h4>我的指标</h4><a>数据源 ›</a></div>
+        <div class="metric-grid">
+          <div class="m-card">
+            <div class="m-top"><div class="m-ico" style="background:#FCEEEA">❤️</div><span class="m-name">心率</span><span class="pill pill-ok">正常</span></div>
+            <div class="m-val"><b>72</b><span>bpm</span></div>
+            <div class="m-foot">
+              <svg class="spark" viewBox="0 0 74 26"><polyline points="0,16 10,14 20,17 30,10 40,13 50,8 62,12 74,9" fill="none" stroke="#18A885" stroke-width="2" stroke-linecap="round"/></svg>
+              <span class="m-time">08:30</span>
+            </div>
+          </div>
+          <div class="m-card">
+            <div class="m-top"><div class="m-ico" style="background:#EBF3FB">🫁</div><span class="m-name">血氧</span><span class="pill pill-ok">正常</span></div>
+            <div class="m-val"><b>98</b><span>%</span></div>
+            <div class="m-foot">
+              <svg class="spark" viewBox="0 0 74 26"><polyline points="0,12 12,13 24,11 36,12 48,10 60,11 74,10" fill="none" stroke="#18A885" stroke-width="2" stroke-linecap="round"/></svg>
+              <span class="m-time">08:30</span>
+            </div>
+          </div>
+          <div class="m-card">
+            <div class="m-top"><div class="m-ico" style="background:#F0EBFB">😴</div><span class="m-name">睡眠</span><span class="pill pill-ok">良好</span></div>
+            <div class="m-val"><b>7.2</b><span>小时</span></div>
+            <div class="m-foot">
+              <svg class="spark" viewBox="0 0 74 26"><polyline points="0,18 12,15 24,17 36,12 48,13 60,9 74,8" fill="none" stroke="#18A885" stroke-width="2" stroke-linecap="round"/></svg>
+              <span class="m-time">今早</span>
+            </div>
+          </div>
+          <div class="m-card">
+            <div class="m-top"><div class="m-ico" style="background:#FBF3E0">🚶</div><span class="m-name">步数</span><span class="pill pill-none">目标 1 万</span></div>
+            <div class="m-val"><b>8,432</b><span>步</span></div>
+            <div class="m-foot">
+              <svg class="spark" viewBox="0 0 74 26"><polyline points="0,20 12,17 24,18 36,14 48,15 60,11 74,10" fill="none" stroke="#4A90D9" stroke-width="2" stroke-linecap="round"/></svg>
+              <span class="m-time">昨天</span>
+            </div>
+          </div>
+          <div class="m-card" style="border-color:#F0DDB4;background:#FFFDF5">
+            <div class="m-top"><div class="m-ico" style="background:#FBF3E0">😮‍💨</div><span class="m-name">压力</span><span class="pill pill-warn">偏高</span></div>
+            <div class="m-val"><b style="color:#D99426">68</b><span>/100</span></div>
+            <div class="m-foot">
+              <svg class="spark" viewBox="0 0 74 26"><polyline points="0,18 12,15 24,16 36,12 48,10 60,8 74,6" fill="none" stroke="#D99426" stroke-width="2" stroke-linecap="round"/></svg>
+              <span class="m-time">08:30</span>
+            </div>
+          </div>
+          <div class="m-card">
+            <div class="m-top"><div class="m-ico" style="background:#E7F7F0">⚖️</div><span class="m-name">体重</span><span class="pill pill-none">手动</span></div>
+            <div class="m-val"><b>62.5</b><span>kg</span></div>
+            <div class="m-foot">
+              <svg class="spark" viewBox="0 0 74 26"><polyline points="0,10 12,11 24,11 36,12 48,12 60,13 74,13" fill="none" stroke="#B5AC9F" stroke-width="2" stroke-linecap="round"/></svg>
+              <span class="m-time">3 天前</span>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div></div>
+      <div class="caption">
+        <h3><b>H1</b>健康总览（pages/health/index）</h3>
+        <ul>
+          <li class="hl">新增「健康评分」环卡：把分散的指标聚合成一个可感知的总分与一句话总结</li>
+          <li class="hl">列表改双列卡片网格，每张卡 = 图标 + 最新值 + 迷你趋势图 + 状态徽章，信息密度翻倍</li>
+          <li>异常指标独立成琥珀色警示横幅置顶，点击进入详情；异常卡片描边高亮</li>
+          <li>迷你趋势图（sparkline）用状态色绘制，正常薄荷绿 / 临界琥珀</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- H2 指标详情 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar"><span class="back">‹</span>心率<span class="more">•••</span></div>
+        <div class="hero-metric">
+          <div>
+            <div class="hm-val"><b>72</b><span>bpm</span></div>
+            <div class="hm-sub">测量于今天 08:30 · 来自华为健康</div>
+          </div>
+          <span class="pill pill-ok" style="font-size:11px;padding:5px 12px">● 正常</span>
+        </div>
+        <div class="range-tabs"><span>7 天</span><span class="on">30 天</span><span>90 天</span></div>
+
+        <div class="chart-card">
+          <svg width="100%" height="170" viewBox="0 0 340 170">
+            <defs>
+              <linearGradient id="gArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#5FCFAE" stop-opacity=".28"/><stop offset="1" stop-color="#5FCFAE" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <!-- 参考区间带 60-100 -->
+            <rect x="30" y="30" width="300" height="72" rx="6" fill="#E7F7F0"/>
+            <text x="326" y="26" font-size="9" fill="#8A8178" text-anchor="end">100</text>
+            <text x="326" y="106" font-size="9" fill="#8A8178" text-anchor="end">60</text>
+            <text x="34" y="24" font-size="9" fill="#18A885">参考区间 60–100</text>
+            <line x1="30" y1="30" x2="330" y2="30" stroke="#B5AC9F" stroke-dasharray="4 4" stroke-width="1"/>
+            <line x1="30" y1="102" x2="330" y2="102" stroke="#B5AC9F" stroke-dasharray="4 4" stroke-width="1"/>
+            <path d="M30,80 L60,72 L90,84 L120,66 L150,74 L180,58 L210,70 L240,62 L270,76 L300,60 L330,66 L330,140 L30,140 Z" fill="url(#gArea)"/>
+            <polyline points="30,80 60,72 90,84 120,66 150,74 180,58 210,70 240,62 270,76 300,60 330,66" fill="none" stroke="#18A885" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="300" cy="60" r="4" fill="#fff" stroke="#18A885" stroke-width="2.5"/>
+            <text x="30" y="160" font-size="9" fill="#B5AC9F">08-19</text><text x="170" y="160" font-size="9" fill="#B5AC9F">09-02</text><text x="312" y="160" font-size="9" fill="#B5AC9F">09-17</text>
+          </svg>
+        </div>
+
+        <div class="stat-row">
+          <div class="sr"><b>74</b><span>平均</span></div>
+          <div class="sr"><b>58</b><span>最低</span></div>
+          <div class="sr"><b>96</b><span>最高</span></div>
+          <div class="sr"><b>30</b><span>记录数</span></div>
+        </div>
+
+        <div class="sec-row"><h4>测量记录</h4><a>全部 ›</a></div>
+        <div class="form-card" style="padding:6px 16px">
+          <div class="sample-item"><span class="si-dot" style="background:#18A885"></span><span class="si-val">72 <span>bpm</span></span><span class="si-time">今天 08:30 · 静息</span><span class="pill pill-ok">正常</span></div>
+          <div class="sample-item"><span class="si-dot" style="background:#18A885"></span><span class="si-val">85 <span>bpm</span></span><span class="si-time">昨天 19:12 · 运动后</span><span class="pill pill-ok">正常</span></div>
+          <div class="sample-item"><span class="si-dot" style="background:#D99426"></span><span class="si-val">58 <span>bpm</span></span><span class="si-time">昨天 06:45 · 睡眠</span><span class="pill pill-warn">偏低</span></div>
+          <div class="sample-item"><span class="si-dot" style="background:#18A885"></span><span class="si-val">76 <span>bpm</span></span><span class="si-time">09-15 08:28 · 静息</span><span class="pill pill-ok">正常</span></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div></div>
+      <div class="caption">
+        <h3><b>H2</b>指标详情（pages/health/detail）</h3>
+        <ul>
+          <li class="hl">大数字 + 状态徽章的 Hero 区，最新值一目了然，注明数据来源与测量场景</li>
+          <li class="hl">趋势图叠加「参考区间带」，哪些点越界不用猜；越界点用琥珀/红色标记</li>
+          <li>新增 7/30/90 天时间范围切换（现接口已支持 days 参数，直接可用）</li>
+          <li>记录列表带测量场景（静息/运动/睡眠）与单点状态判定</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- H3 数据源 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar"><span class="back">‹</span>数据源<span class="more">•••</span></div>
+        <div style="padding:2px 18px 0;font-size:12px;color:#B5AC9F;line-height:1.6">连接健康平台后自动同步数据，已同步数据不受断开影响</div>
+
+        <div class="src-card">
+          <div class="sc-top">
+            <div class="sc-ico" style="background:#FCEEEA">⌚</div>
+            <div class="sc-body">
+              <div class="sc-name">华为健康 <span class="pill pill-ok">已连接</span></div>
+              <div class="sc-desc">可同步步数、心率、睡眠、压力等</div>
+            </div>
+          </div>
+          <div class="sync-row"><span class="ok-dot"></span>上次同步 今天 08:30 · 本次入库 126 条</div>
+          <div class="sc-actions">
+            <span class="btn btn-md btn-solid-g">立即同步</span>
+            <span class="btn btn-md btn-line danger">断开连接</span>
+          </div>
+        </div>
+
+        <div class="src-card">
+          <div class="sc-top">
+            <div class="sc-ico" style="background:#FFF1E2">✍️</div>
+            <div class="sc-body">
+              <div class="sc-name">手动录入 <span class="pill pill-none">随时可用</span></div>
+              <div class="sc-desc">体重、血压等手动记录，计入趋势</div>
+            </div>
+          </div>
+          <div class="sc-actions"><span class="btn btn-md btn-line">＋ 记一条</span></div>
+        </div>
+
+        <div class="src-card off">
+          <div class="sc-top">
+            <div class="sc-ico" style="background:#F4F0E9">🍎</div>
+            <div class="sc-body">
+              <div class="sc-name">苹果健康 <span class="soon-tag">即将支持</span></div>
+              <div class="sc-desc">iOS 端 HealthKit 数据同步</div>
+            </div>
+          </div>
+        </div>
+        <div class="src-card off">
+          <div class="sc-top">
+            <div class="sc-ico" style="background:#F4F0E9">🏃</div>
+            <div class="sc-body">
+              <div class="sc-name">小米运动 <span class="soon-tag">即将支持</span></div>
+              <div class="sc-desc">Zepp Life 开放平台接入中</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-card" style="background:linear-gradient(135deg,#F4FBF8,#E7F7F0);border-color:#CBEBDD">
+          <div style="font-size:13px;font-weight:600;color:#18A885">授权小贴士</div>
+          <div style="font-size:11.5px;color:#8A8178;line-height:1.8;margin-top:8px">① 点击「连接」复制授权链接 → ② 在系统浏览器打开并完成授权 → ③ 返回本页自动检测，连接成功即开始同步</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div></div>
+      <div class="caption">
+        <h3><b>H3</b>数据源管理（现 index 底部拆分为独立页）</h3>
+        <ul>
+          <li class="hl">每个平台一张卡：Logo 图标 + 连接状态徽章 + 上次同步时间 + 入库条数，状态完全透明</li>
+          <li>「立即同步」与「断开」并排放置，断开用红色弱样式防误触</li>
+          <li class="hl">新增「手动录入」入口卡（体重/血压），未接平台也能用健康模块</li>
+          <li>未上线平台灰态展示「即将支持」，授权引导收敛成小贴士卡，不再占据主流程</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 05 设计决策 ================= -->
+<section id="notes">
+  <div class="sec-title"><span class="num">05</span><h2>关键设计决策</h2></div>
+  <div class="note-strip">
+    <b>1 · 双主题、一底盘。</b>厨房用暖橙、健康用薄荷，但背景、卡片、圆角、状态色完全一致——用户在两个模块间切换时感到「同一个产品的两个房间」，而不是两个产品。<br>
+    <b>2 · 从导航页到驾驶舱。</b>厨房首页的核心矛盾是「厨师打开后不知道现在该干什么」。Hero 数据卡 + 宫格角标 + 最新预约流，让待办事项自己浮出来。<br>
+    <b>2.5 · 食客端要「有食欲」。</b>大图大卡 + 库存紧迫感 + 预约单底部常驻浮条，点菜路径从 5 步缩到 3 步；进行中订单给迷你进度条与预计取餐时间，吃完引导评价形成数据闭环。<br>
+    <b>3 · 健康数据要「有感觉」。</b>纯列表的数字没有感知力，评分环 + sparkline + 参考区间带把「我好不好」变成直觉；异常永远用琥珀/红前置，不打断但可见。<br>
+    <b>4 · 状态机可视化。</b>预约的 4 节点流程条、菜品的 4 状态 Tab、数据源的连接徽章——所有后台已有的状态字段都给了明确视觉映射，开发零新增接口（健康评分除外，可先前端按规则计算）。<br>
+    <b>5 · 向后兼容。</b>所有设计均基于现有 API 字段（trend.latest / avg / min / max / pointCount、订单状态机、绑定关系），不依赖新接口即可落地。
+  </div>
+</section>
+
+</body>
+</html>

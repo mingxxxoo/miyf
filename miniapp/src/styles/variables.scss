@@ -1,36 +1,58 @@
-// miyf · Design Tokens（厨房暖色 + 健康青绿）
-// 衍生色使用静态 hex，避免 Dart Sass 对 darken()/lighten() 的弃用警告
+// miyf · Design Tokens v2（对齐 design/miniapp-redesign.html）
+// 厨房灶橙 + 健康薄荷，共用奶油底与状态色
+
 $ck-primary: #FFB36B;
+$ck-primary-deep: #F07B1F;
 $ck-primary-d6: #FFA34C;
 $ck-primary-d8: #FF9E42;
 $ck-primary-d10: #FF9938;
 $ck-primary-d12: #FF942E;
-$ck-primary-d18: #FF840F;
+$ck-primary-d18: #E56A12;
+$ck-ko-soft: #FFF1E2;
+$ck-ko-softer: #FFF8EF;
 
-$ck-secondary: #9DD9C4;
-$ck-secondary-d18: #5BBF9C;
-$ck-secondary-d22: #4CBA93;
-$ck-secondary-d28: #41A783;
+$ck-secondary: #5FCFAE;
+$ck-secondary-d18: #18A885;
+$ck-secondary-d22: #0E9E77;
+$ck-secondary-d28: #0C8A68;
+$ck-hg: #18A885;
+$ck-hg2: #5FCFAE;
+$ck-hg-soft: #E7F7F0;
+$ck-hg-softer: #F4FBF8;
 
-$ck-health: #5BB8A8;
-$ck-health-d6: #4AAB9A;
-$ck-health-d8: #47A393;
-$ck-health-d10: #449C8D;
-$ck-health-d12: #419587;
+$ck-health: #18A885;
+$ck-health-d6: #16A07E;
+$ck-health-d8: #0E9E77;
+$ck-health-d10: #0D946F;
+$ck-health-d12: #0C8A68;
 
 $ck-bg: #FFFDF8;
-$ck-text: #333333;
-$ck-muted: #888888;
-$ck-muted-l12: #A7A7A7;
-$ck-border: #F0ECE5;
-$ck-border-l4: #F7F5F2;
+$ck-text: #2B2622;
+$ck-ink: #2B2622;
+$ck-muted: #8A8178;
+$ck-muted-l12: #B5AC9F;
+$ck-faint: #B5AC9F;
+$ck-border: #F1E9DD;
+$ck-border-l4: #F7F2E9;
+$ck-line: #F1E9DD;
+
+$ck-red: #E15A4B;
+$ck-red-soft: #FCEEEA;
+$ck-amber: #D99426;
+$ck-amber-soft: #FBF3E0;
+$ck-blue: #4A90D9;
+$ck-blue-soft: #EBF3FB;
 
 $ck-radius-sm: 12px;
 $ck-radius-md: 20px;
-$ck-radius-lg: 28px;
+$ck-radius-lg: 24px;
+$ck-radius-pill: 99px;
 
-$ck-shadow-soft: 0 8px 24px rgba(255, 179, 107, 0.12);
+$ck-shadow-soft: 0 8px 24px rgba(240, 123, 31, 0.12);
+$ck-shadow-card: 0 6px 16px rgba(80, 50, 10, 0.06);
 
-$ck-font-title: 36px;
+$ck-font-display: 44px;
+$ck-font-title: 32px;
 $ck-font-body: 28px;
 $ck-font-caption: 24px;
+$ck-font-mini: 20px;
