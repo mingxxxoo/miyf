@@ -19,5 +19,6 @@
     <modules>
         <module>kitchen-service</module>
         <module>health-service</module>
+        <module>ai-service</module>
     </modules>
 </project>

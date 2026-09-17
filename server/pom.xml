@@ -35,6 +35,7 @@
         <springdoc.version>3.0.2</springdoc.version>
         <testcontainers.version>1.21.3</testcontainers.version>
         <flowable.version>8.0.0</flowable.version>
+        <spring-ai-alibaba.version>2.0.0-M1.1</spring-ai-alibaba.version>
     </properties>
 
     <dependencyManagement>
@@ -123,6 +124,17 @@
                 <groupId>cn.miyf</groupId>
                 <artifactId>health-service</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.miyf</groupId>
+                <artifactId>ai-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+                <version>${spring-ai-alibaba.version}</version>
             </dependency>
 
             <dependency>

@@ -6,6 +6,14 @@ spring:
   jackson:
     # Boot 4 默认 tools.jackson；业务 ObjectMapper 见 JacksonConfig（com.fasterxml）
     default-property-inclusion: non_null
+  ai:
+    # none：不加载聊天模型（默认，免 API Key 即可启动）；启用 AI 时设为 dashscope
+    model:
+      chat: ${SPRING_AI_MODEL_CHAT:none}
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:}
+      chat:
+        model: ${APP_AI_MODEL:qwen-plus}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -49,7 +57,7 @@ management:
 mybatis-plus:
   # 复杂 SQL 统一放 mapper XML，禁止用 Wrapper 拼装联表/动态分页/聚合
   mapper-locations: classpath*:mapper/**/*.xml
-  type-aliases-package: cn.miyf.bean.entity,cn.miyf.kitchen.bean.entity,cn.miyf.health.bean.entity,cn.miyf.notification.entity,cn.miyf.job.entity
+  type-aliases-package: cn.miyf.bean.entity,cn.miyf.kitchen.bean.entity,cn.miyf.health.bean.entity,cn.miyf.ai.bean.entity,cn.miyf.notification.entity,cn.miyf.job.entity
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
@@ -171,6 +179,28 @@ app:
     password: ${ELASTICSEARCH_PASSWORD:}
     connect-timeout-ms: ${APP_SEARCH_CONNECT_TIMEOUT_MS:3000}
     socket-timeout-ms: ${APP_SEARCH_SOCKET_TIMEOUT_MS:10000}
+  ai:
+    # 关闭时接口返回降级产物；开启需同时配置 DASHSCOPE_API_KEY，并将 spring.ai.model.chat=dashscope
+    enabled: ${APP_AI_ENABLED:false}
+    model: ${APP_AI_MODEL:qwen-plus}
+    max-tokens: ${APP_AI_MAX_TOKENS:4096}
+    chef-dish:
+      temperature: 0.2
+      timeout-ms: 30000
+      retry-on-transient: 1
+    order-draft:
+      temperature: 0.1
+      timeout-ms: 10000
+      retry-on-transient: 0
+    order-insight:
+      temperature: 0.3
+      timeout-ms: 15000
+      retry-on-transient: 1
+    web-fetch:
+      connect-timeout-ms: 5000
+      read-timeout-ms: 15000
+      max-redirects: 3
+      max-chars: 8000
 
 wx:
   auth:

@@ -382,13 +382,50 @@
   .me-item .mi-name { flex:1; font-size:13.5px; }
   .me-item .mi-val { font-size:11.5px; color:var(--faint); }
   .me-item .mi-arrow { color:var(--faint); font-size:15px; }
+
+  /* ============ AI 能力 ============ */
+  .ai-ask { display:flex; align-items:center; gap:8px; margin-top:14px; background:#fff; border:1px solid #F3D9B8; border-radius:14px; padding:11px 14px; font-size:12px; color:var(--muted); box-shadow:0 4px 14px rgba(240,123,31,.08); }
+  .ai-ask b { flex:none; font-size:14px; }
+  .ai-hero { margin:6px 18px 0; border-radius:24px; padding:22px 20px; background:linear-gradient(135deg,#2B2622,#4E3B28); color:#fff; position:relative; overflow:hidden; }
+  .ai-hero::after { content:'✨'; position:absolute; right:14px; top:8px; font-size:54px; opacity:.18; }
+  .ai-hero h3 { font-size:18px; font-weight:700; }
+  .ai-hero p { font-size:11.5px; opacity:.78; margin-top:8px; line-height:1.7; }
+  .ai-textarea { margin:14px 18px 0; background:#fff; border:1px solid var(--line); border-radius:18px; padding:14px; font-size:12.5px; color:var(--faint); line-height:1.8; }
+  .ai-textarea.focus { border-color:var(--ko2); color:var(--ink); box-shadow:0 0 0 3px var(--ko-soft); }
+  .ai-example { display:flex; gap:8px; flex-wrap:wrap; padding:12px 18px 0; }
+  .ai-example span { font-size:11px; color:var(--ko); background:var(--ko-soft); border:1px dashed #EFCB9C; border-radius:99px; padding:6px 12px; }
+  .ai-ok-strip { margin:12px 18px 0; display:flex; align-items:center; gap:10px; background:var(--hg-soft); border:1px solid #CBEBDD; border-radius:14px; padding:11px 14px; font-size:12px; color:var(--hg); font-weight:600; }
+  .ai-dish { margin:12px 18px 0; background:#fff; border:1px solid var(--line); border-radius:20px; padding:16px; }
+  .ai-dish .ad-top { display:flex; gap:12px; }
+  .ai-dish .ad-img { width:64px; height:64px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:30px; flex:none; position:relative; }
+  .ai-dish .ad-img i { position:absolute; bottom:-4px; right:-4px; width:18px; height:18px; border-radius:50%; background:linear-gradient(135deg,var(--ko2),var(--ko)); color:#fff; font-size:9px; font-style:normal; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #fff; }
+  .ai-dish .ad-name { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .ai-dish .ad-desc { font-size:11.5px; color:var(--muted); margin-top:6px; line-height:1.6; }
+  .ai-dish .ad-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
+  .ai-dish .ad-foot { display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
+  .ai-dish .ad-sum { font-size:11px; color:var(--faint); }
+  .ai-parse { display:flex; align-items:center; gap:10px; margin:12px 18px 0; background:#fff; border:1px solid var(--line); border-radius:14px; padding:11px 14px; font-size:12px; color:var(--muted); }
+  .ai-sparkle { width:26px; height:26px; border-radius:9px; background:linear-gradient(135deg,var(--ko2),var(--ko)); display:flex; align-items:center; justify-content:center; font-size:13px; flex:none; }
+  .insight { margin:12px 18px 0; border-radius:20px; padding:16px; background:linear-gradient(135deg,#F4FBF8,#E7F7F0); border:1px solid #CBEBDD; }
+  .insight.warn { background:linear-gradient(135deg,#FFFDF5,#FBF3E0); border-color:#F0DDB4; }
+  .insight .is-head { display:flex; align-items:center; gap:8px; }
+  .insight .is-title { font-size:13.5px; font-weight:700; flex:1; }
+  .insight .is-sum { font-size:12px; color:var(--ink); line-height:1.7; margin-top:10px; }
+  .insight .is-dishes { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .insight .is-dish { display:inline-flex; align-items:center; gap:5px; font-size:11px; background:#fff; border:1px solid #CBEBDD; border-radius:99px; padding:5px 11px; color:var(--ink); }
+  .insight .is-dish i { font-style:normal; font-weight:700; color:var(--hg); }
+  .insight.warn .is-dish { border-color:#F0DDB4; }
+  .insight.warn .is-dish i { color:var(--amber); }
+  .insight .is-tip { display:flex; align-items:center; gap:8px; margin-top:12px; background:rgba(255,255,255,.75); border-radius:12px; padding:10px 12px; font-size:11.5px; color:var(--ink); }
+  .insight .is-tip .is-act { flex:none; font-size:11px; font-weight:700; color:var(--hg); }
+  .insight .is-disclaimer { font-size:10px; color:var(--faint); margin-top:12px; line-height:1.6; }
 </style>
 </head>
 <body>
 
 <header class="doc-head">
   <h1>miyf 小程序 <em>厨房 · 健康</em> 双模块界面重设计</h1>
-  <p>在现有「暖色厨房风」基础上做一次系统升级：厨房模块强化暖橙的烟火气与经营效率，健康模块引入薄荷绿建立「安心感」，两模块共用同一套奶油底与设计 Token，保证产品气质统一。以下共 12 屏高保真设计稿 + 完整设计规范，覆盖厨师端、食客端与健康模块。</p>
+  <p>在现有「暖色厨房风」基础上做一次系统升级：厨房模块强化暖橙的烟火气与经营效率，健康模块引入薄荷绿建立「安心感」，两模块共用同一套奶油底与设计 Token，保证产品气质统一。以下共 16 屏高保真设计稿 + 完整设计规范，覆盖厨师端、食客端、健康模块与 AI 能力（spring-ai）。</p>
   <div class="doc-meta">
     <span>版本 v2.0 设计提案</span><span>2026-09-17</span><span>375×812 (iPhone)</span><span>仅设计稿 · 未改动代码</span>
   </div>
@@ -399,7 +436,8 @@
   <a href="#kitchen">02 厨房模块 · 厨师端</a>
   <a href="#diner">03 厨房模块 · 食客端</a>
   <a href="#health">04 健康模块</a>
-  <a href="#notes">05 设计决策说明</a>
+  <a href="#ai">05 AI 能力 · 4 屏</a>
+  <a href="#notes">06 设计决策说明</a>
 </nav>
 
 <!-- ================= 01 设计规范 ================= -->
@@ -548,7 +586,7 @@
       <div class="phone"><div class="notch"></div><div class="screen">
         <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
         <div class="navbar"><span class="back">‹</span>菜品管理<span class="more">•••</span></div>
-        <div class="searchbar"><span class="s-ico">🔍</span><input placeholder="搜索菜品名 / 分类"><span class="s-add">＋ 新菜品</span></div>
+        <div class="searchbar"><span class="s-ico">🔍</span><input placeholder="搜索菜品名 / 分类"><span class="s-add" style="background:linear-gradient(135deg,#2B2622,#5A4632)">✨ AI</span><span class="s-add">＋ 新菜品</span></div>
         <div class="tabs">
           <span class="tab on">全部 <i>12</i></span><span class="tab">在售 <i>9</i></span><span class="tab">提审中 <i>2</i></span><span class="tab">已下架 <i>1</i></span>
         </div>
@@ -606,6 +644,7 @@
           <li class="hl">菜品卡展示经营数据（被约次数、评分、库存），不只是名称列表</li>
           <li>推荐标签做成图片角标，比文字更显眼；提审中给出「审核通过自动上架」预期</li>
           <li>操作收敛为 3 个 pill 按钮，危险操作（下架/撤回）用红色弱样式</li>
+          <li class="hl">搜索栏新增「✨ AI」入口：口述文本或粘贴菜谱链接即可批量建菜（详见 05 章 A1/A2 屏）</li>
         </ul>
       </div>
     </div>
@@ -737,6 +776,7 @@
           <h2>小林，今天想吃点什么？</h2>
           <div class="d-sub">专属菜单 · 无价格无支付 · 约到就是赚到</div>
           <span class="kitchen-chip">🍳 老王的灶 · 营业中</span>
+          <div class="ai-ask"><b>✨</b>说句话就点菜：「明天中午两个人，想吃清淡点…」</div>
         </div>
 
         <div class="sec-row" style="margin-top:18px"><h4>厨师推荐</h4><a>换一批 ›</a></div>
@@ -795,6 +835,7 @@
           <li class="hl">新增「厨师推荐」横滑卡（对应后端推荐字段，现接口已返回）</li>
           <li>菜品大卡：大图 + 评分 + 剩余库存 + 预计时长，点「＋」直接进预约单</li>
           <li class="hl">预约单常驻底部浮条：随时可见已选菜品与取餐时间，一键去下单；tabBar 预约项带角标</li>
+          <li class="hl">新增「✨ 说句话点菜」入口：自然语言直接生成预约单草稿（详见 05 章 A3/A4 屏）</li>
         </ul>
       </div>
     </div>
@@ -939,6 +980,15 @@
           </div>
         </div>
 
+        <div class="insight">
+          <div class="is-head"><span class="ai-sparkle">🌿</span><span class="is-title">AI 饮食分析</span><span class="pill pill-ok">本单合适</span></div>
+          <div class="is-sum">清蒸、清炒为主，油盐都不高，荤素搭配合理，符合你「少辣」的备注。</div>
+          <div class="is-dishes">
+            <span class="is-dish"><i>✓</i>红烧肉</span><span class="is-dish"><i>✓</i>清炒时蔬</span><span class="is-dish"><i>✓</i>米饭</span>
+          </div>
+          <div class="is-disclaimer">以上为一般性饮食参考，不构成医疗建议。</div>
+        </div>
+
         <div class="sec-row"><h4>我的预约</h4></div>
         <div class="tabs" style="padding-top:0">
           <span class="tab on">进行中 <i>1</i></span><span class="tab">已完成</span><span class="tab">已取消</span>
@@ -988,6 +1038,7 @@
           <li>时段选择器给「今天晚餐 / 明天午餐 / 明天晚餐」快捷项，代替两层 Picker</li>
           <li class="hl">进行中订单带 4 段迷你进度条 + 预计可取时间，不用点进详情就知道到哪一步</li>
           <li>已完成订单的「去评价」做成主按钮，引导评价闭环（厨师端评分数据来源）</li>
+          <li class="hl">草稿卡下方挂「AI 饮食分析」卡：结合健康模块异常指标给出本单适宜度（详见 05 章 A4 屏）</li>
         </ul>
       </div>
     </div>
@@ -1277,16 +1328,206 @@
   </div>
 </section>
 
-<!-- ================= 05 设计决策 ================= -->
+<!-- ================= 05 AI 能力 ================= -->
+<section id="ai">
+  <div class="sec-title"><span class="num">05</span><h2>AI 能力（spring-ai）</h2></div>
+  <p class="sec-desc">对应《AI_PROMPT_DESIGN》的两个落地场景。设计原则：<strong style="color:#e8e6e3">AI 是助手不是自动驾驶</strong>——所有 AI 产物都是「草稿」，菜品进提审、预约单等食客亲手提交；分析结论永远附免责声明。入口轻、结果可改、失败可降级。</p>
+
+  <div class="screens">
+    <!-- A1 厨师端 · AI 建菜输入 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar"><span class="back">‹</span>AI 建菜<span class="more">•••</span></div>
+        <div class="ai-hero">
+          <h3>说句话，菜就上架了一半</h3>
+          <p>口述菜品、粘贴菜谱文字或网页链接，AI 帮你整理名称、简介、分类、食材和步骤。生成后进入草稿，你确认再提审。</p>
+        </div>
+        <div class="tabs">
+          <span class="tab on">✍️ 粘贴文本</span><span class="tab">🔗 网页链接</span>
+        </div>
+        <div class="ai-textarea focus">明天想做两个菜：红烧肉，五花肉焯水上糖色炖四十分钟，下饭神器；再拍个黄瓜，快手凉菜。</div>
+        <div class="ai-example">
+          <span>💡 试试：周末菜单，一荤一素一汤</span>
+          <span>💡 试试：粘贴下厨房链接</span>
+        </div>
+        <div class="form-card" style="background:linear-gradient(135deg,#FFF8EF,#FFF1E2);border-color:#F3D9B8">
+          <div style="font-size:12px;color:#8A8178;line-height:1.8">支持菜谱网站链接（下厨房、美食杰等），AI 只抽取菜品内容，自动忽略网页广告与评论。一次最多识别 5 道菜。</div>
+        </div>
+        <div class="btn btn-block">✨ 生成菜品</div>
+        <div style="text-align:center;font-size:11px;color:#B5AC9F;margin-top:12px">生成失败？也可以 <span style="color:#F07B1F;font-weight:600">手动新建</span></div>
+        <div class="home-indicator"></div>
+      </div></div>
+      <div class="caption">
+        <h3><b>A1</b>AI 建菜 · 输入（新增页，入口在 K2）</h3>
+        <ul>
+          <li class="hl">深色 Hero 区讲清能力边界：文本 / 网页链接两种输入，Tab 切换</li>
+          <li>示例 chip 降低空白恐惧；明确「生成后进草稿，确认再提审」的预期</li>
+          <li>链接输入说明抓取范围（只抽菜品、忽略广告评论），对应提示词的注入防护</li>
+          <li>降级路径前置：生成失败可一键转手动新建，不阻塞</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- A2 厨师端 · AI 建菜确认 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar"><span class="back">‹</span>确认菜品<span class="more">•••</span></div>
+        <div class="ai-ok-strip"><span style="font-size:15px">✅</span>已识别 2 道菜品 · 1 个建议新分类「凉菜」</div>
+
+        <div class="ai-dish">
+          <div class="ad-top">
+            <div class="ad-img" style="background:linear-gradient(135deg,#FFD9AE,#FF9A3E)">🍖<i>AI</i></div>
+            <div style="flex:1;min-width:0">
+              <div class="ad-name">红烧肉 <span class="pill pill-ok">荤菜 · 已有分类</span></div>
+              <div class="ad-desc">五花肉焯水后炒糖色，小火慢炖四十分钟，肥而不腻，汤汁拌饭刚好。</div>
+            </div>
+          </div>
+          <div class="ad-meta">
+            <span class="pill pill-none">咸鲜</span><span class="pill pill-none">炖</span><span class="pill pill-none">下饭</span>
+            <span class="pill" style="background:#EBF3FB;color:#4A90D9">库存 10 份</span>
+          </div>
+          <div class="ad-foot">
+            <span class="ad-sum">2 种食材 · 3 步做法 · 约 40 分钟</span>
+            <div class="d-ops"><span class="op-pill">编辑</span><span class="op-pill warn">删除</span></div>
+          </div>
+        </div>
+        <div class="ai-dish">
+          <div class="ad-top">
+            <div class="ad-img" style="background:linear-gradient(135deg,#C9EDD9,#5FCFAE)">🥒<i>AI</i></div>
+            <div style="flex:1;min-width:0">
+              <div class="ad-name">拍黄瓜 <span class="pill pill-warn">凉菜 · 新分类</span></div>
+              <div class="ad-desc">黄瓜拍裂后加蒜末、香醋拌匀，清爽解腻，配肉菜正好。</div>
+            </div>
+          </div>
+          <div class="ad-meta">
+            <span class="pill pill-none">清淡</span><span class="pill pill-none">凉拌</span><span class="pill pill-none">快手</span>
+            <span class="pill" style="background:#EBF3FB;color:#4A90D9">库存 10 份</span>
+          </div>
+          <div class="ad-foot">
+            <span class="ad-sum">1 种食材 · 1 步做法 · 难度 简单</span>
+            <div class="d-ops"><span class="op-pill">编辑</span><span class="op-pill warn">删除</span></div>
+          </div>
+        </div>
+
+        <div style="padding:0 18px;margin-top:4px;font-size:11px;color:#B5AC9F;line-height:1.6">新分类「凉菜」将随菜品一起创建；保存后菜品为草稿，提审通过后上架。</div>
+        <div style="display:flex;gap:10px;margin:14px 18px 0">
+          <span class="btn btn-line" style="flex:1;height:46px;border-radius:16px;font-size:14px">存为草稿</span>
+          <span class="btn" style="flex:1.4;height:46px;border-radius:16px;font-size:14px;background:linear-gradient(135deg,#FFB36B,#F07B1F);color:#fff;box-shadow:0 8px 20px rgba(240,123,31,.28)">保存并提审</span>
+        </div>
+        <div class="home-indicator"></div>
+      </div></div>
+      <div class="caption">
+        <h3><b>A2</b>AI 建菜 · 确认页（新增页）</h3>
+        <ul>
+          <li class="hl">识别结果逐菜成卡：封面带 AI 角标，分类映射状态透明（已有分类 ✓ / 新分类提示）</li>
+          <li>每道菜可单独编辑或删除，不是「全要或全不要」</li>
+          <li class="hl">底部双按钮分级：「存为草稿」次要、「保存并提审」主操作——AI 永远不直接上架</li>
+          <li>摘要行（食材/步骤/时长）让厨师不展开也能 sanity check 抽取质量</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- A3 食客端 · AI 点菜结果 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar"><span class="back">‹</span>AI 点菜<span class="more">•••</span></div>
+        <div class="ai-textarea focus" style="margin-top:6px">明天中午想吃清淡点，两个人，来个鱼和素菜，少辣</div>
+        <div class="ai-parse"><span class="ai-sparkle">✨</span>已匹配 3 道菜 · 明天午餐 · 2 人 · 备注「少辣」</div>
+
+        <div class="draft-card">
+          <div class="dc-head"><span style="font-size:16px">🧺</span><h5>预约单草稿</h5><span style="font-size:11px;color:#B5AC9F">AI 生成，可修改</span></div>
+          <div class="dc-line">
+            <div class="dc-emoji" style="background:#EBF3FB">🐟</div>
+            <div class="dc-name">清蒸鲈鱼<small style="color:#D99426">「鱼」已匹配为它 · 今日剩 4 份</small></div>
+            <div class="stepper" style="padding:2px"><span class="op" style="width:24px;height:24px;font-size:13px">−</span><b style="font-size:12px">1</b><span class="op" style="width:24px;height:24px;font-size:13px">＋</span></div>
+          </div>
+          <div class="dc-line">
+            <div class="dc-emoji" style="background:#E7F7F0">🥬</div>
+            <div class="dc-name">清炒时蔬<small>今日剩 12 份</small></div>
+            <div class="stepper" style="padding:2px"><span class="op" style="width:24px;height:24px;font-size:13px">−</span><b style="font-size:12px">2</b><span class="op" style="width:24px;height:24px;font-size:13px">＋</span></div>
+          </div>
+          <div class="dc-line">
+            <div class="dc-emoji" style="background:#FBF3E0">🍚</div>
+            <div class="dc-name">米饭<small>按 2 人推荐 · 不限量</small></div>
+            <div class="stepper" style="padding:2px"><span class="op" style="width:24px;height:24px;font-size:13px">−</span><b style="font-size:12px">2</b><span class="op" style="width:24px;height:24px;font-size:13px">＋</span></div>
+          </div>
+          <div class="meal-pick"><span>今天 · 晚餐</span><span class="on">明天 · 午餐</span><span>明天 · 晚餐</span></div>
+        </div>
+
+        <div class="ai-parse" style="background:#FBF3E0;border-color:#F0DDB4;color:#8A6A1F"><span class="ai-sparkle" style="background:linear-gradient(135deg,#E8B45A,#D99426)">💬</span>没匹配到「清淡点的汤」——菜单里暂时没有汤羹，已忽略</div>
+
+        <div class="btn btn-block" style="margin-top:14px">加入预约单</div>
+        <div style="text-align:center;font-size:11px;color:#B5AC9F;margin-top:12px;line-height:1.6">AI 只帮你选好，<span style="color:#F07B1F;font-weight:600">提交前都可以改</span>，不会自动下单</div>
+        <div class="home-indicator"></div>
+      </div></div>
+      <div class="caption">
+        <h3><b>A3</b>AI 点菜 · 匹配结果（新增页，入口在 D1）</h3>
+        <ul>
+          <li class="hl">解析摘要条：菜品数 / 时段 / 人数 / 备注一次说清，用户快速验证 AI 理解是否正确</li>
+          <li class="hl">歧义透明化：「鱼 → 清蒸鲈鱼」直接标注在菜品行上；数量可就地调整</li>
+          <li>未匹配项单独提示（菜单没有汤羹），绝不硬编一道菜塞进来</li>
+          <li>主按钮是「加入预约单」而非「提交」——AI 产物只进草稿，页面底部再次明示不会自动下单</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- A4 食客端 · AI 指标分析 -->
+    <div class="shot">
+      <div class="phone"><div class="notch"></div><div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="sicons">●●●●○ 5G ▰</span></div>
+        <div class="navbar"><span class="back">‹</span>预约<span class="more">•••</span></div>
+
+        <div class="draft-card">
+          <div class="dc-head"><span style="font-size:16px">🧺</span><h5>预约单 · 3 样</h5><span style="font-size:11px;color:#B5AC9F">明天 12:00 午餐 · 2 人</span></div>
+          <div class="dc-line">
+            <div class="dc-emoji" style="background:#EBF3FB">🐟</div>
+            <div class="dc-name">清蒸鲈鱼 ×1 · 清炒时蔬 ×2 · 米饭 ×2<small>备注：少辣</small></div>
+          </div>
+        </div>
+
+        <div class="insight warn">
+          <div class="is-head"><span class="ai-sparkle" style="background:linear-gradient(135deg,#E8B45A,#D99426)">🌿</span><span class="is-title">AI 饮食分析</span><span class="pill pill-warn">1 项需注意</span></div>
+          <div class="is-sum">整体清淡合适：清蒸和清炒油盐都少，符合你的要求。不过你最近血压偏高（152/95），红烧类今天先忍忍，这单已经很友好了。</div>
+          <div class="is-dishes">
+            <span class="is-dish"><i>✓</i>清蒸鲈鱼 · 适合</span>
+            <span class="is-dish"><i>✓</i>清炒时蔬 · 适合</span>
+            <span class="is-dish"><i>!</i>米饭 · 适量</span>
+          </div>
+          <div class="is-tip">💡 建议备注再加一句「少盐」，对血压更友好 <span class="is-act" style="color:#D99426">一键添加</span></div>
+          <div class="is-disclaimer">以上为一般性饮食参考，不构成医疗建议。如有疾病管理需求请遵医嘱。分析基于近 30 天异常指标（收缩压偏高）。</div>
+        </div>
+
+        <div class="btn btn-block" style="margin-top:16px">提交预约</div>
+        <div style="text-align:center;font-size:11px;color:#B5AC9F;margin-top:12px">提交后厨师才会看到订单</div>
+        <div class="home-indicator"></div>
+      </div></div>
+      <div class="caption">
+        <h3><b>A4</b>AI 指标分析卡（嵌入 D4 预约页）</h3>
+        <ul>
+          <li class="hl">跨模块联动：预约单 × 健康模块异常指标 → 三档结论（本单合适 / 需注意 / 不建议），复用状态色</li>
+          <li class="hl">逐菜判定胶囊（适合/适量/不建议），理由口语化，像家里懂营养的长辈</li>
+          <li>建议可执行：「一键添加少盐备注」直接改写草稿，推荐替代菜仅限当前菜单</li>
+          <li>固定免责声明 + 数据来源说明（近 30 天异常指标），医疗边界清晰；分析失败时静默收起，不阻塞提交</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 06 设计决策 ================= -->
 <section id="notes">
-  <div class="sec-title"><span class="num">05</span><h2>关键设计决策</h2></div>
+  <div class="sec-title"><span class="num">06</span><h2>关键设计决策</h2></div>
   <div class="note-strip">
     <b>1 · 双主题、一底盘。</b>厨房用暖橙、健康用薄荷，但背景、卡片、圆角、状态色完全一致——用户在两个模块间切换时感到「同一个产品的两个房间」，而不是两个产品。<br>
     <b>2 · 从导航页到驾驶舱。</b>厨房首页的核心矛盾是「厨师打开后不知道现在该干什么」。Hero 数据卡 + 宫格角标 + 最新预约流，让待办事项自己浮出来。<br>
     <b>2.5 · 食客端要「有食欲」。</b>大图大卡 + 库存紧迫感 + 预约单底部常驻浮条，点菜路径从 5 步缩到 3 步；进行中订单给迷你进度条与预计取餐时间，吃完引导评价形成数据闭环。<br>
     <b>3 · 健康数据要「有感觉」。</b>纯列表的数字没有感知力，评分环 + sparkline + 参考区间带把「我好不好」变成直觉；异常永远用琥珀/红前置，不打断但可见。<br>
     <b>4 · 状态机可视化。</b>预约的 4 节点流程条、菜品的 4 状态 Tab、数据源的连接徽章——所有后台已有的状态字段都给了明确视觉映射，开发零新增接口（健康评分除外，可先前端按规则计算）。<br>
-    <b>5 · 向后兼容。</b>所有设计均基于现有 API 字段（trend.latest / avg / min / max / pointCount、订单状态机、绑定关系），不依赖新接口即可落地。
+    <b>5 · 向后兼容。</b>所有设计均基于现有 API 字段（trend.latest / avg / min / max / pointCount、订单状态机、绑定关系），不依赖新接口即可落地。<br>
+    <b>6 · AI 是助手，不是自动驾驶。</b>AI 能力（spring-ai，详见 AI_PROMPT_DESIGN）的产物一律是草稿：菜品进提审、预约单等食客亲手提交；歧义与未匹配项必须透明展示；分析结论附固定免责声明；AI 失败时静默降级到手动路径，主流程永不被阻塞。
   </div>
 </section>
 
