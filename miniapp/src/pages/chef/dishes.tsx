@@ -16,6 +16,7 @@ import {
   type ChefDishSavePayload
 } from '@/api/kitchen'
 import EmptyState from '@/components/EmptyState'
+import ServiceSwitcher from '@/components/ServiceSwitcher'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
 import type { Category } from '@/types'
 import { toAbsoluteResourceUrl, toResourceUrl } from '@/utils/resourceUrl'
@@ -251,6 +252,9 @@ export default function ChefDishesPage() {
 
   return (
     <View className='chef-page'>
+      <View className='chef-page__svc-switch'>
+        <ServiceSwitcher compact activeKey='chef' />
+      </View>
       <View className='chef-page__search'>
         <Input
           className='chef-page__search-input'
@@ -258,6 +262,12 @@ export default function ChefDishesPage() {
           placeholder='搜索菜品名 / 分类'
           onInput={(e) => setKeyword(e.detail.value)}
         />
+        <Text
+          className='chef-page__search-ai'
+          onClick={() => Taro.showToast({ title: 'AI 建菜即将开放', icon: 'none' })}
+        >
+          ✨ AI
+        </Text>
         <Text
           className='chef-page__search-add'
           onClick={() => {

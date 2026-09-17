@@ -4,15 +4,28 @@ import { useEffect, useRef, useState } from 'react'
 import DishCard from '@/components/DishCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
-import ServiceSwitcher from '@/components/ServiceSwitcher'
+import ServiceSwitcher, { DraftOrderBar } from '@/components/ServiceSwitcher'
 import { fetchCategories } from '@/api/category'
 import { fetchDishes } from '@/api/dish'
 import { fetchMyBinding } from '@/api/kitchen'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
+import { useOrderStore } from '@/stores/orderStore'
 import { PRODUCT_META, useProductStore } from '@/stores/productStore'
 import { useUserStore } from '@/stores/userStore'
 import type { Category, Dish } from '@/types'
 import './index.scss'
+
+const CAT_EMOJI = ['🥩', '🥬', '🍲', '🍚', '🍰', '🥗', '🍜', '🍵']
+
+function catLabel(name: string, index: number) {
+  if (name === '全部') return '全部'
+  if (/荤/.test(name)) return `🥩 ${name}`
+  if (/素/.test(name)) return `🥬 ${name}`
+  if (/汤/.test(name)) return `🍲 ${name}`
+  if (/主食|饭/.test(name)) return `🍚 ${name}`
+  if (/甜|点心/.test(name)) return `🍰 ${name}`
+  return `${CAT_EMOJI[index % CAT_EMOJI.length]} ${name}`
+}
 
 const CATEGORY_KEY = 'miyf_kitchen_category_id'
 const ALL = 'all'
@@ -39,6 +52,9 @@ export default function CategoryPage() {
   const [kitchenName, setKitchenName] = useState('')
   const [keyword, setKeyword] = useState('')
   const [searchInput, setSearchInput] = useState('')
+  const draft = useOrderStore((s) => s.draft)
+  const setDraftItem = useOrderStore((s) => s.setDraftItem)
+  const updateDraftItemQty = useOrderStore((s) => s.updateDraftItemQty)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const activeIdRef = useRef(activeId)
   const keywordRef = useRef(keyword)
@@ -191,6 +207,40 @@ export default function CategoryPage() {
   const tabs: Category[] = [{ id: ALL, name: '全部' }, ...categories]
   const hasMore = dishes.length < total
 
+  const addToDraft = (dish: Dish) => {
+    const soldOut = dish.stockType === 'LIMITED' && (dish.stock == null || dish.stock <= 0)
+    if (soldOut) {
+      Taro.showToast({ title: '今日已约满', icon: 'none' })
+      return
+    }
+    const existing = draft.items.find((i) => i.dishId === dish.id)
+    const nextQty = (existing?.quantity || 0) + 1
+    if (dish.stockType === 'LIMITED' && dish.stock != null && nextQty > dish.stock) {
+      Taro.showToast({ title: `最多预约 ${dish.stock} 份`, icon: 'none' })
+      return
+    }
+    setDraftItem({
+      dishId: dish.id,
+      dishName: dish.name,
+      coverUrl: dish.coverUrl,
+      quantity: nextQty
+    })
+  }
+
+  const decDraft = (dish: Dish) => {
+    const existing = draft.items.find((i) => i.dishId === dish.id)
+    if (!existing) return
+    updateDraftItemQty(dish.id, existing.quantity - 1)
+  }
+
+  const draftQtyMap = (() => {
+    const map: Record<string, number> = {}
+    draft.items.forEach((it) => {
+      map[it.dishId] = it.quantity
+    })
+    return map
+  })()
+
   if (bootstrapping) {
     return <Loading fullscreen text='整理菜品柜…' />
   }
@@ -253,7 +303,7 @@ export default function CategoryPage() {
           className='category-page__search'
           type='text'
           confirmType='search'
-          placeholder='搜索菜品'
+          placeholder='想吃什么？搜搜看'
           value={searchInput}
           onInput={(e) => onSearchInput(e.detail.value)}
           onConfirm={onSearchConfirm}
@@ -269,7 +319,7 @@ export default function CategoryPage() {
             }`}
             onClick={() => handleSelect(cat.id)}
           >
-            <Text>{cat.name}</Text>
+            <Text>{catLabel(cat.name, tabs.indexOf(cat))}</Text>
           </View>
         ))}
       </ScrollView>
@@ -306,8 +356,14 @@ export default function CategoryPage() {
             ) : (
               <View className='category-page__grid'>
                 {dishes.map((dish) => (
-                  <View key={dish.id} className='category-page__item ck-pressable'>
-                    <DishCard dish={dish} compact />
+                  <View key={dish.id} className='category-page__item'>
+                    <DishCard
+                      dish={dish}
+                      compact
+                      quantity={draftQtyMap[dish.id] || 0}
+                      onAdd={addToDraft}
+                      onDec={decDraft}
+                    />
                   </View>
                 ))}
               </View>
@@ -323,6 +379,7 @@ export default function CategoryPage() {
           </>
         )}
       </View>
+      <DraftOrderBar />
     </View>
   )
 }

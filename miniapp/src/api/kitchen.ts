@@ -21,6 +21,10 @@ export interface BindingVo {
   dinerNickname?: string
   status: string
   rejectReason?: string
+  /** 厨主对本厨的默认自绑 */
+  ownerSelf?: boolean
+  /** 是否允许解除；自绑为 false */
+  removable?: boolean
 }
 
 export interface InviteVo {

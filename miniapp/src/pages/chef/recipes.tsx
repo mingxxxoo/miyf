@@ -10,6 +10,7 @@ import {
   type ChefRecipe
 } from '@/api/kitchen'
 import EmptyState from '@/components/EmptyState'
+import ServiceSwitcher from '@/components/ServiceSwitcher'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
 import './chef.scss'
 
@@ -171,6 +172,9 @@ export default function ChefRecipesPage() {
 
   return (
     <View className='chef-page'>
+      <View className='chef-page__svc-switch'>
+        <ServiceSwitcher compact activeKey='chef' />
+      </View>
       <View className='chef-page__hero'>
         <Text className='chef-page__title'>菜谱管理</Text>
         <Text className='chef-page__sub'>为一道菜配置食材与步骤；食材/调料按「名称|用量」分行填写</Text>

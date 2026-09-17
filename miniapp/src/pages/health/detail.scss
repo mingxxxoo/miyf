@@ -3,33 +3,31 @@
   padding-bottom: calc(48px + env(safe-area-inset-bottom));
   background: $ck-bg;
 
-  &__panel {
-    margin: 24px 36px 0;
-    padding: 36px 28px 8px;
-    background: #fff;
-    border-radius: 20px;
-    border: 1px solid $ck-line;
+  &__hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    padding: 16px 36px 0;
   }
 
-  &__label {
-    display: block;
-    font-size: 24px;
-    color: $ck-muted;
+  &__hero-main {
+    flex: 1;
+    min-width: 0;
   }
 
   &__value-row {
     display: flex;
     align-items: baseline;
     gap: 10px;
-    margin-top: 8px;
   }
 
   &__value {
-    font-size: 72px;
+    font-size: 88px;
     font-weight: 700;
     color: $ck-ink;
-    line-height: 1.1;
-    letter-spacing: -1px;
+    line-height: 1.05;
+    letter-spacing: -2px;
   }
 
   &__unit {
@@ -39,20 +37,71 @@
 
   &__time {
     display: block;
-    margin-top: 8px;
+    margin-top: 10px;
     font-size: 22px;
     color: $ck-faint;
   }
 
-  &__kpis {
-    display: flex;
-    margin-top: 28px;
-    border-top: 1px solid $ck-line;
+  &__status-pill {
+    flex: none;
+    font-size: 22px;
+    padding: 8px 20px;
+    border-radius: 99px;
+    font-weight: 600;
+    margin-bottom: 8px;
+
+    &--ok {
+      background: $ck-hg-soft;
+      color: $ck-hg;
+    }
+
+    &--warn {
+      background: $ck-amber-soft;
+      color: $ck-amber;
+    }
+
+    &--none {
+      background: #f4f0e9;
+      color: $ck-faint;
+    }
   }
 
-  &__kpi {
+  &__ranges {
+    display: flex;
+    gap: 10px;
+    background: #f6f1e8;
+    margin: 28px 36px 0;
+    border-radius: 12px;
+    padding: 6px;
+  }
+
+  &__range {
     flex: 1;
-    padding: 24px 0;
+    text-align: center;
+    font-size: 24px;
+    padding: 12px 0;
+    border-radius: 10px;
+    color: $ck-muted;
+
+    &--on {
+      background: #fff;
+      color: $ck-ink;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(60, 45, 20, 0.08);
+    }
+  }
+
+  &__stats {
+    display: flex;
+    margin: 24px 36px 0;
+    background: #fff;
+    border: 1px solid $ck-line;
+    border-radius: 20px;
+    padding: 28px 0;
+  }
+
+  &__stat {
+    flex: 1;
     text-align: center;
     position: relative;
 
@@ -67,15 +116,15 @@
     }
   }
 
-  &__kpi-v {
+  &__stat-v {
     display: block;
-    font-size: 30px;
-    font-weight: 600;
+    font-size: 32px;
+    font-weight: 700;
     color: $ck-ink;
     line-height: 1.3;
   }
 
-  &__kpi-k {
+  &__stat-k {
     display: block;
     margin-top: 4px;
     font-size: 20px;
@@ -105,12 +154,6 @@
     line-height: 1.5;
   }
 
-  &__notice-text {
-    font-size: 24px;
-    color: #8a6a1f;
-    line-height: 1.5;
-  }
-
   &__group-title {
     display: block;
     padding: 36px 36px 16px;
@@ -129,14 +172,6 @@
     &--pad {
       padding: 8px 24px 20px;
     }
-  }
-
-  &__chart {
-    margin: 0 36px;
-    background: #fff;
-    border: 1px solid $ck-line;
-    border-radius: 20px;
-    padding: 24px;
   }
 
   &__empty {
@@ -194,54 +229,25 @@
     font-size: 20px;
     padding: 2px 12px;
     border-radius: 99px;
-    background: $ck-red-soft;
-    color: $ck-red;
+    background: $ck-amber-soft;
+    color: $ck-amber;
     font-weight: 600;
   }
 
-  &__row-src {
-    display: block;
-    font-size: 22px;
-    color: $ck-faint;
+  &__row-ok {
+    display: inline-block;
+    font-size: 20px;
+    padding: 2px 12px;
+    border-radius: 99px;
+    background: $ck-hg-soft;
+    color: $ck-hg;
+    font-weight: 600;
   }
 
   &__row-warn {
     display: block;
     margin-top: 6px;
     font-size: 20px;
-    color: $ck-red;
-  }
-
-  &__samples {
-    margin: 0 36px;
-    background: #fff;
-    border: 1px solid $ck-line;
-    border-radius: 20px;
-    padding: 8px 28px;
-  }
-
-  &__ranges {
-    display: flex;
-    gap: 10px;
-    background: #f6f1e8;
-    margin: 24px 36px 0;
-    border-radius: 12px;
-    padding: 6px;
-  }
-
-  &__range {
-    flex: 1;
-    text-align: center;
-    font-size: 24px;
-    padding: 12px 0;
-    border-radius: 10px;
-    color: $ck-muted;
-
-    &--on {
-      background: #fff;
-      color: $ck-ink;
-      font-weight: 600;
-      box-shadow: 0 2px 6px rgba(60, 45, 20, 0.08);
-    }
+    color: $ck-amber;
   }
 }

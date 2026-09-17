@@ -118,6 +118,7 @@ public class UserApplicationService extends BaseApplicationService {
 
     /**
      * 首次选择并开通厨师或食客身份，并设为当前 activeRole。
+     * 开通厨师时同步开通食客身份（厨主默认加入本厨圈）。
      *
      * @param userId 用户 ID
      * @param role   CHEF 或 DINER
@@ -133,6 +134,7 @@ public class UserApplicationService extends BaseApplicationService {
         Instant now = Instant.now();
         if ("CHEF".equals(normalized)) {
             entity.setChef(true);
+            entity.setDiner(true);
         } else {
             entity.setDiner(true);
         }

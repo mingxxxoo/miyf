@@ -29,6 +29,19 @@ function formatNutrition(nutrition?: Record<string, unknown>): string {
     .join(' · ')
 }
 
+function avatarLetter(name?: string): string {
+  const n = (name || '厨').trim()
+  return n.slice(0, 1) || '厨'
+}
+
+function avatarTone(name?: string): string {
+  const tones = ['#F07B1F', '#18A885', '#4A90D9', '#D99426', '#E15A4B']
+  const s = name || ''
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h + s.charCodeAt(i) * (i + 1)) % tones.length
+  return tones[h]
+}
+
 export default function DishDetailPage() {
   const router = useRouter()
   const dishId = router.params.id || ''
@@ -188,6 +201,39 @@ export default function DishDetailPage() {
   const showGallery = gallery.length > 1
   const nutritionText = formatNutrition(recipe?.nutrition)
   const prepMinutes = dish.prepMinutes ?? recipe?.prepareMinutes
+  const cookMinutes = recipe?.cookMinutes
+  const duration =
+    cookMinutes != null
+      ? cookMinutes
+      : prepMinutes != null
+        ? prepMinutes
+        : null
+
+  const stockChip =
+    dish.stockType === 'LIMITED'
+      ? soldOut
+        ? { text: '今日已约满', ok: false }
+        : { text: `今日剩 ${Math.max(0, dish.stock ?? 0)} ${dish.unit || '份'}`, ok: true }
+      : dish.stockType === 'UNLIMITED'
+        ? { text: '不限量', ok: true }
+        : null
+
+  const chips: { text: string; ok?: boolean }[] = []
+  if (stockChip) chips.push(stockChip)
+  if (dish.categoryName) chips.push({ text: dish.categoryName })
+  if (recipe?.difficulty) chips.push({ text: `难度 ${recipe.difficulty}` })
+  if (dish.tags?.length) {
+    dish.tags.slice(0, 2).forEach((t) => chips.push({ text: t }))
+  }
+  chips.push({ text: '可备注口味' })
+
+  const ingredientCapsules: string[] = []
+  ;(recipe?.ingredients || []).forEach((i) => {
+    ingredientCapsules.push(`${i.name}${i.amount ? ` ${i.amount}` : ''}`)
+  })
+  ;(recipe?.seasonings || []).forEach((i) => {
+    ingredientCapsules.push(`${i.name}${i.amount ? ` ${i.amount}` : ''}`)
+  })
 
   return (
     <View className='dish-detail'>
@@ -213,144 +259,157 @@ export default function DishDetailPage() {
           ))}
         </ScrollView>
       )}
+
       <View className='dish-detail__body'>
-        <Text className='dish-detail__name'>{dish.name}</Text>
+        <View className='dish-detail__title-row'>
+          <Text className='dish-detail__name'>{dish.name}</Text>
+          {dish.recommend ? (
+            <Text className='dish-detail__rec-pill'>厨师推荐</Text>
+          ) : null}
+        </View>
+
         {dish.subtitle && <Text className='dish-detail__desc'>{dish.subtitle}</Text>}
+
         <View className='dish-detail__meta'>
           {hasRating ? (
-            <>
-              <StarRating value={dish.rating!} readonly />
-              <Text className='dish-detail__rating-count'>{dish.ratingCount} 人觉得不错</Text>
-            </>
+            <Text className='dish-detail__meta-item'>
+              <Text className='dish-detail__meta-star'>★{dish.rating}</Text>
+              （{dish.ratingCount} 条评价）
+            </Text>
           ) : (
-            <Text className='dish-detail__rating-count'>暂无评分</Text>
+            <Text className='dish-detail__meta-item'>暂无评分</Text>
           )}
-        </View>
-        {dish.description && <Text className='dish-detail__desc'>{dish.description}</Text>}
-
-        {(recipe?.difficulty || prepMinutes != null || recipe?.cookMinutes != null) && (
-          <View className='dish-detail__tags'>
-            {recipe?.difficulty && (
-              <Text className='dish-detail__tag'>难度 {recipe.difficulty}</Text>
-            )}
-            {prepMinutes != null && (
-              <Text className='dish-detail__tag'>准备 {prepMinutes} 分钟</Text>
-            )}
-            {recipe?.cookMinutes != null && (
-              <Text className='dish-detail__tag'>烹饪 {recipe.cookMinutes} 分钟</Text>
-            )}
-          </View>
-        )}
-
-        {dish.stockType === 'LIMITED' && (
-          <Text className='dish-detail__rating-count'>
-            {soldOut
-              ? '今日已约满'
-              : `今日可约 ${Math.max(0, dish.stock ?? 0)} ${dish.unit || '份'}`}
-          </Text>
-        )}
-
-        <View className={`dish-detail__qty ${soldOut ? 'dish-detail__qty--disabled' : ''}`}>
-          <Text className='dish-detail__qty-label'>预约份数</Text>
-          <View className='dish-detail__qty-ctrl'>
-            <View
-              className='dish-detail__qty-btn'
-              onClick={() => bumpQty(-1)}
-            >
-              <Text>−</Text>
-            </View>
-            <Text className='dish-detail__qty-num'>{soldOut ? 0 : quantity}</Text>
-            <View
-              className='dish-detail__qty-btn'
-              onClick={() => bumpQty(1)}
-            >
-              <Text>＋</Text>
-            </View>
-          </View>
+          {duration != null ? (
+            <Text className='dish-detail__meta-item'>约 {duration} 分钟</Text>
+          ) : null}
         </View>
 
-        {recipe && (
-          <View className='dish-detail__recipe'>
-            <Text className='dish-detail__section-title'>菜谱</Text>
-            {recipe.tips && (
-              <View className='dish-detail__tip'>
-                <Text>💡 {recipe.tips}</Text>
-              </View>
-            )}
-            {(recipe.ingredients?.length || 0) > 0 && (
-              <View className='dish-detail__tip'>
-                <Text>
-                  食材：
-                  {recipe.ingredients!.map((i) => `${i.name}${i.amount ? `(${i.amount})` : ''}`).join('、')}
-                </Text>
-              </View>
-            )}
-            {(recipe.seasonings?.length || 0) > 0 && (
-              <View className='dish-detail__tip'>
-                <Text>
-                  调料：
-                  {recipe.seasonings!.map((i) => `${i.name}${i.amount ? `(${i.amount})` : ''}`).join('、')}
-                </Text>
-              </View>
-            )}
-            {nutritionText && (
-              <View className='dish-detail__tip'>
-                <Text>营养：{nutritionText}</Text>
-              </View>
-            )}
-            {recipe.steps.map((step, index) => (
-              <RecipeStep
-                key={step.step}
-                step={step}
-                isLast={index === recipe.steps.length - 1}
-              />
+        {chips.length > 0 && (
+          <View className='dish-detail__chips'>
+            {chips.map((c) => (
+              <Text
+                key={c.text}
+                className={`dish-detail__chip${c.ok ? ' dish-detail__chip--ok' : ''}`}
+              >
+                {c.text}
+              </Text>
             ))}
           </View>
         )}
 
-        <View className='dish-detail__recipe'>
-          <Text className='dish-detail__section-title'>大家怎么说</Text>
-          {comments.length === 0 ? (
-            <Text className='dish-detail__rating-count'>还没有评价，完成预约后来分享吧</Text>
+        {dish.description && dish.description !== dish.subtitle ? (
+          <Text className='dish-detail__desc'>{dish.description}</Text>
+        ) : null}
+      </View>
+
+      {recipe && (
+        <View className='dish-detail__card'>
+          <Text className='dish-detail__section-title'>食材</Text>
+          {ingredientCapsules.length > 0 ? (
+            <View className='dish-detail__ing-grid'>
+              {ingredientCapsules.map((label) => (
+                <Text key={label} className='dish-detail__ing-chip'>
+                  {label}
+                </Text>
+              ))}
+            </View>
           ) : (
-            <ScrollView scrollY style={{ maxHeight: '480px' }}>
-              {comments.map((c) => {
-                const imgs = (c.images || []).filter(Boolean)
-                return (
-                  <View key={c.id} className='dish-detail__tip' style={{ marginBottom: '16px' }}>
-                    <StarRating value={c.rating} size='sm' readonly />
-                    <Text>{c.content || '（只打了分）'}</Text>
-                    {imgs.length > 0 && (
-                      <View className='dish-detail__comment-imgs'>
-                        {imgs.map((src) => (
-                          <Image
-                            key={src}
-                            className='dish-detail__comment-img'
-                            src={src}
-                            mode='aspectFill'
-                            onClick={() => previewImages(imgs, src)}
-                          />
-                        ))}
-                      </View>
-                    )}
-                    <Text className='dish-detail__rating-count'>
-                      {c.userNickname || '厨房朋友'} · {String(c.createTime || '').slice(0, 10)}
-                    </Text>
-                  </View>
-                )
-              })}
-            </ScrollView>
+            <Text className='dish-detail__muted'>厨师暂未填写食材</Text>
           )}
+          {nutritionText ? (
+            <Text className='dish-detail__nutrition'>营养：{nutritionText}</Text>
+          ) : null}
+          {recipe.tips ? (
+            <View className='dish-detail__tip'>
+              <Text>💡 {recipe.tips}</Text>
+            </View>
+          ) : null}
         </View>
+      )}
+
+      {recipe && recipe.steps.length > 0 && (
+        <View className='dish-detail__card'>
+          <Text className='dish-detail__section-title'>做法步骤</Text>
+          {recipe.steps.map((step, index) => (
+            <RecipeStep
+              key={step.step}
+              step={step}
+              isLast={index === recipe.steps.length - 1}
+            />
+          ))}
+        </View>
+      )}
+
+      <View className='dish-detail__card'>
+        <View className='dish-detail__section-head'>
+          <Text className='dish-detail__section-title dish-detail__section-title--inline'>
+            食客评价
+          </Text>
+          {comments.length > 0 ? (
+            <Text className='dish-detail__section-more'>{comments.length} 条</Text>
+          ) : null}
+        </View>
+        {comments.length === 0 ? (
+          <Text className='dish-detail__muted'>还没有评价，完成预约后来分享吧</Text>
+        ) : (
+          comments.map((c) => {
+            const imgs = (c.images || []).filter(Boolean)
+            const nick = c.userNickname || '厨房朋友'
+            return (
+              <View key={c.id} className='dish-detail__cmt'>
+                <View className='dish-detail__cmt-top'>
+                  <View
+                    className='dish-detail__cmt-avatar'
+                    style={{ background: avatarTone(nick) }}
+                  >
+                    <Text>{avatarLetter(nick)}</Text>
+                  </View>
+                  <Text className='dish-detail__cmt-name'>{nick}</Text>
+                  <View className='dish-detail__cmt-stars'>
+                    <StarRating value={c.rating} size='sm' readonly />
+                  </View>
+                </View>
+                <Text className='dish-detail__cmt-txt'>{c.content || '（只打了分）'}</Text>
+                {imgs.length > 0 && (
+                  <View className='dish-detail__comment-imgs'>
+                    {imgs.map((src) => (
+                      <Image
+                        key={src}
+                        className='dish-detail__comment-img'
+                        src={src}
+                        mode='aspectFill'
+                        onClick={() => previewImages(imgs, src)}
+                      />
+                    ))}
+                  </View>
+                )}
+                <Text className='dish-detail__cmt-time'>
+                  {String(c.createTime || '').slice(0, 10)}
+                </Text>
+              </View>
+            )
+          })
+        )}
       </View>
 
       <View className='dish-detail__footer'>
+        <View
+          className={`dish-detail__stepper${soldOut ? ' dish-detail__stepper--disabled' : ''}`}
+        >
+          <View className='dish-detail__stepper-op' onClick={() => bumpQty(-1)}>
+            <Text>−</Text>
+          </View>
+          <Text className='dish-detail__stepper-num'>{soldOut ? 0 : quantity}</Text>
+          <View className='dish-detail__stepper-op' onClick={() => bumpQty(1)}>
+            <Text>＋</Text>
+          </View>
+        </View>
         <Button
-          className={`ck-btn-primary dish-detail__btn ${soldOut ? 'dish-detail__btn--disabled' : ''}`}
+          className={`dish-detail__cta${soldOut ? ' dish-detail__cta--disabled' : ''}`}
           disabled={soldOut}
           onClick={() => void handleReserve()}
         >
-          {soldOut ? '今日已约满' : '预约这道菜'}
+          {soldOut ? '今日已约满' : '加入预约单'}
         </Button>
       </View>
     </View>

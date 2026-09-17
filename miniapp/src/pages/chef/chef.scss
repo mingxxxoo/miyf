@@ -4,6 +4,14 @@
   box-sizing: border-box;
   background: $ck-bg;
 
+  &__svc-switch {
+    padding: 16px 36px 0;
+  }
+
+  &__switch {
+    margin: 0;
+  }
+
   &__pad {
     padding: 0 36px;
   }
@@ -317,6 +325,16 @@
     font-size: 26px;
     color: $ck-ink;
     height: 56px;
+  }
+
+  &__search-ai {
+    background: linear-gradient(135deg, #2b2622, #5a4632);
+    color: #fff;
+    font-size: 24px;
+    font-weight: 600;
+    padding: 12px 18px;
+    border-radius: 12px;
+    flex-shrink: 0;
   }
 
   &__search-add {

@@ -40,4 +40,12 @@ public class KitchenBindingVo extends BaseVo {
     private Instant appliedAt;
     private Instant decidedAt;
     private Instant unboundAt;
+    /**
+     * 厨师本人对本厨的默认食客绑定（不可单独解除）
+     */
+    private Boolean ownerSelf;
+    /**
+     * 是否允许解除；本厨主自绑为 false
+     */
+    private Boolean removable;
 }

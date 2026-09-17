@@ -9,6 +9,7 @@ import {
   type ChefCategory
 } from '@/api/kitchen'
 import EmptyState from '@/components/EmptyState'
+import ServiceSwitcher from '@/components/ServiceSwitcher'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
 import './chef.scss'
 
@@ -95,6 +96,9 @@ export default function ChefCategoriesPage() {
 
   return (
     <View className='chef-page'>
+      <View className='chef-page__svc-switch'>
+        <ServiceSwitcher compact activeKey='chef' />
+      </View>
       <View className='chef-page__hero'>
         <Text className='chef-page__title'>分类管理</Text>
         <Text className='chef-page__sub'>为本厨房维护菜品分类，食客浏览时按此展示</Text>

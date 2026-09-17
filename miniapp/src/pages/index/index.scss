@@ -1,6 +1,6 @@
 .index-page {
   min-height: 100vh;
-  padding-bottom: calc(32px + env(safe-area-inset-bottom));
+  padding-bottom: calc(220px + env(safe-area-inset-bottom));
   background: $ck-bg;
 
   &__hero {
@@ -11,18 +11,20 @@
     margin-bottom: 20px;
   }
 
-  &__brand-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  &__brand {
+  &__greeting {
     display: block;
     font-size: 44px;
     font-weight: 700;
     color: $ck-ink;
-    letter-spacing: 0.02em;
+    margin-top: 8px;
+    line-height: 1.35;
+  }
+
+  &__subtitle {
+    display: block;
+    margin-top: 10px;
+    font-size: 24px;
+    color: $ck-faint;
   }
 
   &__kitchen-chip {
@@ -39,32 +41,50 @@
     font-weight: 600;
   }
 
-  &__greeting {
-    display: block;
-    font-size: 30px;
-    font-weight: 600;
-    color: $ck-ink;
-    margin-top: 16px;
-    line-height: 1.35;
+  &__ai-ask {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+    background: #fff;
+    border: 1px solid #f3d9b8;
+    border-radius: 14px;
+    padding: 18px 24px;
+    box-shadow: 0 4px 14px rgba(240, 123, 31, 0.08);
   }
 
-  &__subtitle {
-    display: block;
-    margin-top: 10px;
-    font-size: $ck-font-caption;
-    color: $ck-faint;
+  &__ai-ico {
+    flex-shrink: 0;
+    font-size: 28px;
+  }
+
+  &__ai-txt {
+    flex: 1;
+    font-size: 24px;
+    color: $ck-muted;
+    line-height: 1.45;
   }
 
   &__section {
     padding: 28px 36px 0;
   }
 
+  &__sec-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
   &__section-title {
-    display: block;
     font-size: 30px;
     font-weight: 700;
     color: $ck-ink;
-    margin-bottom: 20px;
+  }
+
+  &__sec-more {
+    font-size: 24px;
+    color: $ck-faint;
   }
 
   &__rec-scroll {
@@ -80,16 +100,38 @@
     padding: 28px;
     color: #fff;
     vertical-align: top;
-    background: linear-gradient(135deg, #ff9a3e, #f07b1f);
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #ff9a3e, #e56a12);
   }
 
   &__rec-card--alt {
-    background: linear-gradient(135deg, #5fcfae, #18a885);
+    background: linear-gradient(135deg, #1fbf92, #0e9e77);
+  }
+
+  &__rec-tag {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 18px;
+    background: rgba(255, 255, 255, 0.25);
+    padding: 4px 14px;
+    border-radius: 99px;
+    font-weight: 600;
+  }
+
+  &__rec-img {
+    display: block;
+    width: 120px;
+    height: 120px;
+    border-radius: 20px;
+    margin-top: 8px;
+    border: 3px solid rgba(255, 255, 255, 0.35);
   }
 
   &__rec-emoji {
     display: block;
-    font-size: 56px;
+    font-size: 72px;
   }
 
   &__rec-name {
@@ -105,4 +147,5 @@
     opacity: 0.9;
     margin-top: 6px;
   }
+
 }

@@ -3,13 +3,24 @@ spring:
     name: miyf
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  # spring-ai-alibaba：缺类 / Agent 无 Key 仍装配，统一排除（业务仅用 Chat）
+  autoconfigure:
+    exclude:
+      - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeMultimodalEmbeddingAutoConfiguration
+      - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAgentAutoConfiguration
   jackson:
     # Boot 4 默认 tools.jackson；业务 ObjectMapper 见 JacksonConfig（com.fasterxml）
     default-property-inclusion: non_null
   ai:
-    # none：不加载聊天模型（默认，免 API Key 即可启动）；启用 AI 时设为 dashscope
+    # none：不加载对应模型（默认免 API Key 即可启动）；启用 AI 聊天时设 chat=dashscope
     model:
       chat: ${SPRING_AI_MODEL_CHAT:none}
+      embedding: none
+      image: none
+      audio:
+        speech: none
+        transcription: none
+      moderation: none
     dashscope:
       api-key: ${DASHSCOPE_API_KEY:}
       chat:

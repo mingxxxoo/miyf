@@ -8,6 +8,15 @@ import { useUserStore } from '@/stores/userStore'
 import { toAbsoluteResourceUrl } from '@/utils/resourceUrl'
 import './index.scss'
 
+function bindingStatusText(binding: BindingVo | null): string {
+  if (!binding) return '未绑定'
+  if (binding.ownerSelf && binding.status === 'BOUND') return '本厨默认食客'
+  if (binding.status === 'BOUND') return '绑定中'
+  if (binding.status === 'PENDING') return '待确认'
+  if (binding.status === 'REJECTED') return '未通过'
+  return binding.status
+}
+
 export default function UserPage() {
   const {
     user,
@@ -20,7 +29,6 @@ export default function UserPage() {
   } = useUserStore()
   const product = useProductStore((s) => s.product)
   const setProduct = useProductStore((s) => s.setProduct)
-  const switchTo = useProductStore((s) => s.switchTo)
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [saving, setSaving] = useState(false)
@@ -45,10 +53,6 @@ export default function UserPage() {
   const goOrders = () => {
     setProduct('kitchen')
     Taro.switchTab({ url: '/pages/order/index' })
-  }
-
-  const goHealthHome = () => {
-    switchTo('health')
   }
 
   const startEditName = () => {
@@ -121,26 +125,36 @@ export default function UserPage() {
 
   const meta = PRODUCT_META[product]
   const avatar = toAbsoluteResourceUrl(user?.avatarUrl)
-  const canUnbind = binding && (binding.status === 'BOUND' || binding.status === 'PENDING')
+  const canUnbind =
+    binding &&
+    (binding.status === 'BOUND' || binding.status === 'PENDING') &&
+    !binding.ownerSelf &&
+    binding.removable !== false
+  const isOwnerSelfBound = Boolean(binding?.ownerSelf && binding.status === 'BOUND')
   const pageClass = product === 'health' ? 'user-page user-page--health' : 'user-page'
 
-  const roleLabel =
+  const roleBadge =
+    user?.activeRole === 'CHEF' ? '厨师' : user?.activeRole === 'DINER' ? '食客' : '未选身份'
+
+  const roleDesc =
     user?.activeRole === 'CHEF' ? '当前：厨师' : user?.activeRole === 'DINER' ? '当前：食客' : '未选择'
 
-  const bindDesc =
-    binding?.status === 'BOUND'
-      ? `已绑定：${binding.kitchenName || '厨房'}`
-      : binding?.status === 'PENDING'
-        ? `待确认：${binding.kitchenName || '厨房'}`
-        : binding?.status === 'REJECTED'
-          ? `未通过：${binding.kitchenName || '厨房'}`
-          : '邀请码绑定一位厨师'
+  const kitchenSub =
+    binding?.ownerSelf && binding.status === 'BOUND'
+      ? `本厨默认 · ${binding.kitchenName || '厨房'}`
+      : binding?.status === 'BOUND'
+        ? `绑定中 · ${binding.kitchenName || '厨房'}`
+        : binding?.status === 'PENDING'
+          ? `待确认 · ${binding.kitchenName || '厨房'}`
+          : binding?.status === 'REJECTED'
+            ? `未通过 · ${binding.kitchenName || '厨房'}`
+            : '用邀请码加入一位厨师的厨房'
 
   return (
     <ScrollView scrollY className={pageClass} enhanced showScrollbar={false}>
       <ServiceSwitcher compact className='user-page__switch' />
 
-      <View className='user-page__profile ck-card'>
+      <View className='user-page__profile'>
         <View className='user-page__avatar-wrap ck-pressable' onClick={() => void onChooseAvatar()}>
           {avatar ? (
             <Image className='user-page__avatar' src={avatar} mode='aspectFill' />
@@ -179,80 +193,132 @@ export default function UserPage() {
               </View>
             </View>
           ) : (
-            <View className='user-page__name-row ck-pressable' onClick={startEditName}>
-              <Text className='user-page__name'>
+            <View className='user-page__name-row'>
+              <Text className='user-page__name ck-pressable' onClick={startEditName}>
                 {user?.nickname || user?.username || '厨房朋友'}
               </Text>
-              <Text className='user-page__name-edit-tip'>改昵称</Text>
+              <Text className='user-page__role-badge'>{roleBadge}</Text>
             </View>
           )}
-          <Text className='user-page__service'>{meta.label}</Text>
+          <Text className='user-page__sub'>
+            {product === 'kitchen'
+              ? kitchenSub
+              : `${meta.label} · 点此可切回厨房`}
+          </Text>
         </View>
       </View>
 
       {product === 'kitchen' && (
-        <View className='user-page__menu ck-card'>
-          <View className='user-page__menu-item ck-pressable' onClick={goOrders}>
-            <View className='user-page__menu-main'>
-              <Text className='user-page__menu-label'>我的预约</Text>
-              <Text className='user-page__menu-desc'>查看与管理预约单</Text>
+        <>
+          <View className='user-page__kitchen'>
+              <View className='user-page__kitchen-ico'>
+                <Text>🍳</Text>
+              </View>
+              <View
+                className='user-page__kitchen-body ck-pressable'
+                onClick={() => {
+                  if (!canUnbind && !isOwnerSelfBound) Taro.navigateTo({ url: '/pages/join/index' })
+                }}
+              >
+                <Text className='user-page__kitchen-name'>
+                  {binding?.kitchenName || '尚未绑定厨房'}
+                </Text>
+                <Text className='user-page__kitchen-status'>
+                  {binding ? bindingStatusText(binding) : '邀请码绑定一位厨师'}
+                </Text>
+              </View>
+              {canUnbind ? (
+                <Text
+                  className='user-page__unbind'
+                  onClick={() => void handleUnbind()}
+                >
+                  {binding?.status === 'PENDING' ? '取消' : '解绑'}
+                </Text>
+              ) : isOwnerSelfBound ? (
+                <Text className='user-page__kitchen-go'>本厨</Text>
+              ) : (
+                <Text
+                  className='user-page__kitchen-go'
+                  onClick={() => Taro.navigateTo({ url: '/pages/join/index' })}
+                >
+                  加入 ›
+                </Text>
+              )}
             </View>
-            <Text className='user-page__menu-arrow'>→</Text>
+
+          <View className='user-page__menu'>
+            <View className='user-page__menu-item ck-pressable' onClick={goOrders}>
+              <View className='user-page__menu-ico' style={{ background: '#FFF1E2' }}>
+                <Text>⭐</Text>
+              </View>
+              <Text className='user-page__menu-label'>我的预约</Text>
+              <Text className='user-page__menu-val'>进行中</Text>
+              <Text className='user-page__menu-arrow'>›</Text>
+            </View>
+            <View
+              className='user-page__menu-item ck-pressable'
+              onClick={() => Taro.navigateTo({ url: '/pages/join/index' })}
+            >
+              <View className='user-page__menu-ico' style={{ background: '#EBF3FB' }}>
+                <Text>📋</Text>
+              </View>
+              <Text className='user-page__menu-label'>加入厨房</Text>
+              <Text className='user-page__menu-val'>
+                {binding?.status === 'BOUND' ? '已绑定' : '邀请码'}
+              </Text>
+              <Text className='user-page__menu-arrow'>›</Text>
+            </View>
           </View>
+
+          <View className='user-page__menu'>
+            <View
+              className='user-page__menu-item ck-pressable'
+              onClick={() => Taro.navigateTo({ url: '/pages/role/select' })}
+            >
+              <View className='user-page__menu-ico' style={{ background: '#FBF3E0' }}>
+                <Text>🎭</Text>
+              </View>
+              <Text className='user-page__menu-label'>身份</Text>
+              <Text className='user-page__menu-val'>{roleDesc}</Text>
+              <Text className='user-page__menu-arrow'>›</Text>
+            </View>
+            <View className='user-page__menu-item ck-pressable' onClick={startEditName}>
+              <View className='user-page__menu-ico' style={{ background: '#FBF3E0' }}>
+                <Text>✏️</Text>
+              </View>
+              <Text className='user-page__menu-label'>修改昵称</Text>
+              <Text className='user-page__menu-val'>
+                {user?.nickname || user?.username || ''}
+              </Text>
+              <Text className='user-page__menu-arrow'>›</Text>
+            </View>
+          </View>
+        </>
+      )}
+
+      {product === 'health' && (
+        <View className='user-page__menu'>
           <View
             className='user-page__menu-item ck-pressable'
-            onClick={() => Taro.navigateTo({ url: '/pages/join/index' })}
+            onClick={() => Taro.navigateTo({ url: '/pages/health/index' })}
           >
-            <View className='user-page__menu-main'>
-              <Text className='user-page__menu-label'>加入厨房</Text>
-              <Text className='user-page__menu-desc'>{bindDesc}</Text>
+            <View className='user-page__menu-ico' style={{ background: '#E7F7F0' }}>
+              <Text>🌿</Text>
             </View>
-            <Text className='user-page__menu-arrow'>→</Text>
+            <Text className='user-page__menu-label'>进入健康首页</Text>
+            <Text className='user-page__menu-val'>指标与趋势</Text>
+            <Text className='user-page__menu-arrow'>›</Text>
           </View>
-          {canUnbind && (
-            <View className='user-page__menu-item ck-pressable' onClick={() => void handleUnbind()}>
-              <View className='user-page__menu-main'>
-                <Text className='user-page__menu-label'>
-                  {binding?.status === 'PENDING' ? '取消申请' : '解除绑定'}
-                </Text>
-                <Text className='user-page__menu-desc'>换厨须先解除当前绑定</Text>
-              </View>
-              <Text className='user-page__menu-arrow'>→</Text>
-            </View>
-          )}
           <View
             className='user-page__menu-item ck-pressable'
             onClick={() => Taro.navigateTo({ url: '/pages/role/select' })}
           >
-            <View className='user-page__menu-main'>
-              <Text className='user-page__menu-label'>身份</Text>
-              <Text className='user-page__menu-desc'>{roleLabel}</Text>
+            <View className='user-page__menu-ico' style={{ background: '#FBF3E0' }}>
+              <Text>🎭</Text>
             </View>
-            <Text className='user-page__menu-arrow'>→</Text>
-          </View>
-          {user?.chef && (
-            <View
-              className='user-page__menu-item ck-pressable'
-              onClick={() => Taro.navigateTo({ url: '/pages/chef/index' })}
-            >
-              <View className='user-page__menu-main'>
-                <Text className='user-page__menu-label'>厨师工作台</Text>
-                <Text className='user-page__menu-desc'>厨房、菜品、邀请与接单</Text>
-              </View>
-              <Text className='user-page__menu-arrow'>→</Text>
-            </View>
-          )}
-        </View>
-      )}
-
-      {product === 'health' && (
-        <View className='user-page__menu ck-card'>
-          <View className='user-page__menu-item ck-pressable' onClick={goHealthHome}>
-            <View className='user-page__menu-main'>
-              <Text className='user-page__menu-label'>进入健康首页</Text>
-              <Text className='user-page__menu-desc'>指标统计与明细</Text>
-            </View>
-            <Text className='user-page__menu-arrow'>→</Text>
+            <Text className='user-page__menu-label'>身份</Text>
+            <Text className='user-page__menu-val'>{roleDesc}</Text>
+            <Text className='user-page__menu-arrow'>›</Text>
           </View>
         </View>
       )}

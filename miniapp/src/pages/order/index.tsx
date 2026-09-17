@@ -1,6 +1,6 @@
-﻿import { View, Text, Button, Input, Picker, ScrollView } from '@tarojs/components'
+import { View, Text, Button, Input, Picker, ScrollView } from '@tarojs/components'
 import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import OrderCard from '@/components/OrderCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
@@ -12,21 +12,38 @@ import { useUserStore } from '@/stores/userStore'
 import type { OrderStatus } from '@/types'
 import './index.scss'
 
-const TABS: { key: 'ALL' | OrderStatus; label: string }[] = [
-  { key: 'ALL', label: '全部' },
-  { key: 'PENDING', label: '待确认' },
-  { key: 'CONFIRMED', label: '已确认' },
-  { key: 'PREPARING', label: '制作中' },
-  { key: 'READY', label: '待取餐' },
+type TabKey = 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'ALL'
+
+const ACTIVE_STATUSES: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY']
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'ACTIVE', label: '进行中' },
   { key: 'COMPLETED', label: '已完成' },
-  { key: 'CANCELLED', label: '已取消' }
+  { key: 'CANCELLED', label: '已取消' },
+  { key: 'ALL', label: '全部' }
 ]
+
+const DISH_EMOJIS = ['🍖', '🥬', '🍅', '🐟', '🥗', '🍲', '🍛', '🥘']
+const EMOJI_BGS = ['#FFF1E2', '#E7F7F0', '#FBF3E0', '#EBF3FB', '#FCEEEA']
 
 function todayStr(): string {
   const d = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
+
+function tomorrowStr(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+const MEAL_PRESETS = [
+  { key: 'today-dinner', label: '今天 · 晚餐', date: () => todayStr(), time: '18:00' },
+  { key: 'tomorrow-lunch', label: '明天 · 午餐', date: () => tomorrowStr(), time: '12:00' },
+  { key: 'tomorrow-dinner', label: '明天 · 晚餐', date: () => tomorrowStr(), time: '18:00' }
+] as const
 
 export default function OrderIndexPage() {
   const {
@@ -37,19 +54,32 @@ export default function OrderIndexPage() {
     fetchOrders,
     updateDraft,
     updateDraftItemQty,
-    removeDraftItem,
     submitOrder,
     clearDraft
   } = useOrderStore()
   const { isLoggedIn, requireLogin, user, refreshProfile } = useUserStore()
   const setProduct = useProductStore((s) => s.setProduct)
-  const [tab, setTab] = useState<'ALL' | OrderStatus>('ALL')
+  const [tab, setTab] = useState<TabKey>('ACTIVE')
   const [needJoin, setNeedJoin] = useState(false)
   const [pending, setPending] = useState(false)
   const [gateLoading, setGateLoading] = useState(true)
   const minDate = todayStr()
 
-  const reload = () => fetchOrders(tab === 'ALL' ? undefined : tab)
+  const reload = () => fetchOrders()
+
+  const filteredOrders = useMemo(() => {
+    if (tab === 'ALL') return orders
+    if (tab === 'ACTIVE') return orders.filter((o) => ACTIVE_STATUSES.includes(o.status))
+    return orders.filter((o) => o.status === tab)
+  }, [orders, tab])
+
+  const activeMealKey = useMemo(() => {
+    return (
+      MEAL_PRESETS.find(
+        (p) => p.date() === draft.scheduledTime && p.time === draft.scheduledTimeOfDay
+      )?.key ?? ''
+    )
+  }, [draft.scheduledTime, draft.scheduledTimeOfDay])
 
   const bootstrapGate = async () => {
     setGateLoading(true)
@@ -88,7 +118,7 @@ export default function OrderIndexPage() {
 
   useEffect(() => {
     if (isLoggedIn && !needJoin && !gateLoading) void reload()
-  }, [tab, isLoggedIn, needJoin, gateLoading])
+  }, [isLoggedIn, needJoin, gateLoading])
 
   usePullDownRefresh(async () => {
     try {
@@ -124,6 +154,15 @@ export default function OrderIndexPage() {
     } else {
       Taro.showToast({ title: '提交失败', icon: 'none' })
     }
+  }
+
+  const handleMealPreset = (key: (typeof MEAL_PRESETS)[number]['key']) => {
+    const preset = MEAL_PRESETS.find((p) => p.key === key)
+    if (!preset) return
+    updateDraft({
+      scheduledTime: preset.date(),
+      scheduledTimeOfDay: preset.time
+    })
   }
 
   const handlePickDate = (e: { detail: { value: string } }) => {
@@ -180,95 +219,106 @@ export default function OrderIndexPage() {
       )}
 
       {draft.items.length > 0 && (
-        <View className='order-page__draft ck-card'>
-          <Text className='order-page__draft-title'>当前预约</Text>
-          {draft.items.map((item) => (
-            <View key={item.dishId} className='order-page__draft-item'>
-              <Text className='order-page__draft-name'>{item.dishName}</Text>
-              <View className='order-page__draft-ops'>
-                <View className='order-page__qty'>
-                  <View
-                    className='order-page__qty-btn'
-                    onClick={() => updateDraftItemQty(item.dishId, item.quantity - 1)}
-                  >
-                    <Text>−</Text>
-                  </View>
-                  <Text className='order-page__qty-num'>{item.quantity}</Text>
-                  <View
-                    className='order-page__qty-btn'
-                    onClick={() => updateDraftItemQty(item.dishId, item.quantity + 1)}
-                  >
-                    <Text>＋</Text>
-                  </View>
-                </View>
-                <Text
-                  className='order-page__draft-del'
-                  onClick={() => removeDraftItem(item.dishId)}
+        <View className='order-page__draft'>
+          <View className='order-page__draft-head'>
+            <Text className='order-page__draft-emoji'>🧺</Text>
+            <Text className='order-page__draft-title'>预约单 · {draft.items.length} 样</Text>
+            <Text className='order-page__draft-clear' onClick={clearDraft}>
+              清空
+            </Text>
+          </View>
+
+          {draft.items.map((item, idx) => (
+            <View key={item.dishId} className='order-page__draft-line'>
+              <View
+                className='order-page__draft-emoji-box'
+                style={{ background: EMOJI_BGS[idx % EMOJI_BGS.length] }}
+              >
+                <Text>{DISH_EMOJIS[idx % DISH_EMOJIS.length]}</Text>
+              </View>
+              <View className='order-page__draft-name-wrap'>
+                <Text className='order-page__draft-name'>{item.dishName}</Text>
+              </View>
+              <View className='order-page__qty'>
+                <View
+                  className='order-page__qty-btn'
+                  onClick={() => updateDraftItemQty(item.dishId, item.quantity - 1)}
                 >
-                  删除
-                </Text>
+                  <Text>−</Text>
+                </View>
+                <Text className='order-page__qty-num'>{item.quantity}</Text>
+                <View
+                  className='order-page__qty-btn'
+                  onClick={() => updateDraftItemQty(item.dishId, item.quantity + 1)}
+                >
+                  <Text>＋</Text>
+                </View>
               </View>
             </View>
           ))}
 
-          <View className='order-page__field'>
-            <Text className='order-page__label'>期望用餐日期（选填，写入给厨房的备注）</Text>
+          <View className='order-page__meal-pick'>
+            {MEAL_PRESETS.map((p) => (
+              <View
+                key={p.key}
+                className={`order-page__meal-chip ${
+                  activeMealKey === p.key ? 'order-page__meal-chip--on' : ''
+                }`}
+                onClick={() => handleMealPreset(p.key)}
+              >
+                <Text>{p.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View className='order-page__custom-row'>
             <Picker
               mode='date'
               start={minDate}
               value={draft.scheduledTime || minDate}
               onChange={handlePickDate}
             >
-              <View className='order-page__picker'>
-                {draft.scheduledTime || '选择日期'}
+              <View className='order-page__picker order-page__picker--sm'>
+                {draft.scheduledTime || '日期'}
               </View>
             </Picker>
-          </View>
-
-          <View className='order-page__field'>
-            <Text className='order-page__label'>期望用餐时间（选填）</Text>
             <Picker
               mode='time'
               value={draft.scheduledTimeOfDay || '12:00'}
               onChange={handlePickTimeOfDay}
             >
-              <View className='order-page__picker'>
-                {draft.scheduledTimeOfDay || '选择时间'}
+              <View className='order-page__picker order-page__picker--sm'>
+                {draft.scheduledTimeOfDay || '时间'}
               </View>
             </Picker>
-          </View>
-
-          <View className='order-page__field'>
-            <Text className='order-page__label'>用餐人数（选填）</Text>
             <Picker
               mode='selector'
               range={['1 位', '2 位', '3 位', '4 位', '5 位', '6 位', '8 位', '10 位']}
               onChange={handlePickGuest}
             >
-              <View className='order-page__picker'>{draft.guestCount} 位</View>
+              <View className='order-page__picker order-page__picker--sm'>
+                {draft.guestCount} 位
+              </View>
             </Picker>
           </View>
 
-          <View className='order-page__field'>
-            <Text className='order-page__label'>给厨房的备注</Text>
+          <View className='order-page__submit-row'>
             <Input
-              className='order-page__input'
-              placeholder='口味偏好、忌口等（选填）'
+              className='order-page__note-input'
+              placeholder='备注：口味偏好、忌口等'
               value={draft.note}
               onInput={(e) => updateDraft({ note: e.detail.value })}
             />
-          </View>
-
-          <View className='order-page__actions'>
-            <Button className='ck-btn-secondary order-page__btn' onClick={clearDraft}>
-              清空
-            </Button>
-            <Button className='ck-btn-primary order-page__btn' onClick={handleSubmit}>
-              提交预约
-            </Button>
+            <View className='order-page__submit-btn' onClick={handleSubmit}>
+              <Text>提交预约</Text>
+            </View>
           </View>
         </View>
       )}
+
+      <View className='order-page__sec-row'>
+        <Text className='order-page__section-title'>我的预约</Text>
+      </View>
 
       <ScrollView scrollX className='order-page__tabs' enhanced showScrollbar={false}>
         {TABS.map((t) => (
@@ -283,7 +333,6 @@ export default function OrderIndexPage() {
       </ScrollView>
 
       <View className='order-page__history'>
-        <Text className='order-page__section-title'>预约记录</Text>
         {loadError ? (
           <EmptyState
             emoji='📋'
@@ -292,7 +341,7 @@ export default function OrderIndexPage() {
             actionText='重试'
             onAction={() => void reload()}
           />
-        ) : orders.length === 0 ? (
+        ) : filteredOrders.length === 0 ? (
           <EmptyState
             emoji='📋'
             title='还没有预约记录'
@@ -301,7 +350,7 @@ export default function OrderIndexPage() {
             onAction={goCategory}
           />
         ) : (
-          orders.map((order) => <OrderCard key={order.id} order={order} />)
+          filteredOrders.map((order) => <OrderCard key={order.id} order={order} />)
         )}
       </View>
     </View>

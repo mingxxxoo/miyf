@@ -9,6 +9,7 @@ import {
   type BindingVo
 } from '@/api/kitchen'
 import EmptyState from '@/components/EmptyState'
+import ServiceSwitcher from '@/components/ServiceSwitcher'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
 import './chef.scss'
 
@@ -48,6 +49,9 @@ export default function ChefBindingsPage() {
 
   return (
     <View className='chef-page'>
+      <View className='chef-page__svc-switch'>
+        <ServiceSwitcher compact activeKey='chef' />
+      </View>
       <View className='chef-page__hero'>
         <Text className='chef-page__title'>食客申请</Text>
         <Text className='chef-page__sub'>通过后对方即可浏览你的菜单并预约</Text>
@@ -63,7 +67,7 @@ export default function ChefBindingsPage() {
             <Text className='chef-dish__desc'>{STATUS_TEXT[b.status] || b.status}</Text>
             {b.rejectReason && <Text className='chef-dish__desc'>原因：{b.rejectReason}</Text>}
             <View className='chef-page__actions'>
-              {b.status === 'PENDING' && (
+              {b.status === 'PENDING' && !b.ownerSelf && (
                 <>
                   <Button
                     className='chef-page__action'
@@ -88,7 +92,10 @@ export default function ChefBindingsPage() {
                   </Button>
                 </>
               )}
-              {b.status === 'BOUND' && (
+              {b.status === 'BOUND' && b.ownerSelf && (
+                <Text className='chef-dish__desc'>本厨默认食客 · 不可单独解除</Text>
+              )}
+              {b.status === 'BOUND' && !b.ownerSelf && b.removable !== false && (
                 <Button
                   className='chef-page__action chef-page__action--danger'
                   size='mini'

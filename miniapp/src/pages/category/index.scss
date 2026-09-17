@@ -1,5 +1,7 @@
 .category-page {
   min-height: 100vh;
+  padding-bottom: calc(220px + env(safe-area-inset-bottom));
+  background: $ck-bg;
 
   &__top {
     padding: 20px 32px 8px;
@@ -12,11 +14,11 @@
 
   &__search {
     padding: 18px 24px;
-    border-radius: $ck-radius-sm;
+    border-radius: 14px;
     background: #fff;
-    border: 1px solid $ck-border;
-    font-size: 28px;
-    color: $ck-text;
+    border: 1px solid $ck-line;
+    font-size: 26px;
+    color: $ck-ink;
   }
 
   &__tabs {
@@ -57,9 +59,13 @@
   }
 
   &__grid {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  &__item {
+    min-width: 0;
   }
 
   &__more {

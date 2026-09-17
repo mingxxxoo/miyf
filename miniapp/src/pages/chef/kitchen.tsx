@@ -2,6 +2,7 @@ import { View, Text, Input, Textarea, Button } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import { fetchInvite, fetchMyKitchen, saveMyKitchen, type InviteVo } from '@/api/kitchen'
+import ServiceSwitcher from '@/components/ServiceSwitcher'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
 import './chef.scss'
 
@@ -40,6 +41,9 @@ export default function ChefKitchenPage() {
 
   return (
     <View className='chef-page'>
+      <View className='chef-page__svc-switch'>
+        <ServiceSwitcher compact activeKey='chef' />
+      </View>
       <View className='chef-page__cover'>
         <View className='chef-page__big-avatar'>
           <Text>🍳</Text>

@@ -22,7 +22,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
+import java.util.Locale;
 
 /**
  * 文件资源：资源索引维护 + 按 ID 打开流与访问校验。
@@ -36,6 +48,16 @@ import java.io.InputStream;
 @RequiredArgsConstructor
 public class FileResourceApplicationService {
 
+    /**
+     * 压缩时图片最长边像素上限。
+     */
+    private static final int COMPRESS_MAX_SIDE = 1280;
+
+    /**
+     * JPEG 压缩质量（约 0.78）。
+     */
+    private static final float JPEG_COMPRESS_QUALITY = 0.78f;
+
     private final FileStorageService fileStorageService;
     private final SysResourceIndexMapper sysResourceIndexMapper;
     private final FileStorageProperties fileStorageProperties;
@@ -44,6 +66,10 @@ public class FileResourceApplicationService {
 
     /**
      * 存储并登记资源索引，返回 {@code /r/{id}.jpg} 等带后缀 URL。
+     * <p>
+     * 当 {@link FileUploadCommand#isCompress()} 为 true 且 Content-Type 为图片时，
+     * 会先按最长边 {@value #COMPRESS_MAX_SIDE}、JPEG 质量约 {@value #JPEG_COMPRESS_QUALITY}
+     * 压缩（含透明通道的 PNG 等会铺白底后转 JPEG）再写入存储；压缩失败或未缩小则回退原图上传。
      *
      * @param inputStream  内容流
      * @param size         字节数
@@ -71,7 +97,30 @@ public class FileResourceApplicationService {
         long fileId = snowflakeIdGenerator.nextId();
         String path = StoragePathUtils.buildStoragePath(
                 fileStorageProperties.getPathNamespace(), appCode, fileId);
-        StoredFile stored = fileStorageService.store(inputStream, size, contentType, path);
+
+        InputStream storeStream = inputStream;
+        long storeSize = size;
+        String storeContentType = contentType;
+        // 需要压缩的图片先读入内存，便于失败时回退原字节
+        if (command.isCompress() && isImageContentType(contentType)) {
+            byte[] originalBytes;
+            try {
+                originalBytes = inputStream.readAllBytes();
+            } catch (IOException ex) {
+                throw new BusinessException(ErrorCode.INVALID_FILE, "读取上传文件失败");
+            }
+            CompressedImage compressed = tryCompressImage(originalBytes);
+            if (compressed != null) {
+                storeStream = new ByteArrayInputStream(compressed.bytes());
+                storeSize = compressed.bytes().length;
+                storeContentType = compressed.contentType();
+            } else {
+                storeStream = new ByteArrayInputStream(originalBytes);
+                storeSize = originalBytes.length;
+            }
+        }
+
+        StoredFile stored = fileStorageService.store(storeStream, storeSize, storeContentType, path);
         Long userId = SecurityUtils.currentPrincipal().map(AuthPrincipal::getId).orElse(null);
         FileAccessPermission permission = command.getAccessPermission() == null
                 ? FileAccessPermission.OWNER
@@ -230,6 +279,136 @@ public class FileResourceApplicationService {
     public InputStream open(Long fileId) {
         SysResourceIndexEntity meta = requireMeta(fileId);
         return fileStorageService.open(meta.getPath());
+    }
+
+    /**
+     * 判断 Content-Type 是否为图片。
+     *
+     * @param contentType Content-Type
+     * @return true 表示图片
+     * @history 1.00 2026-09-17 XieMingJie Created.
+     */
+    private static boolean isImageContentType(String contentType) {
+        if (!StringUtils.hasText(contentType)) {
+            return false;
+        }
+        return contentType.trim().toLowerCase(Locale.ROOT).startsWith("image/");
+    }
+
+    /**
+     * 尝试压缩图片：最长边限制 {@value #COMPRESS_MAX_SIDE}，统一输出 JPEG（质量约 {@value #JPEG_COMPRESS_QUALITY}）；
+     * PNG 等含透明通道时先铺白底再编码。失败或结果未缩小则返回 {@code null}，由调用方回退原图。
+     *
+     * @param originalBytes 原始字节
+     * @return 压缩结果；无法压缩时为 null
+     * @history 1.00 2026-09-17 XieMingJie Created.
+     */
+    private static CompressedImage tryCompressImage(byte[] originalBytes) {
+        if (originalBytes == null || originalBytes.length == 0) {
+            return null;
+        }
+        try {
+            BufferedImage source = ImageIO.read(new ByteArrayInputStream(originalBytes));
+            if (source == null) {
+                return null;
+            }
+            BufferedImage scaled = scaleToMaxSide(source, COMPRESS_MAX_SIDE);
+            byte[] jpegBytes = encodeJpeg(scaled, JPEG_COMPRESS_QUALITY);
+            // 未变小则回退，避免无意义改写 Content-Type
+            if (jpegBytes.length == 0 || jpegBytes.length >= originalBytes.length) {
+                return null;
+            }
+            return new CompressedImage(jpegBytes, "image/jpeg");
+        } catch (Exception ignored) {
+            // 任意编解码异常均回退原图，保证上传不因压缩失败
+            return null;
+        }
+    }
+
+    /**
+     * 将图片最长边限制在 {@code maxSide} 以内，等比缩放；无需缩放时返回原图。
+     *
+     * @param source  原图
+     * @param maxSide 最长边像素
+     * @return 缩放后的图或原图
+     * @history 1.00 2026-09-17 XieMingJie Created.
+     */
+    private static BufferedImage scaleToMaxSide(BufferedImage source, int maxSide) {
+        int width = source.getWidth();
+        int height = source.getHeight();
+        int longest = Math.max(width, height);
+        if (longest <= maxSide) {
+            return source;
+        }
+        double scale = (double) maxSide / (double) longest;
+        int targetWidth = Math.max(1, (int) Math.round(width * scale));
+        int targetHeight = Math.max(1, (int) Math.round(height * scale));
+        // 保留 ARGB，透明像素在 JPEG 编码阶段再铺白底
+        BufferedImage target = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = target.createGraphics();
+        try {
+            graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            graphics.drawImage(source, 0, 0, targetWidth, targetHeight, null);
+        } finally {
+            graphics.dispose();
+        }
+        return target;
+    }
+
+    /**
+     * 将图片编码为 JPEG；非 RGB 或含透明时先绘制到白底 RGB 画布。
+     *
+     * @param image   源图
+     * @param quality 压缩质量 0~1
+     * @return JPEG 字节
+     * @throws IOException 编码失败
+     * @history 1.00 2026-09-17 XieMingJie Created.
+     */
+    private static byte[] encodeJpeg(BufferedImage image, float quality) throws IOException {
+        BufferedImage rgbImage = image;
+        if (image.getType() != BufferedImage.TYPE_INT_RGB) {
+            rgbImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = rgbImage.createGraphics();
+            try {
+                graphics.setColor(Color.WHITE);
+                graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
+                graphics.drawImage(image, 0, 0, null);
+            } finally {
+                graphics.dispose();
+            }
+        }
+        Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
+        if (!writers.hasNext()) {
+            throw new IOException("JPEG ImageWriter unavailable");
+        }
+        ImageWriter writer = writers.next();
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (ImageOutputStream imageOutput = ImageIO.createImageOutputStream(output)) {
+            if (imageOutput == null) {
+                throw new IOException("ImageOutputStream unavailable");
+            }
+            writer.setOutput(imageOutput);
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            if (param.canWriteCompressed()) {
+                param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                param.setCompressionQuality(quality);
+            }
+            writer.write(null, new IIOImage(rgbImage, null, null), param);
+        } finally {
+            writer.dispose();
+        }
+        return output.toByteArray();
+    }
+
+    /**
+     * 压缩后的图片字节与 Content-Type。
+     *
+     * @param bytes       内容
+     * @param contentType MIME
+     * @history 1.00 2026-09-17 XieMingJie Created.
+     */
+    private record CompressedImage(byte[] bytes, String contentType) {
     }
 
     private static String trimName(String originalName) {

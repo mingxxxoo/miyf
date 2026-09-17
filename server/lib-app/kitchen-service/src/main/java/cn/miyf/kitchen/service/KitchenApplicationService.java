@@ -20,6 +20,7 @@ import java.util.Set;
 /**
  * 厨师个人厨房：一用户一厨。
  * 厨师仅可 OPEN/CLOSED；管理端可额外 BANNED。
+ * 创建/保存时默认将厨主以 BOUND 加入本厨圈。
  *
  * @author XieMingJie
  * @since 2026-09-15
@@ -33,20 +34,27 @@ public class KitchenApplicationService extends BaseApplicationService {
 
     private final KitchenRepository kitchenRepository;
     private final KitchenAccessService kitchenAccessService;
+    private final BindingApplicationService bindingApplicationService;
 
     /**
      * 当前厨师的厨房；尚未创建时返回 null。
+     * 已有厨房时补齐厨主默认自绑。
      *
      * @return 厨房 VO
      * @history 1.00 2026-09-15 XieMingJie Created.
      */
+    @Transactional
     public KitchenVo getMine() {
         KitchenEntity kitchen = kitchenRepository.selectByOwnerUserId(kitchenAccessService.requireChef().getId());
+        if (kitchen != null) {
+            bindingApplicationService.ensureOwnerSelfBinding(kitchen);
+        }
         return kitchenAccessService.toKitchenVo(kitchen);
     }
 
     /**
      * 创建或更新本厨资料；新建默认 OPEN，已封禁不可由厨师改状态。
+     * 新建或保存后确保厨主以 BOUND 加入本厨圈。
      *
      * @param dto 名称/简介/封面/状态
      * @return 保存后厨房
@@ -65,6 +73,7 @@ public class KitchenApplicationService extends BaseApplicationService {
                     .setCoverImage(dto.getCoverImage())
                     .setStatus("OPEN");
             kitchenRepository.insert(created);
+            bindingApplicationService.ensureOwnerSelfBinding(created);
             return kitchenAccessService.toKitchenVo(created);
         }
         existing.setName(name);
@@ -79,6 +88,7 @@ public class KitchenApplicationService extends BaseApplicationService {
             existing.setStatus(status);
         }
         kitchenRepository.updateById(existing);
+        bindingApplicationService.ensureOwnerSelfBinding(existing);
         return kitchenAccessService.toKitchenVo(existing);
     }
 

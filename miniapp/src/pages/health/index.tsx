@@ -30,15 +30,47 @@ import './index.scss'
 const HUAWEI_POLL_MS = 3000
 const HUAWEI_POLL_MAX_MS = 3 * 60 * 1000
 
-const METRIC_ICONS: Record<string, string> = {
-  steps: '👟',
-  heart_rate: '❤️',
-  sleep: '😴',
-  stress: '🧘',
-  spo2: '🫁',
-  calories: '🔥',
-  weight: '⚖️',
-  blood_pressure: '🩺'
+const METRIC_ICONS: Record<string, { icon: string; bg: string }> = {
+  WEIGHT: { icon: '⚖️', bg: '#E7F7F0' },
+  HEART_RATE: { icon: '💗', bg: '#FCEEEA' },
+  STEPS: { icon: '👟', bg: '#FBF3E0' },
+  BLOOD_PRESSURE_SYS: { icon: '🩺', bg: '#EBF3FB' },
+  BLOOD_PRESSURE_DIA: { icon: '💉', bg: '#EBF3FB' },
+  BLOOD_GLUCOSE: { icon: '🍬', bg: '#FFF1E2' },
+  BODY_FAT: { icon: '🫧', bg: '#F0EBFB' },
+  BMI: { icon: '📏', bg: '#E7F7F0' },
+  HEIGHT: { icon: '📐', bg: '#F4F0E9' },
+  SPO2: { icon: '🫁', bg: '#EBF3FB' },
+  SLEEP_MINUTES: { icon: '😴', bg: '#F0EBFB' },
+  STRESS: { icon: '😮‍💨', bg: '#FBF3E0' },
+  CALORIES: { icon: '🔥', bg: '#FFF1E2' }
+}
+
+function MiniSpark({
+  points,
+  warn
+}: {
+  points?: { value?: number }[]
+  warn?: boolean
+}) {
+  const bars = (points || [])
+    .map((p) => (typeof p.value === 'number' ? p.value : null))
+    .filter((v): v is number => v != null)
+    .slice(-8)
+  if (bars.length < 2) {
+    return <View className='health-page__spark health-page__spark--empty' />
+  }
+  const min = Math.min(...bars)
+  const max = Math.max(...bars)
+  const span = max - min || 1
+  return (
+    <View className={`health-page__spark ${warn ? 'health-page__spark--warn' : ''}`}>
+      {bars.map((v, i) => {
+        const h = Math.round(8 + ((v - min) / span) * 24)
+        return <View key={i} className='health-page__spark-bar' style={{ height: `${h}px` }} />
+      })}
+    </View>
+  )
 }
 
 export default function HealthPage() {
@@ -96,10 +128,25 @@ export default function HealthPage() {
 
   const scoreTitle = useMemo(() => {
     if (!summary.withData) return '暂无数据'
-    if (summary.alerts === 0) return '状态不错'
-    if (summary.alerts <= 2) return '需要留意'
-    return '建议关注'
+    if (summary.alerts === 0) return '状态不错，继续保持 🌿'
+    if (summary.alerts <= 2) return '需要留意一下'
+    return '建议多关注身体'
   }, [summary])
+
+  const firstAlert = useMemo(() => {
+    return cards.find((c) => c.latestAlert) || null
+  }, [cards])
+
+  const latestSyncHint = useMemo(() => {
+    const times = cards
+      .map((c) => c.trend?.latestTime)
+      .filter(Boolean)
+      .map((t) => new Date(String(t).replace(' ', 'T')).getTime())
+      .filter((n) => Number.isFinite(n))
+    if (!times.length) return ''
+    const latest = Math.max(...times)
+    return `数据更新至 ${formatMeasuredTime(new Date(latest).toISOString())}`
+  }, [cards])
 
   const stopHuaweiPoll = () => {
     if (pollTimerRef.current != null) {
@@ -339,73 +386,104 @@ export default function HealthPage() {
     <View className='health-page'>
       <View className='health-page__head'>
         <ServiceSwitcher compact className='health-page__switch' />
+        {latestSyncHint ? (
+          <Text className='health-page__sync-hint'>{latestSyncHint}</Text>
+        ) : null}
       </View>
 
       <View className='health-page__score'>
         <View className='health-page__ring'>
           <Text className='health-page__ring-val'>{healthScore || '—'}</Text>
-          <Text className='health-page__ring-label'>健康分</Text>
+          <Text className='health-page__ring-label'>健康评分</Text>
         </View>
         <View className='health-page__score-info'>
           <Text className='health-page__score-title'>{scoreTitle}</Text>
           <Text className='health-page__score-desc'>
-            {subject?.displayName || '我'} · {summary.withData} 项有数据
-            {summary.alerts > 0 ? ` · ${summary.alerts} 项需关注` : ' · 继续保持'}
+            {summary.withData
+              ? `${summary.withData} 项指标中 ${Math.max(0, summary.withData - summary.alerts)} 项正常${
+                  summary.alerts > 0 ? `，${summary.alerts} 项需关注` : ''
+                }`
+              : '连接数据源后，这里会汇总你的健康状态'}
           </Text>
           <View className='health-page__score-tags'>
-            <Text className='health-page__score-tag'>近 30 天</Text>
-            {summary.alerts === 0 && summary.withData > 0 ? (
-              <Text className='health-page__score-tag'>指标平稳</Text>
+            {summary.withData > 0 ? (
+              <Text className='health-page__score-tag'>
+                {Math.max(0, summary.withData - summary.alerts)} 正常
+              </Text>
+            ) : null}
+            {summary.alerts > 0 ? (
+              <Text className='health-page__score-tag'>{summary.alerts} 需关注</Text>
             ) : null}
           </View>
         </View>
       </View>
 
-      {summary.alerts > 0 && (
-        <View className='health-page__notice'>
+      {firstAlert ? (
+        <View
+          className='health-page__notice ck-pressable'
+          onClick={() => openDetail(firstAlert.metric.code)}
+        >
           <View className='health-page__notice-ico'>
             <Text>⚠️</Text>
           </View>
-          <Text className='health-page__notice-text'>
-            {summary.alerts} 项最新值超出参考范围，点进指标查看明细与趋势
-          </Text>
-        </View>
-      )}
-
-      <Text className='health-page__group-title'>健康指标</Text>
-      <View className='health-page__metric-grid'>
-        {cards.map(({ metric, trend, latestAlert }) => (
-          <View
-            key={metric.code}
-            className='health-page__m-card ck-pressable'
-            onClick={() => openDetail(metric.code)}
-          >
-            <View className='health-page__m-top'>
-              <View className='health-page__m-ico'>
-                <Text>{METRIC_ICONS[metric.code] || '📌'}</Text>
-              </View>
-              <Text className='health-page__m-name'>{metric.label}</Text>
-            </View>
-            <View className='health-page__m-val'>
-              <Text className='health-page__m-num'>
-                {trend?.latest != null ? formatStatValue(metric.code, trend.latest) : '—'}
-              </Text>
-              {metric.unit ? <Text className='health-page__m-unit'>{metric.unit}</Text> : null}
-            </View>
-            <View className='health-page__m-foot'>
-              <Text className='health-page__m-time'>
-                {trend?.latestTime ? formatMeasuredTime(trend.latestTime) : '暂无数据'}
-              </Text>
-              {latestAlert ? (
-                <Text className='ck-chip ck-chip--warn'>需关注</Text>
-              ) : trend?.pointCount ? (
-                <Text className='ck-chip ck-chip--ok'>正常</Text>
-              ) : (
-                <Text className='ck-chip ck-chip--none'>无数据</Text>
-              )}
-            </View>
+          <View className='health-page__notice-body'>
+            <Text className='health-page__notice-title'>
+              {firstAlert.metric.label}
+              {firstAlert.latestAlert?.level === 'high' ? '偏高' : '偏低'}
+            </Text>
+            <Text className='health-page__notice-text'>
+              {firstAlert.latestAlert?.message || '最新值超出参考范围，注意放松与复查'}
+            </Text>
           </View>
-        ))}
+          <Text className='health-page__notice-go'>查看 ›</Text>
+        </View>
+      ) : null}
+
+      <View className='health-page__sec-row'>
+        <Text className='health-page__group-title'>我的指标</Text>
+      </View>
+      <View className='health-page__metric-grid'>
+        {cards.map(({ metric, trend, latestAlert }) => {
+          const meta = METRIC_ICONS[metric.code] || { icon: '📌', bg: '#F4F0E9' }
+          const warn = Boolean(latestAlert)
+          return (
+            <View
+              key={metric.code}
+              className={`health-page__m-card ck-pressable ${
+                warn ? 'health-page__m-card--warn' : ''
+              }`}
+              onClick={() => openDetail(metric.code)}
+            >
+              <View className='health-page__m-top'>
+                <View className='health-page__m-ico' style={{ background: meta.bg }}>
+                  <Text>{meta.icon}</Text>
+                </View>
+                <Text className='health-page__m-name'>{metric.label}</Text>
+                {latestAlert ? (
+                  <Text className='ck-chip ck-chip--warn'>需关注</Text>
+                ) : trend?.pointCount ? (
+                  <Text className='ck-chip ck-chip--ok'>正常</Text>
+                ) : (
+                  <Text className='ck-chip ck-chip--none'>暂无</Text>
+                )}
+              </View>
+              <View className='health-page__m-val'>
+                <Text
+                  className={`health-page__m-num ${warn ? 'health-page__m-num--warn' : ''}`}
+                >
+                  {trend?.latest != null ? formatStatValue(metric.code, trend.latest) : '—'}
+                </Text>
+                {metric.unit ? <Text className='health-page__m-unit'>{metric.unit}</Text> : null}
+              </View>
+              <View className='health-page__m-foot'>
+                <MiniSpark points={trend?.points} warn={warn} />
+                <Text className='health-page__m-time'>
+                  {trend?.latestTime ? formatMeasuredTime(trend.latestTime) : '暂无数据'}
+                </Text>
+              </View>
+            </View>
+          )
+        })}
       </View>
 
       <Text className='health-page__group-title'>数据源</Text>

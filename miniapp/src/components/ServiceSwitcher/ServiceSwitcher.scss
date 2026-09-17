@@ -1,58 +1,318 @@
 .service-switcher {
-  display: flex;
-  padding: 6px;
-  border-radius: $ck-radius-md;
-  background: rgba($ck-text, 0.04);
-  border: 1px solid $ck-border;
+  position: relative;
+  z-index: 30;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
 
-  &--compact {
-    padding: 4px;
-    border-radius: $ck-radius-sm;
+  &__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid $ck-line;
+    border-radius: 99px;
+    padding: 10px 22px;
+    box-shadow: 0 2px 8px rgba(60, 45, 20, 0.04);
   }
 
-  &__item {
+  &--compact &__trigger {
+    padding: 8px 20px;
+  }
+
+  &__dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &--kitchen {
+      background: $ck-primary-deep;
+    }
+
+    &--health {
+      background: $ck-hg;
+    }
+
+    &--chef {
+      background: #5a4632;
+    }
+  }
+
+  &__current {
+    font-size: 24px;
+    font-weight: 600;
+    color: $ck-ink;
+  }
+
+  &__chevron {
+    font-size: 22px;
+    color: $ck-faint;
+    line-height: 1;
+    transition: transform 0.15s ease;
+
+    &.is-open {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__mask {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: transparent;
+  }
+
+  &__menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    min-width: 280px;
+    z-index: 50;
+    background: #fff;
+    border: 1px solid $ck-line;
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow: 0 12px 28px rgba(43, 38, 34, 0.14);
+  }
+
+  &__option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px;
+    border-radius: 12px;
+
+    &--active {
+      background: $ck-ko-softer;
+    }
+  }
+
+  &__option-label {
+    display: block;
+    font-size: 26px;
+    font-weight: 600;
+    color: $ck-ink;
+  }
+
+  &__option-desc {
+    display: block;
+    margin-top: 4px;
+    font-size: 20px;
+    color: $ck-faint;
+  }
+
+  &__check {
+    font-size: 26px;
+    color: $ck-primary-deep;
+    font-weight: 700;
+  }
+}
+
+.draft-order-bar-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.draft-order-bar__mask {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(43, 38, 34, 0.35);
+  pointer-events: auto;
+}
+
+.draft-order-panel {
+  position: absolute;
+  left: 36px;
+  right: 36px;
+  bottom: calc(200px + env(safe-area-inset-bottom));
+  z-index: 1001;
+  background: #fff;
+  border: 1px solid $ck-line;
+  border-radius: 20px;
+  padding: 20px 0 8px;
+  box-shadow: 0 16px 40px rgba(43, 38, 34, 0.22);
+  pointer-events: auto;
+  max-height: 52vh;
+  display: flex;
+  flex-direction: column;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 28px 12px;
+  }
+
+  &__title {
+    font-size: 28px;
+    font-weight: 700;
+    color: $ck-ink;
+  }
+
+  &__close {
+    font-size: 24px;
+    color: $ck-muted;
+  }
+
+  &__list {
+    max-height: 42vh;
+    padding: 0 16px 8px;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 12px;
+    border-top: 1px solid $ck-border-l4;
+  }
+
+  &__cover {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    background: $ck-ko-soft;
+
+    &--empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+  }
+
+  &__name {
     flex: 1;
+    min-width: 0;
+    font-size: 26px;
+    font-weight: 600;
+    color: $ck-ink;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__qty {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: $ck-ko-softer;
+    border: 1px solid $ck-line;
+    border-radius: 12px;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+
+  &__qty-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 64px;
-    border-radius: calc(#{$ck-radius-md} - 4px);
-    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
-
-    .service-switcher--compact & {
-      min-height: 52px;
-      border-radius: calc(#{$ck-radius-sm} - 2px);
-    }
-
-    &--active {
-      background: #fff;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-    }
-
-    &--kitchen.service-switcher__item--active {
-      .service-switcher__label {
-        color: $ck-primary-d10;
-      }
-    }
-
-    &--health.service-switcher__item--active {
-      .service-switcher__label {
-        color: $ck-health-d8;
-      }
-    }
+    font-size: 28px;
+    color: $ck-primary-deep;
+    font-weight: 700;
+    box-shadow: 0 1px 4px rgba(60, 45, 20, 0.1);
   }
 
-  &__label {
+  &__qty-num {
+    min-width: 36px;
+    text-align: center;
     font-size: 26px;
-    font-weight: 500;
-    color: $ck-muted;
+    font-weight: 600;
+    color: $ck-ink;
+  }
 
-    .service-switcher--compact & {
-      font-size: 24px;
-    }
+  &__del {
+    font-size: 22px;
+    color: $ck-faint;
+    flex-shrink: 0;
+    padding: 8px 4px;
+  }
+}
 
-    .service-switcher__item--active & {
-      font-weight: 600;
-    }
+.draft-order-bar {
+  position: absolute;
+  left: 36px;
+  right: 36px;
+  bottom: calc(108px + env(safe-area-inset-bottom));
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: $ck-ink;
+  color: $ck-bg;
+  border-radius: 18px;
+  padding: 20px 24px;
+  box-shadow: 0 12px 28px rgba(43, 38, 34, 0.3);
+  pointer-events: auto;
+
+  &__ico {
+    width: 68px;
+    height: 68px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  &__badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    border-radius: 99px;
+    background: $ck-red;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+
+  &__txt {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    display: block;
+    font-size: 26px;
+    font-weight: 700;
+  }
+
+  &__sub {
+    display: block;
+    font-size: 20px;
+    opacity: 0.7;
+    margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__go {
+    background: linear-gradient(135deg, $ck-primary, $ck-primary-deep);
+    font-size: 24px;
+    font-weight: 700;
+    padding: 14px 26px;
+    border-radius: 12px;
+    flex-shrink: 0;
   }
 }

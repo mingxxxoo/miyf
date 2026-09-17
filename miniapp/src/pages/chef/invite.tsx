@@ -2,6 +2,7 @@ import { View, Text, Button } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import { fetchInvite, rotateInvite, type InviteVo } from '@/api/kitchen'
+import ServiceSwitcher from '@/components/ServiceSwitcher'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
 import './chef.scss'
 
@@ -17,6 +18,9 @@ export default function ChefInvitePage() {
 
   return (
     <View className='chef-page'>
+      <View className='chef-page__svc-switch'>
+        <ServiceSwitcher compact activeKey='chef' />
+      </View>
       <View className='chef-page__hero'>
         <Text className='chef-page__title'>邀请食客</Text>
         <Text className='chef-page__sub'>把邀请码或链接发给食客，对方申请并由你确认后才能看到菜单。</Text>

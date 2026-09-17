@@ -1,17 +1,20 @@
-import { View, Text, ScrollView } from '@tarojs/components'
-import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
-import { useMemo, useState } from 'react'
+import { View, Text, ScrollView, Image } from '@tarojs/components'
+import Taro, { useDidHide, useDidShow, usePullDownRefresh } from '@tarojs/taro'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import DishCard from '@/components/DishCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
-import ServiceSwitcher from '@/components/ServiceSwitcher'
+import ServiceSwitcher, { DraftOrderBar } from '@/components/ServiceSwitcher'
 import { fetchDishes } from '@/api/dish'
 import { fetchMyBinding } from '@/api/kitchen'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
+import { useOrderStore } from '@/stores/orderStore'
 import { PRODUCT_META, useProductStore } from '@/stores/productStore'
 import { useUserStore } from '@/stores/userStore'
 import type { Dish } from '@/types'
 import './index.scss'
+
+const DISH_EMOJIS = ['🍖', '🥬', '🍅', '🐟', '🥗', '🍲', '🍛', '🥘']
 
 export default function IndexPage() {
   const { bootstrapping } = useAuthGuard({ required: false })
@@ -19,6 +22,9 @@ export default function IndexPage() {
   const user = useUserStore((s) => s.user)
   const isLoggedIn = useUserStore((s) => s.isLoggedIn)
   const refreshProfile = useUserStore((s) => s.refreshProfile)
+  const draft = useOrderStore((s) => s.draft)
+  const setDraftItem = useOrderStore((s) => s.setDraftItem)
+  const updateDraftItemQty = useOrderStore((s) => s.updateDraftItemQty)
   const [loading, setLoading] = useState(true)
   const [dishes, setDishes] = useState<Dish[]>([])
   const [kitchenName, setKitchenName] = useState('')
@@ -26,31 +32,82 @@ export default function IndexPage() {
   const [pending, setPending] = useState(false)
   const [rejected, setRejected] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
+  const hasLoadedRef = useRef(false)
+  const scrollTopRef = useRef(0)
 
   const recommended = useMemo(
     () => dishes.filter((d) => d.recommend).slice(0, 6),
     [dishes]
   )
 
+  const draftQtyMap = useMemo(() => {
+    const map: Record<string, number> = {}
+    draft.items.forEach((it) => {
+      map[it.dishId] = it.quantity
+    })
+    return map
+  }, [draft.items])
+
+  const saveScroll = () => {
+    try {
+      Taro.createSelectorQuery()
+        .selectViewport()
+        .scrollOffset()
+        .exec((res) => {
+          const top = res?.[0]?.scrollTop
+          if (typeof top === 'number') scrollTopRef.current = top
+        })
+    } catch {
+      // ignore
+    }
+  }
+
+  const restoreScroll = () => {
+    const top = scrollTopRef.current
+    if (top <= 0) return
+    setTimeout(() => {
+      Taro.pageScrollTo({ scrollTop: top, duration: 0 })
+    }, 30)
+  }
+
+  useDidHide(() => {
+    saveScroll()
+  })
+
   useDidShow(() => {
     setProduct('kitchen')
     Taro.setNavigationBarTitle({ title: PRODUCT_META.kitchen.brand })
-    if (!bootstrapping) void bootstrapHome()
+    if (bootstrapping) return
+    // 已加载过：从详情返回不请求、不重绘列表，只恢复滚动
+    if (hasLoadedRef.current) {
+      restoreScroll()
+      return
+    }
+    void bootstrapHome({ soft: false })
   })
+
+  // 首次进入时若正值登录引导，等 bootstrapping 结束后再拉首页
+  useEffect(() => {
+    if (bootstrapping || !isLoggedIn || hasLoadedRef.current) return
+    void bootstrapHome({ soft: false })
+  }, [bootstrapping, isLoggedIn])
 
   usePullDownRefresh(async () => {
     try {
-      if (!bootstrapping) await bootstrapHome()
+      if (!bootstrapping) await bootstrapHome({ soft: false })
     } finally {
       Taro.stopPullDownRefresh()
     }
   })
 
-  const bootstrapHome = async () => {
+  const bootstrapHome = async (opts?: { soft?: boolean }) => {
     if (!isLoggedIn) {
       setLoading(false)
+      hasLoadedRef.current = false
       return
     }
+    const soft = Boolean(opts?.soft && hasLoadedRef.current)
+    if (soft) return
     setLoading(true)
     const profile = (await refreshProfile()) || user
     if (!profile?.activeRole && !profile?.chef && !profile?.diner) {
@@ -92,14 +149,44 @@ export default function IndexPage() {
           }
         }
       }
+      hasLoadedRef.current = true
     } catch {
       setNeedJoin(true)
       setDishes([])
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
-  if (bootstrapping || loading) {
+  const addToDraft = (dish: Dish) => {
+    const soldOut = dish.stockType === 'LIMITED' && (dish.stock == null || dish.stock <= 0)
+    if (soldOut) {
+      Taro.showToast({ title: '今日已约满', icon: 'none' })
+      return
+    }
+    const existing = draft.items.find((i) => i.dishId === dish.id)
+    const nextQty = (existing?.quantity || 0) + 1
+    if (dish.stockType === 'LIMITED' && dish.stock != null && nextQty > dish.stock) {
+      Taro.showToast({ title: `最多预约 ${dish.stock} 份`, icon: 'none' })
+      return
+    }
+    setDraftItem({
+      dishId: dish.id,
+      dishName: dish.name,
+      coverUrl: dish.coverUrl,
+      quantity: nextQty
+    })
+  }
+
+  const decDraft = (dish: Dish) => {
+    const existing = draft.items.find((i) => i.dishId === dish.id)
+    if (!existing) return
+    updateDraftItemQty(dish.id, existing.quantity - 1)
+  }
+
+  const nick = user?.nickname || user?.username || '朋友'
+
+  if (bootstrapping || (loading && !hasLoadedRef.current)) {
     return <Loading fullscreen text='打开冰箱看看…' />
   }
 
@@ -138,7 +225,6 @@ export default function IndexPage() {
       <View className='index-page'>
         <View className='index-page__hero'>
           <ServiceSwitcher compact className='index-page__switch' />
-          <Text className='index-page__brand'>胡闹厨房</Text>
           <Text className='index-page__greeting'>
             {pending
               ? '申请已提交，等厨师确认'
@@ -146,7 +232,7 @@ export default function IndexPage() {
                 ? '申请未通过'
                 : rejectReason
                   ? '厨房暂不可用'
-                  : '先加入一位厨师的厨房'}
+                  : `${nick}，先加入一位厨师的厨房`}
           </Text>
         </View>
         <EmptyState
@@ -164,27 +250,54 @@ export default function IndexPage() {
     <View className='index-page'>
       <View className='index-page__hero'>
         <ServiceSwitcher compact className='index-page__switch' />
-        <Text className='index-page__brand'>胡闹厨房</Text>
-        <Text className='index-page__subtitle'>专属菜单 · 无价格无支付</Text>
+        <Text className='index-page__greeting'>{nick}，今天想吃点什么？</Text>
+        <Text className='index-page__subtitle'>专属菜单 · 无价格无支付 · 约到就是赚到</Text>
         {kitchenName ? (
-          <Text className='index-page__kitchen-chip'>🏠 {kitchenName}</Text>
+          <Text className='index-page__kitchen-chip'>🍳 {kitchenName} · 营业中</Text>
         ) : null}
+        <View
+          className='index-page__ai-ask ck-pressable'
+          onClick={() => Taro.showToast({ title: 'AI 点菜即将开放', icon: 'none' })}
+        >
+          <Text className='index-page__ai-ico'>✨</Text>
+          <Text className='index-page__ai-txt'>说句话就点菜：「明天中午两个人，想吃清淡点…」</Text>
+        </View>
       </View>
 
       {recommended.length > 0 ? (
         <View className='index-page__section'>
-          <Text className='index-page__section-title'>今日推荐</Text>
-          <ScrollView scrollX className='index-page__rec-scroll'>
+          <View className='index-page__sec-row'>
+            <Text className='index-page__section-title'>厨师推荐</Text>
+          </View>
+          <ScrollView scrollX className='index-page__rec-scroll' enhanced showScrollbar={false}>
             {recommended.map((d, i) => (
               <View
                 key={d.id}
-                className={`index-page__rec-card ck-pressable ${i % 2 === 1 ? 'index-page__rec-card--alt' : ''}`}
-                onClick={() => Taro.navigateTo({ url: `/pages/dish/detail?id=${d.id}` })}
+                className={`index-page__rec-card ck-pressable ${
+                  i % 2 === 1 ? 'index-page__rec-card--alt' : ''
+                }`}
+                onClick={() => {
+                  saveScroll()
+                  Taro.navigateTo({ url: `/pages/dish/detail?id=${d.id}` })
+                }}
               >
-                <Text className='index-page__rec-emoji'>🍽️</Text>
+                <Text className='index-page__rec-tag'>{d.recommend ? '招牌' : '推荐'}</Text>
+                {d.coverUrl ? (
+                  <Image
+                    className='index-page__rec-img'
+                    src={d.coverUrl}
+                    mode='aspectFill'
+                    lazyLoad
+                  />
+                ) : (
+                  <Text className='index-page__rec-emoji'>
+                    {DISH_EMOJIS[i % DISH_EMOJIS.length]}
+                  </Text>
+                )}
                 <Text className='index-page__rec-name'>{d.name}</Text>
                 <Text className='index-page__rec-meta'>
                   {d.rating != null ? `评分 ${d.rating}` : '厨师力荐'}
+                  {d.stockType === 'LIMITED' && d.stock != null ? ` · 今日剩 ${d.stock} 份` : ''}
                 </Text>
               </View>
             ))}
@@ -193,13 +306,31 @@ export default function IndexPage() {
       ) : null}
 
       <View className='index-page__section'>
-        <Text className='index-page__section-title'>全部菜品</Text>
+        <View className='index-page__sec-row'>
+          <Text className='index-page__section-title'>今日菜单</Text>
+          <Text
+            className='index-page__sec-more'
+            onClick={() => Taro.switchTab({ url: '/pages/category/index' })}
+          >
+            全部 {dishes.length} ›
+          </Text>
+        </View>
         {dishes.length === 0 ? (
           <EmptyState emoji='🥘' title='厨房还没上菜' description='等厨师审核通过并上架后再来' />
         ) : (
-          dishes.map((d) => <DishCard key={d.id} dish={d} />)
+          dishes.map((d) => (
+            <DishCard
+              key={d.id}
+              dish={d}
+              quantity={draftQtyMap[d.id] || 0}
+              onAdd={addToDraft}
+              onDec={decDraft}
+            />
+          ))
         )}
       </View>
+
+      <DraftOrderBar />
     </View>
   )
 }

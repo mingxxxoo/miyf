@@ -1,6 +1,7 @@
 .order-page {
   padding: 32px;
   min-height: 100vh;
+  background: $ck-bg;
 
   &__switch {
     margin-bottom: 24px;
@@ -30,43 +31,80 @@
   }
 
   &__draft {
-    margin-bottom: 40px;
+    margin-bottom: 32px;
+    background: #fff;
+    border: 1px solid $ck-border;
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  &__draft-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 28px 32px 20px;
+  }
+
+  &__draft-emoji {
+    font-size: 32px;
+    line-height: 1;
+    flex-shrink: 0;
   }
 
   &__draft-title {
-    display: block;
-    font-size: 32px;
-    font-weight: 600;
-    margin-bottom: 20px;
-  }
-
-  &__draft-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 16px 0;
-    border-bottom: 1px solid $ck-border;
-  }
-
-  &__draft-name {
     flex: 1;
     min-width: 0;
     font-size: 28px;
-    color: $ck-text;
+    font-weight: 700;
+    color: $ck-ink;
   }
 
-  &__draft-ops {
+  &__draft-clear {
+    flex-shrink: 0;
+    font-size: 22px;
+    color: $ck-red;
+  }
+
+  &__draft-line {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
+    padding: 20px 32px;
+    border-top: 1px solid $ck-border-l4;
+  }
+
+  &__draft-emoji-box {
+    width: 76px;
+    height: 76px;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 38px;
     flex-shrink: 0;
+  }
+
+  &__draft-name-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__draft-name {
+    display: block;
+    font-size: 26px;
+    font-weight: 500;
+    color: $ck-text;
   }
 
   &__qty {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
+    padding: 4px;
+    background: $ck-ko-softer;
+    border: 1px solid $ck-border;
+    border-radius: 24px;
+    flex-shrink: 0;
   }
 
   &__qty-btn {
@@ -75,55 +113,112 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: $ck-radius-sm;
-    background: $ck-bg;
-    border: 1px solid $ck-border;
-    font-size: 28px;
-    color: $ck-text;
+    border-radius: 18px;
+    background: #fff;
+    font-size: 26px;
+    font-weight: 700;
+    color: $ck-primary-deep;
+    box-shadow: 0 2px 8px rgba(60, 45, 20, 0.1);
   }
 
   &__qty-num {
     min-width: 40px;
     text-align: center;
-    font-size: 28px;
+    font-size: 24px;
+    font-weight: 600;
     color: $ck-text;
   }
 
-  &__draft-del {
-    font-size: 24px;
+  &__meal-pick {
+    display: flex;
+    gap: 16px;
+    padding: 24px 32px 12px;
+  }
+
+  &__meal-chip {
+    flex: 1;
+    text-align: center;
+    font-size: 22px;
+    padding: 18px 0;
+    border-radius: 24px;
+    background: $ck-ko-softer;
+    border: 1px solid $ck-border;
     color: $ck-muted;
-    padding: 8px 4px;
+
+    &--on {
+      background: $ck-ko-soft;
+      border-color: $ck-primary;
+      color: $ck-primary-deep;
+      font-weight: 700;
+    }
   }
 
-  &__field {
-    margin-top: 24px;
+  &__custom-row {
+    display: flex;
+    gap: 12px;
+    padding: 8px 32px 16px;
   }
 
-  &__label {
-    display: block;
-    font-size: $ck-font-caption;
-    color: $ck-muted;
-    margin-bottom: 12px;
-  }
-
-  &__picker,
-  &__input {
-    background: $ck-bg;
+  &__picker {
+    background: $ck-ko-softer;
     border: 1px solid $ck-border;
     border-radius: $ck-radius-sm;
-    padding: 20px 24px;
-    font-size: 28px;
+    padding: 16px 20px;
+    font-size: 24px;
     color: $ck-text;
+
+    &--sm {
+      flex: 1;
+      text-align: center;
+      padding: 14px 8px;
+      font-size: 22px;
+      color: $ck-muted;
+    }
   }
 
-  &__actions {
+  &__submit-row {
     display: flex;
+    align-items: center;
     gap: 20px;
-    margin-top: 32px;
+    padding: 0 32px 28px;
   }
 
-  &__btn {
+  &__note-input {
     flex: 1;
+    min-width: 0;
+    font-size: 24px;
+    color: $ck-faint;
+    background: $ck-ko-softer;
+    border: 1px solid $ck-border;
+    border-radius: 24px;
+    padding: 20px 24px;
+  }
+
+  &__submit-btn {
+    flex-shrink: 0;
+    width: 192px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 24px;
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, $ck-primary, $ck-primary-deep);
+  }
+
+  &__sec-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  &__section-title {
+    font-size: 30px;
+    font-weight: 700;
+    color: $ck-ink;
   }
 
   &__tabs {
@@ -150,10 +245,7 @@
     }
   }
 
-  &__section-title {
-    display: block;
-    font-size: $ck-font-title;
-    font-weight: 600;
-    margin-bottom: 24px;
+  &__history {
+    padding-bottom: 32px;
   }
 }

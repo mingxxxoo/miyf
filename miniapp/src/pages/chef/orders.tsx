@@ -3,6 +3,7 @@ import Taro, { useDidShow } from '@tarojs/taro'
 import { useMemo, useState } from 'react'
 import { fetchChefOrders, updateChefOrderStatus, type ChefOrder } from '@/api/kitchen'
 import EmptyState from '@/components/EmptyState'
+import ServiceSwitcher from '@/components/ServiceSwitcher'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
 import { prefetchChefWxSubscribeConfig, requestChefOrderSubscribe } from '@/utils/wxSubscribe'
 import './chef.scss'
@@ -129,8 +130,35 @@ export default function ChefOrdersPage() {
     }
   }
 
+  const rejectOrder = (order: ChefOrder) => {
+    if (actingId) return
+    Taro.showModal({
+      title: '拒绝预约',
+      content: `确认拒绝「${order.userNickname || '食客'}」的预约？`,
+      success: async (res) => {
+        if (!res.confirm) return
+        setActingId(order.id)
+        try {
+          await updateChefOrderStatus(order.id, 'CANCELLED')
+          Taro.showToast({ title: '已拒绝', icon: 'success' })
+          await load()
+        } catch (err) {
+          Taro.showToast({
+            title: err instanceof Error ? err.message : '操作失败',
+            icon: 'none'
+          })
+        } finally {
+          setActingId(null)
+        }
+      }
+    })
+  }
+
   return (
     <View className='chef-page'>
+      <View className='chef-page__svc-switch'>
+        <ServiceSwitcher compact activeKey='chef' className='chef-page__switch' />
+      </View>
       <View className='chef-page__hero'>
         <Text className='chef-page__title'>处理预约</Text>
         <Text className='chef-page__sub'>确认 → 备餐 → 取餐 → 完成</Text>
@@ -231,15 +259,25 @@ export default function ChefOrdersPage() {
               {o.remark ? <Text className='chef-page__oc-meta' style={{ marginTop: '12px' }}>备注：{o.remark}</Text> : null}
               {next ? (
                 <View className='chef-page__oc-foot'>
-                  <View />
+                  <Text className='chef-page__oc-meta'>单号 #{o.orderNo}</Text>
                   <View className='chef-page__oc-actions'>
+                    {o.status === 'PENDING' ? (
+                      <Button
+                        className='chef-page__btn-xs chef-page__btn-xs--ghost'
+                        size='mini'
+                        disabled={actingId === o.id}
+                        onClick={() => rejectOrder(o)}
+                      >
+                        拒绝
+                      </Button>
+                    ) : null}
                     <Button
                       className='chef-page__btn-xs chef-page__btn-xs--solid'
                       size='mini'
                       loading={actingId === o.id}
                       onClick={() => void advance(o)}
                     >
-                      {next.label}
+                      {o.status === 'PENDING' ? '确认接单' : next.label}
                     </Button>
                   </View>
                 </View>

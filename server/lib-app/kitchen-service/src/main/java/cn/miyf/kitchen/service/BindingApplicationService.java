@@ -26,6 +26,7 @@ import java.util.Set;
 
 /**
  * 厨师–食客绑定：一客一厨，厨师确认后生效。
+ * 厨房主默认 BOUND 加入本厨圈，不可单独解绑（须随厨房一并移除）。
  *
  * @author XieMingJie
  * @since 2026-09-15
@@ -45,18 +46,28 @@ public class BindingApplicationService extends BaseApplicationService {
 
     /**
      * 食客当前绑定关系（优先 BOUND，其次 PENDING，再次最新 REJECTED）。
+     * 若当前用户拥有厨房且尚未自绑，则补齐本厨主默认 BOUND。
      *
      * @return 绑定 VO，无记录时为 null
      * @history 1.00 2026-09-15 XieMingJie Created.
      */
+    @Transactional
     public KitchenBindingVo getMine() {
         UserEntity diner = kitchenAccessService.requireDiner();
         KitchenBindingEntity active = bindingRepository.selectActiveByDiner(diner.getId());
-        return active == null ? null : toVo(active);
+        if (active != null) {
+            return toVo(active);
+        }
+        KitchenEntity owned = kitchenRepository.selectByOwnerUserId(diner.getId());
+        if (owned != null) {
+            return toVo(ensureOwnerSelfBinding(owned));
+        }
+        return null;
     }
 
     /**
      * 凭邀请码/token 申请加入厨房；一客一厨，且同时仅允许一条 PENDING。
+     * 对本厨主申请则幂等确保默认自绑并返回。
      *
      * @param dto 邀请码或 token
      * @return 新建或已存在的 PENDING/BOUND
@@ -68,7 +79,7 @@ public class BindingApplicationService extends BaseApplicationService {
         KitchenInviteEntity invite = inviteApplicationService.requireActive(dto.getCode(), dto.getToken());
         KitchenEntity kitchen = kitchenAccessService.requireKitchen(invite.getKitchenId());
         if (kitchen.getOwnerUserId().equals(diner.getId())) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "不能加入自己的厨房");
+            return toVo(ensureOwnerSelfBinding(kitchen));
         }
         KitchenBindingEntity currentBound = bindingRepository.selectBoundByDiner(diner.getId());
         if (currentBound != null) {
@@ -110,15 +121,70 @@ public class BindingApplicationService extends BaseApplicationService {
     }
 
     /**
-     * 厨师端：本厨房绑定分页。
+     * 厨师端：本厨房绑定分页；进入前确保厨主已默认加入本厨圈。
      *
      * @param qo 状态与分页
      * @return 分页结果
      * @history 1.00 2026-09-15 XieMingJie Created.
      */
+    @Transactional
     public PageResult<KitchenBindingVo> pageChef(BindingPageQo qo) {
         KitchenEntity kitchen = kitchenAccessService.requireOwnedKitchen();
+        ensureOwnerSelfBinding(kitchen);
         return pageByKitchen(kitchen.getId(), qo.getStatus(), qo);
+    }
+
+    /**
+     * 确保厨房主以 BOUND 身份加入本厨圈，并开通食客身份。
+     * 若厨主已 BOUND 其他厨房且无进行中预约，则先解除再自绑。
+     *
+     * @param kitchen 厨房
+     * @return 本厨主 BOUND 绑定
+     * @history 1.00 2026-09-17 XieMingJie Created.
+     */
+    @Transactional
+    public KitchenBindingEntity ensureOwnerSelfBinding(KitchenEntity kitchen) {
+        Long ownerId = kitchen.getOwnerUserId();
+        UserEntity owner = requireById(userRepository, ownerId, "用户不存在");
+        if (!Boolean.TRUE.equals(owner.getDiner())) {
+            owner.setDiner(true);
+            userRepository.updateById(owner);
+        }
+        KitchenBindingEntity bound = bindingRepository.selectBoundByDiner(ownerId);
+        if (bound != null && kitchen.getId().equals(bound.getKitchenId())) {
+            return bound;
+        }
+        if (bound != null) {
+            if (kitchenAccessService.hasOpenOrders(bound.getKitchenId(), ownerId)) {
+                throw new BusinessException(ErrorCode.CONFLICT,
+                        "请先完成或取消其他厨房的进行中预约，再加入本厨圈");
+            }
+            bound.setStatus("UNBOUND");
+            bound.setUnboundAt(Instant.now());
+            bindingRepository.updateById(bound);
+        }
+        KitchenBindingEntity pending = bindingRepository.selectPendingByDiner(ownerId);
+        if (pending != null) {
+            if (kitchen.getId().equals(pending.getKitchenId())) {
+                pending.setStatus("BOUND");
+                pending.setDecidedAt(Instant.now());
+                pending.setRejectReason(null);
+                bindingRepository.updateById(pending);
+                return pending;
+            }
+            pending.setStatus("UNBOUND");
+            pending.setUnboundAt(Instant.now());
+            bindingRepository.updateById(pending);
+        }
+        Instant now = Instant.now();
+        KitchenBindingEntity entity = new KitchenBindingEntity()
+                .setKitchenId(kitchen.getId())
+                .setDinerUserId(ownerId)
+                .setStatus("BOUND")
+                .setAppliedAt(now)
+                .setDecidedAt(now);
+        bindingRepository.insert(entity);
+        return entity;
     }
 
     /**
@@ -173,6 +239,7 @@ public class BindingApplicationService extends BaseApplicationService {
         KitchenBindingEntity entity = requireById(bindingRepository, id, "绑定不存在");
         UserEntity user = kitchenAccessService.requireUser();
         KitchenEntity kitchen = kitchenAccessService.requireKitchen(entity.getKitchenId());
+        rejectOwnerSelfUnbind(kitchen, entity);
         boolean owner = kitchen.getOwnerUserId().equals(user.getId());
         boolean diner = entity.getDinerUserId().equals(user.getId());
         requireTrue(owner || diner, ErrorCode.FORBIDDEN, "无权解除该绑定");
@@ -227,6 +294,8 @@ public class BindingApplicationService extends BaseApplicationService {
     @Transactional
     public KitchenBindingVo unbindAdmin(Long id) {
         KitchenBindingEntity entity = requireById(bindingRepository, id, "绑定不存在");
+        KitchenEntity kitchen = kitchenAccessService.requireKitchen(entity.getKitchenId());
+        rejectOwnerSelfUnbind(kitchen, entity);
         requireTrue("BOUND".equals(entity.getStatus()) || "PENDING".equals(entity.getStatus()),
                 ErrorCode.INVALID_STATUS, "当前状态不可解除");
         if ("BOUND".equals(entity.getStatus())
@@ -237,6 +306,12 @@ public class BindingApplicationService extends BaseApplicationService {
         entity.setUnboundAt(Instant.now());
         bindingRepository.updateById(entity);
         return toVo(entity);
+    }
+
+    private void rejectOwnerSelfUnbind(KitchenEntity kitchen, KitchenBindingEntity entity) {
+        if (kitchen.getOwnerUserId().equals(entity.getDinerUserId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "厨师为本厨默认食客，不可单独解除；需随厨房一并移除");
+        }
     }
 
     private PageResult<KitchenBindingVo> pageByKitchen(Long kitchenId, String status, BindingPageQo qo) {
@@ -272,6 +347,7 @@ public class BindingApplicationService extends BaseApplicationService {
     private KitchenBindingVo toVo(KitchenBindingEntity entity) {
         KitchenEntity kitchen = kitchenRepository.selectById(entity.getKitchenId());
         UserEntity diner = userRepository.selectById(entity.getDinerUserId());
+        boolean ownerSelf = kitchen != null && kitchen.getOwnerUserId().equals(entity.getDinerUserId());
         return new KitchenBindingVo()
                 .setId(entity.getId())
                 .setKitchenId(entity.getKitchenId())
@@ -282,6 +358,8 @@ public class BindingApplicationService extends BaseApplicationService {
                 .setRejectReason(entity.getRejectReason())
                 .setAppliedAt(entity.getAppliedAt())
                 .setDecidedAt(entity.getDecidedAt())
-                .setUnboundAt(entity.getUnboundAt());
+                .setUnboundAt(entity.getUnboundAt())
+                .setOwnerSelf(ownerSelf)
+                .setRemovable(!ownerSelf);
     }
 }

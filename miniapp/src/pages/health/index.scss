@@ -211,6 +211,75 @@
     color: $ck-faint;
   }
 
+  &__sync-hint {
+    font-size: 22px;
+    color: $ck-faint;
+  }
+
+  &__sec-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 36px 36px 16px;
+  }
+
+  &__sec-row .health-page__group-title {
+    padding: 0;
+  }
+
+  &__notice-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__notice-title {
+    display: block;
+    font-size: 26px;
+    font-weight: 700;
+    color: #8a6a1f;
+  }
+
+  &__notice-go {
+    font-size: 22px;
+    color: $ck-amber;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  &__m-card--warn {
+    border-color: #f0ddb4;
+    background: #fffdf5;
+  }
+
+  &__m-num--warn {
+    color: $ck-amber;
+  }
+
+  &__spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 32px;
+    width: 120px;
+
+    &--empty {
+      background: linear-gradient(90deg, transparent, #f4f0e9);
+      border-radius: 4px;
+      opacity: 0.5;
+    }
+
+    &--warn .health-page__spark-bar {
+      background: linear-gradient(180deg, #e8b45a, #d99426);
+    }
+  }
+
+  &__spark-bar {
+    flex: 1;
+    min-width: 4px;
+    border-radius: 99px 99px 2px 2px;
+    background: linear-gradient(180deg, $ck-hg2, $ck-hg);
+  }
+
   &__group {
     margin: 0 36px;
     background: #fff;

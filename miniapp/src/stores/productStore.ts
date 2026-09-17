@@ -35,9 +35,9 @@ export const PRODUCT_META: Record<
   },
   health: {
     code: 'health',
-    label: '健康服务',
+    label: '胡闹健康',
     shortLabel: '健康',
-    brand: 'miyf 健康',
+    brand: '胡闹健康',
     homeUrl: '/pages/health/index',
     homeIsTab: false,
     accent: 'health'

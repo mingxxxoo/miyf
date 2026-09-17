@@ -10,20 +10,21 @@ import {
   type ChefOrder
 } from '@/api/kitchen'
 import EmptyState from '@/components/EmptyState'
+import ServiceSwitcher from '@/components/ServiceSwitcher'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
 import { useUserStore } from '@/stores/userStore'
 import { prefetchChefWxSubscribeConfig, requestChefOrderSubscribe } from '@/utils/wxSubscribe'
 import './chef.scss'
 
 const MENUS = [
-  { label: '菜品', url: '/pages/chef/dishes', icon: '🍽️', bg: '#FFF1E2' },
-  { label: '菜谱', url: '/pages/chef/recipes', icon: '📖', bg: '#E7F7F0' },
-  { label: '分类', url: '/pages/chef/categories', icon: '📂', bg: '#FBF3E0' },
-  { label: '预约', url: '/pages/chef/orders', icon: '📋', bg: '#EBF3FB', badgeKey: 'pending' as const },
-  { label: '食客申请', url: '/pages/chef/bindings', icon: '👥', bg: '#FCEEEA', badgeKey: 'apply' as const },
-  { label: '邀请码', url: '/pages/chef/invite', icon: '🔗', bg: '#FFF1E2' },
-  { label: '厨房资料', url: '/pages/chef/kitchen', icon: '🏠', bg: '#E7F7F0' },
-  { label: '经营统计', url: '', icon: '📊', bg: '#F4F0E9', soon: true }
+  { label: '菜品', url: '/pages/chef/dishes', icon: '🥘', bg: '#FFF1E2' },
+  { label: '菜谱', url: '/pages/chef/recipes', icon: '📗', bg: '#E7F7F0' },
+  { label: '分类', url: '/pages/chef/categories', icon: '🗂️', bg: '#FBF3E0' },
+  { label: '预约', url: '/pages/chef/orders', icon: '📝', bg: '#EBF3FB', badgeKey: 'pending' as const },
+  { label: '食客申请', url: '/pages/chef/bindings', icon: '🤝', bg: '#FCEEEA', badgeKey: 'apply' as const },
+  { label: '邀请码', url: '/pages/chef/invite', icon: '🎟️', bg: '#FFF1E2' },
+  { label: '厨房资料', url: '/pages/chef/kitchen', icon: '🏡', bg: '#E7F7F0' },
+  { label: '经营统计', url: '', icon: '📈', bg: '#F4F0E9', soon: true }
 ]
 
 const NEXT: Record<string, { status: string; label: string }> = {
@@ -147,8 +148,35 @@ export default function ChefHomePage() {
     }
   }
 
+  const rejectOrder = (order: ChefOrder) => {
+    if (actingId) return
+    Taro.showModal({
+      title: '拒绝预约',
+      content: `确认拒绝「${order.userNickname || '食客'}」的预约？`,
+      success: async (res) => {
+        if (!res.confirm) return
+        setActingId(order.id)
+        try {
+          await updateChefOrderStatus(order.id, 'CANCELLED')
+          Taro.showToast({ title: '已拒绝', icon: 'success' })
+          await load()
+        } catch (err) {
+          Taro.showToast({
+            title: err instanceof Error ? err.message : '操作失败',
+            icon: 'none'
+          })
+        } finally {
+          setActingId(null)
+        }
+      }
+    })
+  }
+
   return (
     <View className='chef-page'>
+      <View className='chef-page__svc-switch'>
+        <ServiceSwitcher compact activeKey='chef' />
+      </View>
       <View className='chef-page__hero-card'>
         <Text className='chef-page__hello'>
           {greetByHour()}，{user?.nickname || '厨师'} 👋
@@ -245,17 +273,32 @@ export default function ChefHomePage() {
                 <Text className={`ck-chip ${chip.cls}`}>{chip.text}</Text>
               </View>
               <Text className='chef-page__oc-dishes'>{itemSummary(o)}</Text>
+              {o.remark ? (
+                <Text className='chef-page__oc-meta' style={{ marginTop: '8px' }}>
+                  备注：{o.remark}
+                </Text>
+              ) : null}
               <View className='chef-page__oc-foot'>
-                <Text className='chef-page__oc-meta'>单号 #{o.orderNo}</Text>
+                <Text className='chef-page__oc-meta'>🕐 单号 #{o.orderNo}</Text>
                 {next ? (
                   <View className='chef-page__oc-actions'>
+                    {o.status === 'PENDING' ? (
+                      <Button
+                        className='chef-page__btn-xs chef-page__btn-xs--ghost'
+                        size='mini'
+                        disabled={actingId === o.id}
+                        onClick={() => rejectOrder(o)}
+                      >
+                        拒绝
+                      </Button>
+                    ) : null}
                     <Button
                       className='chef-page__btn-xs chef-page__btn-xs--solid'
                       size='mini'
                       loading={actingId === o.id}
                       onClick={() => void advance(o)}
                     >
-                      {next.label}
+                      {o.status === 'PENDING' ? '确认' : next.label}
                     </Button>
                   </View>
                 ) : null}
