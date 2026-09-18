@@ -38,9 +38,9 @@ public class AiConfig {
     }
 
     /**
-     * 默认 ChatClient；仅在 app.ai.enabled=true 且 DashScope ChatClient.Builder 可用时创建。
+     * 默认 ChatClient；仅在 app.ai.enabled=true 且 Spring AI ChatClient.Builder 可用时创建。
      *
-     * @param builder    Spring AI 自动配置的 Builder
+     * @param builder    Spring AI 自动配置的 Builder（OpenAI 协议 / DashScope 兼容模式）
      * @param properties AI 配置
      * @return ChatClient
      * @history 1.00 2026-09-17 XieMingJie Created.
@@ -54,8 +54,7 @@ public class AiConfig {
                 .defaultOptions(ChatOptions.builder()
                         .model(properties.getModel())
                         .temperature(0.2d)
-                        .maxTokens(properties.getMaxTokens())
-                        .build())
+                        .maxTokens(properties.getMaxTokens()))
                 .build();
     }
 }

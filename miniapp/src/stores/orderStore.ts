@@ -1,5 +1,10 @@
 import Taro from '@tarojs/taro'
 import { create } from 'zustand'
+import type {
+  OrderDraftAiResult,
+  OrderDraftAiUnmatched,
+  OrderInsightAiResult
+} from '@/api/ai'
 import { fetchDishDetail } from '@/api/dish'
 import * as orderApi from '@/api/order'
 import type { Order, OrderItem } from '@/types'
@@ -15,10 +20,19 @@ interface OrderDraft {
   guestCount: number
 }
 
+/** AI 草稿附带信息（不持久化，仅当前会话展示） */
+interface AiDraftMeta {
+  dinerText: string
+  ambiguityNote?: string
+  unmatched: OrderDraftAiUnmatched[]
+}
+
 interface OrderState {
   orders: Order[]
   currentOrder: Order | null
   draft: OrderDraft
+  aiMeta: AiDraftMeta | null
+  aiInsight: OrderInsightAiResult | null
   loading: boolean
   loadError: boolean
   detailError: boolean
@@ -29,6 +43,9 @@ interface OrderState {
   removeDraftItem: (dishId: string) => void
   updateDraft: (patch: Partial<OrderDraft>) => void
   clearDraft: () => void
+  applyAiDraft: (result: OrderDraftAiResult, dinerText: string) => void
+  setAiInsight: (insight: OrderInsightAiResult | null) => void
+  clearAiAssist: () => void
   submitOrder: () => Promise<Order | null>
   cancelOrder: (id: string) => Promise<Order | null>
 }
@@ -96,6 +113,13 @@ function buildRemark(draft: OrderDraft): string {
   return parts.join('；') || ''
 }
 
+function mealTypeToTime(mealType?: string): string {
+  const t = (mealType || '').toUpperCase()
+  if (t === 'DINNER') return '18:00'
+  if (t === 'LUNCH') return '12:00'
+  return ''
+}
+
 function setDraft(set: (partial: Partial<OrderState>) => void, draft: OrderDraft) {
   persistDraft(draft)
   set({ draft })
@@ -105,6 +129,8 @@ export const useOrderStore = create<OrderState>((set, getState) => ({
   orders: [],
   currentOrder: null,
   draft: readStoredDraft(),
+  aiMeta: null,
+  aiInsight: null,
   loading: false,
   loadError: false,
   detailError: false,
@@ -173,6 +199,45 @@ export const useOrderStore = create<OrderState>((set, getState) => ({
 
   clearDraft: () => {
     setDraft(set, emptyDraft())
+    set({ aiMeta: null, aiInsight: null })
+  },
+
+  applyAiDraft: (result, dinerText) => {
+    const items: OrderItem[] = (result.items || []).map((i) => ({
+      dishId: i.dishId,
+      dishName: i.dishName,
+      quantity: clampQty(i.quantity),
+      note: i.itemNote,
+      remark: i.itemNote
+    }))
+    const timeOfDay = mealTypeToTime(result.mealType)
+    const next: OrderDraft = {
+      items,
+      scheduledTime: result.mealDate || '',
+      scheduledTimeOfDay: timeOfDay,
+      note: result.note || '',
+      guestCount:
+        typeof result.guestCount === 'number' && result.guestCount > 0
+          ? result.guestCount
+          : 2
+    }
+    setDraft(set, next)
+    set({
+      aiMeta: {
+        dinerText,
+        ambiguityNote: result.ambiguityNote,
+        unmatched: result.unmatched || []
+      },
+      aiInsight: null
+    })
+  },
+
+  setAiInsight: (insight) => {
+    set({ aiInsight: insight })
+  },
+
+  clearAiAssist: () => {
+    set({ aiMeta: null, aiInsight: null })
   },
 
   submitOrder: async () => {

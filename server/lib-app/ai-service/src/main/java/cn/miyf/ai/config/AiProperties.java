@@ -3,7 +3,7 @@ package cn.miyf.ai.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * AI 模块配置（DashScope / 超时 / 降级开关）。
+ * AI 模块配置（模型 / 超时 / 降级开关）。
  *
  * @author XieMingJie
  * @since 2026-09-17

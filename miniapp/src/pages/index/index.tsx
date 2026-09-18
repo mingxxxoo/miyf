@@ -1,12 +1,14 @@
 import { View, Text, ScrollView, Image } from '@tarojs/components'
 import Taro, { useDidHide, useDidShow, usePullDownRefresh } from '@tarojs/taro'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { analyzeOrderInsight, draftOrderFromText } from '@/api/ai'
+import { fetchDishes } from '@/api/dish'
+import { fetchMyBinding } from '@/api/kitchen'
+import AiPromptSheet from '@/components/AiPromptSheet'
 import DishCard from '@/components/DishCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
 import ServiceSwitcher, { DraftOrderBar } from '@/components/ServiceSwitcher'
-import { fetchDishes } from '@/api/dish'
-import { fetchMyBinding } from '@/api/kitchen'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { useOrderStore } from '@/stores/orderStore'
 import { PRODUCT_META, useProductStore } from '@/stores/productStore'
@@ -25,6 +27,8 @@ export default function IndexPage() {
   const draft = useOrderStore((s) => s.draft)
   const setDraftItem = useOrderStore((s) => s.setDraftItem)
   const updateDraftItemQty = useOrderStore((s) => s.updateDraftItemQty)
+  const applyAiDraft = useOrderStore((s) => s.applyAiDraft)
+  const setAiInsight = useOrderStore((s) => s.setAiInsight)
   const [loading, setLoading] = useState(true)
   const [dishes, setDishes] = useState<Dish[]>([])
   const [kitchenName, setKitchenName] = useState('')
@@ -32,6 +36,9 @@ export default function IndexPage() {
   const [pending, setPending] = useState(false)
   const [rejected, setRejected] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiText, setAiText] = useState('')
+  const [aiSubmitting, setAiSubmitting] = useState(false)
   const hasLoadedRef = useRef(false)
   const scrollTopRef = useRef(0)
 
@@ -184,6 +191,63 @@ export default function IndexPage() {
     updateDraftItemQty(dish.id, existing.quantity - 1)
   }
 
+  const runAiOrderDraft = async () => {
+    const text = aiText.trim()
+    if (!text) {
+      Taro.showToast({ title: '请先说一句想吃的', icon: 'none' })
+      return
+    }
+    if (needJoin) {
+      Taro.showToast({ title: '请先加入厨房', icon: 'none' })
+      return
+    }
+    if (aiSubmitting) return
+    setAiSubmitting(true)
+    try {
+      const result = await draftOrderFromText(text)
+      applyAiDraft(result, text)
+      setAiOpen(false)
+      setAiText('')
+
+      if (result.degraded && result.items.length === 0) {
+        Taro.showToast({ title: 'AI 暂不可用，请手动选菜', icon: 'none' })
+        return
+      }
+      if (result.items.length === 0) {
+        const tip =
+          result.unmatched?.[0]?.reason ||
+          result.ambiguityNote ||
+          '没匹配到在售菜品，请手动选菜'
+        Taro.showToast({ title: tip.slice(0, 40), icon: 'none' })
+        return
+      }
+
+      // 异步拉饮食参考，失败静默
+      void analyzeOrderInsight({
+        dinerText: text,
+        draftJson: JSON.stringify(result)
+      })
+        .then((insight) => {
+          if (!insight.degraded) setAiInsight(insight)
+        })
+        .catch(() => {
+          // ignore
+        })
+
+      const unmatchedHint =
+        result.unmatched?.length > 0 ? `，${result.unmatched.length} 项未匹配` : ''
+      Taro.showToast({
+        title: `已生成草稿 ${result.items.length} 样${unmatchedHint}`,
+        icon: 'none'
+      })
+      Taro.switchTab({ url: '/pages/order/index' })
+    } catch {
+      // request 层已 toast
+    } finally {
+      setAiSubmitting(false)
+    }
+  }
+
   const nick = user?.nickname || user?.username || '朋友'
 
   if (bootstrapping || (loading && !hasLoadedRef.current)) {
@@ -257,7 +321,13 @@ export default function IndexPage() {
         ) : null}
         <View
           className='index-page__ai-ask ck-pressable'
-          onClick={() => Taro.showToast({ title: 'AI 点菜即将开放', icon: 'none' })}
+          onClick={() => {
+            if (needJoin) {
+              Taro.showToast({ title: '请先加入厨房', icon: 'none' })
+              return
+            }
+            setAiOpen(true)
+          }}
         >
           <Text className='index-page__ai-ico'>✨</Text>
           <Text className='index-page__ai-txt'>说句话就点菜：「明天中午两个人，想吃清淡点…」</Text>
@@ -331,6 +401,18 @@ export default function IndexPage() {
       </View>
 
       <DraftOrderBar />
+
+      <AiPromptSheet
+        visible={aiOpen}
+        title='✨ 说句话点菜'
+        hint='只匹配当前厨房在售菜品，生成预约草稿，不会自动提交。'
+        placeholder='例如：明天中午两个人，想吃清淡点，来个鱼和素菜，少辣'
+        submitting={aiSubmitting}
+        text={aiText}
+        onTextChange={setAiText}
+        onClose={() => setAiOpen(false)}
+        onSubmit={() => void runAiOrderDraft()}
+      />
     </View>
   )
 }

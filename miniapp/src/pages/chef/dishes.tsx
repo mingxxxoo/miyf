@@ -1,12 +1,19 @@
 import { View, Text, Input, Textarea, Button, Image, Switch, Picker, ScrollView } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useMemo, useState } from 'react'
+import {
+  extractChefDishes,
+  type ChefDishAiDraft,
+  type ChefDishAiRecipeDraft
+} from '@/api/ai'
 import { fetchCategories } from '@/api/category'
 import {
+  createChefCategory,
   createChefDish,
   deleteChefDish,
   fetchChefDishes,
   publishChefDish,
+  saveChefRecipe,
   submitChefDish,
   unpublishChefDish,
   updateChefDish,
@@ -15,6 +22,7 @@ import {
   type ChefDish,
   type ChefDishSavePayload
 } from '@/api/kitchen'
+import AiPromptSheet from '@/components/AiPromptSheet'
 import EmptyState from '@/components/EmptyState'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
@@ -78,6 +86,14 @@ export default function ChefDishesPage() {
   const [tab, setTab] = useState<'ALL' | 'ON_SALE' | 'PENDING' | 'OFF'>('ALL')
   const [creating, setCreating] = useState(false)
 
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiText, setAiText] = useState('')
+  const [aiUrl, setAiUrl] = useState('')
+  const [aiSubmitting, setAiSubmitting] = useState(false)
+  const [aiDrafts, setAiDrafts] = useState<ChefDishAiDraft[]>([])
+  const [aiDraftIndex, setAiDraftIndex] = useState(0)
+  const [pendingRecipe, setPendingRecipe] = useState<ChefDishAiRecipeDraft | null>(null)
+
   const categoryNames = useMemo(() => categories.map((c) => c.name), [categories])
   const categoryIndex = Math.max(
     0,
@@ -119,6 +135,94 @@ export default function ChefDishesPage() {
     setRecommend(false)
     setDescription('')
     setImages([])
+    setPendingRecipe(null)
+    setAiDrafts([])
+    setAiDraftIndex(0)
+  }
+
+  const applyAiDraftToForm = (draft: ChefDishAiDraft, cats: Category[]) => {
+    setEditingId(null)
+    setCreating(true)
+    setName(draft.name || '')
+    const matchedId = draft.categoryId || ''
+    const inList = matchedId && cats.some((c) => c.id === matchedId)
+    setCategoryId(inList ? matchedId : cats[0]?.id || '')
+    const limited = (draft.stockType || '').toUpperCase() === 'LIMITED'
+    setStockType(limited ? 'LIMITED' : 'UNLIMITED')
+    setStock(limited ? String(draft.stock ?? 10) : '')
+    setUnit('份')
+    setRecommend(false)
+    const descParts = [draft.subtitle, draft.description].filter(Boolean)
+    setDescription(descParts.join(' · ') || '')
+    setImages([])
+    setPendingRecipe(draft.recipe || null)
+    Taro.pageScrollTo({ scrollTop: 0, duration: 200 })
+  }
+
+  const runAiExtract = async () => {
+    const text = aiText.trim()
+    const url = aiUrl.trim()
+    if (!text && !url) {
+      Taro.showToast({ title: '请粘贴菜品文字或链接', icon: 'none' })
+      return
+    }
+    if (aiSubmitting) return
+    setAiSubmitting(true)
+    try {
+      const result = await extractChefDishes({
+        text: text || undefined,
+        url: url || undefined
+      })
+      if (result.degraded && (!result.dishes || result.dishes.length === 0)) {
+        setAiOpen(false)
+        setEditingId(null)
+        setCreating(true)
+        Taro.showToast({
+          title: result.rejectReason || 'AI 暂不可用，请手动填写',
+          icon: 'none'
+        })
+        return
+      }
+      if (!result.dishes.length) {
+        Taro.showToast({
+          title: result.rejectReason || '未识别到菜品',
+          icon: 'none'
+        })
+        return
+      }
+      let cats = categories
+      const first = result.dishes[0]
+      if (first.newCategory && first.categoryName && !first.categoryId) {
+        try {
+          const created = await createChefCategory({
+            name: first.categoryName.trim(),
+            status: 'ENABLED'
+          })
+          cats = await fetchCategories().catch(() => cats)
+          setCategories(cats)
+          first.categoryId = created.id
+          first.newCategory = false
+        } catch {
+          // 分类创建失败时仍回填表单，提示厨师手动选分类
+          Taro.showToast({ title: '新分类创建失败，请手动选择', icon: 'none' })
+        }
+      }
+      setAiDrafts(result.dishes)
+      setAiDraftIndex(0)
+      applyAiDraftToForm(first, cats)
+      setAiOpen(false)
+      setAiText('')
+      setAiUrl('')
+      const tip =
+        result.dishes.length > 1
+          ? `已识别 ${result.dishes.length} 道菜，请确认后保存`
+          : '已填入草稿，请确认后保存'
+      Taro.showToast({ title: tip, icon: 'none' })
+    } catch {
+      // request 层已 toast
+    } finally {
+      setAiSubmitting(false)
+    }
   }
 
   const load = async () => {
@@ -224,13 +328,33 @@ export default function ChefDishesPage() {
       if (!payload) return
       if (editingId) {
         await updateChefDish(editingId, payload)
+        if (pendingRecipe) {
+          await saveRecipeForDish(editingId, pendingRecipe)
+        }
         Taro.showToast({ title: '已保存', icon: 'success' })
+        resetForm()
+        await load()
       } else {
-        await createChefDish(payload)
-        Taro.showToast({ title: '已保存草稿', icon: 'success' })
+        const created = await createChefDish(payload)
+        if (pendingRecipe && created?.id) {
+          await saveRecipeForDish(created.id, pendingRecipe)
+        }
+        const remaining = aiDrafts.filter((_, i) => i !== aiDraftIndex)
+        if (remaining.length > 0) {
+          setAiDrafts(remaining)
+          setAiDraftIndex(0)
+          applyAiDraftToForm(remaining[0], categories)
+          Taro.showToast({
+            title: `已保存，还有 ${remaining.length} 道待确认`,
+            icon: 'none'
+          })
+          await load()
+        } else {
+          Taro.showToast({ title: '已保存草稿', icon: 'success' })
+          resetForm()
+          await load()
+        }
       }
-      resetForm()
-      await load()
     } catch (e) {
       Taro.showToast({
         title: e instanceof Error ? e.message : '保存失败',
@@ -238,6 +362,31 @@ export default function ChefDishesPage() {
       })
     } finally {
       setSaving(false)
+    }
+  }
+
+  const saveRecipeForDish = async (dishId: string, recipe: ChefDishAiRecipeDraft) => {
+    try {
+      await saveChefRecipe(dishId, {
+        difficulty: recipe.difficulty || undefined,
+        prepareMinutes: recipe.prepareMinutes,
+        cookMinutes: recipe.cookMinutes,
+        servings: recipe.servings,
+        ingredients: (recipe.ingredients || [])
+          .filter((i) => i.name?.trim())
+          .map((i) => ({ name: i.name.trim(), amount: (i.amount || '').trim() })),
+        seasonings: (recipe.seasonings || [])
+          .filter((i) => i.name?.trim())
+          .map((i) => ({ name: i.name.trim(), amount: (i.amount || '').trim() })),
+        steps: (recipe.steps || [])
+          .filter((s) => s.content?.trim())
+          .map((s, idx) => ({
+            step: s.step ?? idx + 1,
+            description: (s.content || '').trim()
+          }))
+      })
+    } catch {
+      Taro.showToast({ title: '菜品已存，菜谱保存失败可稍后补', icon: 'none' })
     }
   }
 
@@ -264,7 +413,11 @@ export default function ChefDishesPage() {
         />
         <Text
           className='chef-page__search-ai'
-          onClick={() => Taro.showToast({ title: 'AI 建菜即将开放', icon: 'none' })}
+          onClick={() => {
+            setAiOpen(true)
+            setAiText('')
+            setAiUrl('')
+          }}
         >
           ✨ AI
         </Text>
@@ -313,6 +466,25 @@ export default function ChefDishesPage() {
       {(showForm || editingId) && (
       <View className='chef-page__card'>
         <Text className='chef-dish__form-title'>{editingId ? '编辑菜品' : '新增菜品'}</Text>
+        {aiDrafts.length > 1 ? (
+          <ScrollView scrollX className='chef-dish__ai-picks' enhanced showScrollbar={false}>
+            {aiDrafts.map((d, i) => (
+              <Text
+                key={`${d.name}-${i}`}
+                className={`chef-dish__ai-pick ${i === aiDraftIndex ? 'chef-dish__ai-pick--on' : ''}`}
+                onClick={() => {
+                  setAiDraftIndex(i)
+                  applyAiDraftToForm(d, categories)
+                }}
+              >
+                {d.name || `菜 ${i + 1}`}
+              </Text>
+            ))}
+          </ScrollView>
+        ) : null}
+        {pendingRecipe ? (
+          <Text className='chef-dish__ai-tip'>已附带菜谱草稿，保存后将一并写入</Text>
+        ) : null}
 
         <View className='chef-page__field'>
           <Text className='chef-page__label'>菜品图片（首张为封面）</Text>
@@ -571,6 +743,21 @@ export default function ChefDishesPage() {
           )
         })
       )}
+
+      <AiPromptSheet
+        visible={aiOpen}
+        title='✨ AI 建菜'
+        hint='粘贴菜谱文字或网页链接，识别后填入表单，确认再保存。'
+        placeholder='例如：红烧肉，五花肉五花肉慢炖，少油微甜，限量 10 份…'
+        showUrl
+        submitting={aiSubmitting}
+        text={aiText}
+        url={aiUrl}
+        onTextChange={setAiText}
+        onUrlChange={setAiUrl}
+        onClose={() => setAiOpen(false)}
+        onSubmit={() => void runAiExtract()}
+      />
     </View>
   )
 }

@@ -753,6 +753,35 @@
     color: $ck-ink;
   }
 
+  &__ai-picks {
+    white-space: nowrap;
+    margin: 0 0 16px;
+  }
+
+  &__ai-pick {
+    display: inline-block;
+    margin-right: 12px;
+    padding: 10px 20px;
+    border-radius: 99px;
+    font-size: 22px;
+    color: $ck-muted;
+    background: #faf7f2;
+    border: 1px solid $ck-line;
+  }
+
+  &__ai-pick--on {
+    color: #fff;
+    background: $ck-ink;
+    border-color: $ck-ink;
+  }
+
+  &__ai-tip {
+    display: block;
+    font-size: 22px;
+    color: $ck-primary-deep;
+    margin-bottom: 16px;
+  }
+
   &__images {
     display: flex;
     flex-wrap: wrap;

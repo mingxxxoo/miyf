@@ -1,11 +1,13 @@
 import { View, Text, Button, Input, Picker, ScrollView } from '@tarojs/components'
 import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
 import { useEffect, useMemo, useState } from 'react'
+import { analyzeOrderInsight, draftOrderFromText } from '@/api/ai'
+import { fetchMyBinding } from '@/api/kitchen'
+import AiPromptSheet from '@/components/AiPromptSheet'
 import OrderCard from '@/components/OrderCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
-import { fetchMyBinding } from '@/api/kitchen'
 import { useOrderStore } from '@/stores/orderStore'
 import { PRODUCT_META, useProductStore } from '@/stores/productStore'
 import { useUserStore } from '@/stores/userStore'
@@ -49,13 +51,18 @@ export default function OrderIndexPage() {
   const {
     orders,
     draft,
+    aiMeta,
+    aiInsight,
     loading,
     loadError,
     fetchOrders,
     updateDraft,
     updateDraftItemQty,
+    setDraftItem,
     submitOrder,
-    clearDraft
+    clearDraft,
+    applyAiDraft,
+    setAiInsight
   } = useOrderStore()
   const { isLoggedIn, requireLogin, user, refreshProfile } = useUserStore()
   const setProduct = useProductStore((s) => s.setProduct)
@@ -63,6 +70,9 @@ export default function OrderIndexPage() {
   const [needJoin, setNeedJoin] = useState(false)
   const [pending, setPending] = useState(false)
   const [gateLoading, setGateLoading] = useState(true)
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiText, setAiText] = useState('')
+  const [aiSubmitting, setAiSubmitting] = useState(false)
   const minDate = todayStr()
 
   const reload = () => fetchOrders()
@@ -182,6 +192,70 @@ export default function OrderIndexPage() {
     Taro.switchTab({ url: '/pages/category/index' })
   }
 
+  const runAiOrderDraft = async () => {
+    const text = aiText.trim()
+    if (!text) {
+      Taro.showToast({ title: '请先说一句想吃的', icon: 'none' })
+      return
+    }
+    if (aiSubmitting) return
+    setAiSubmitting(true)
+    try {
+      const result = await draftOrderFromText(text)
+      applyAiDraft(result, text)
+      setAiOpen(false)
+      setAiText('')
+      if (result.degraded && result.items.length === 0) {
+        Taro.showToast({ title: 'AI 暂不可用，请手动选菜', icon: 'none' })
+        return
+      }
+      if (result.items.length === 0) {
+        Taro.showToast({
+          title: (result.ambiguityNote || '没匹配到在售菜品').slice(0, 40),
+          icon: 'none'
+        })
+        return
+      }
+      void analyzeOrderInsight({
+        dinerText: text,
+        draftJson: JSON.stringify(result)
+      })
+        .then((insight) => {
+          if (!insight.degraded) setAiInsight(insight)
+        })
+        .catch(() => undefined)
+      Taro.showToast({ title: `已生成草稿 ${result.items.length} 样`, icon: 'none' })
+    } catch {
+      // request toast
+    } finally {
+      setAiSubmitting(false)
+    }
+  }
+
+  const applyReplaceSuggestion = (replaceDishId?: string, replaceDishName?: string) => {
+    if (!replaceDishId || !replaceDishName) return
+    setDraftItem({
+      dishId: replaceDishId,
+      dishName: replaceDishName,
+      quantity: 1
+    })
+    Taro.showToast({ title: `已加入「${replaceDishName}」`, icon: 'none' })
+  }
+
+  const verdictClass = (verdict?: string) => {
+    const v = (verdict || '').toUpperCase()
+    if (v === 'CAUTION') return 'caution'
+    if (v === 'AVOID') return 'avoid'
+    return 'ok'
+  }
+
+  const verdictLabel = (verdict?: string) => {
+    const v = (verdict || '').toUpperCase()
+    if (v === 'CAUTION') return '留意'
+    if (v === 'AVOID') return '慎选'
+    return '合适'
+  }
+
   if (!isLoggedIn) {
     return <Loading fullscreen text='正在前往登录…' />
   }
@@ -208,10 +282,18 @@ export default function OrderIndexPage() {
     <View className='order-page'>
       <ServiceSwitcher compact className='order-page__switch' />
 
+      <View
+        className='order-page__ai-entry ck-pressable'
+        onClick={() => setAiOpen(true)}
+      >
+        <Text className='order-page__ai-entry-ico'>✨</Text>
+        <Text className='order-page__ai-entry-txt'>说句话生成预约草稿</Text>
+      </View>
+
       {draft.items.length === 0 && (
         <View className='order-page__cta ck-card'>
           <Text className='order-page__cta-title'>还没有预约菜品</Text>
-          <Text className='order-page__cta-desc'>去选菜加入预约</Text>
+          <Text className='order-page__cta-desc'>去选菜加入预约，或用 AI 说句话点菜</Text>
           <Button className='ck-btn-primary order-page__cta-btn' onClick={goCategory}>
             去选菜加入预约
           </Button>
@@ -227,6 +309,19 @@ export default function OrderIndexPage() {
               清空
             </Text>
           </View>
+
+          {aiMeta?.ambiguityNote ? (
+            <Text className='order-page__ai-note'>{aiMeta.ambiguityNote}</Text>
+          ) : null}
+          {aiMeta?.unmatched?.length ? (
+            <View className='order-page__unmatched'>
+              {aiMeta.unmatched.map((u, i) => (
+                <Text key={`${u.rawText}-${i}`} className='order-page__unmatched-item'>
+                  未匹配「{u.rawText}」：{u.reason}
+                </Text>
+              ))}
+            </View>
+          ) : null}
 
           {draft.items.map((item, idx) => (
             <View key={item.dishId} className='order-page__draft-line'>
@@ -316,6 +411,51 @@ export default function OrderIndexPage() {
         </View>
       )}
 
+      {aiInsight && !aiInsight.degraded ? (
+        <View className={`order-page__insight order-page__insight--${verdictClass(aiInsight.overallVerdict)}`}>
+          <View className='order-page__insight-head'>
+            <Text className='order-page__insight-badge'>
+              {verdictLabel(aiInsight.overallVerdict)}
+            </Text>
+            <Text className='order-page__insight-title'>饮食参考</Text>
+          </View>
+          {aiInsight.summary ? (
+            <Text className='order-page__insight-summary'>{aiInsight.summary}</Text>
+          ) : null}
+          {(aiInsight.dishInsights || []).map((d) => (
+            <View key={d.dishId} className='order-page__insight-dish'>
+              <Text
+                className={`order-page__insight-v order-page__insight-v--${verdictClass(d.verdict)}`}
+              >
+                {verdictLabel(d.verdict)}
+              </Text>
+              <View className='order-page__insight-dish-body'>
+                <Text className='order-page__insight-dish-name'>{d.dishName}</Text>
+                {d.reason ? (
+                  <Text className='order-page__insight-dish-reason'>{d.reason}</Text>
+                ) : null}
+              </View>
+            </View>
+          ))}
+          {(aiInsight.suggestions || []).map((s, i) => (
+            <View key={`${s.type}-${i}`} className='order-page__insight-sug'>
+              <Text className='order-page__insight-sug-txt'>{s.text}</Text>
+              {s.type === 'REPLACE' && s.replaceDishId ? (
+                <Text
+                  className='order-page__insight-sug-act'
+                  onClick={() => applyReplaceSuggestion(s.replaceDishId, s.replaceDishName)}
+                >
+                  换成它
+                </Text>
+              ) : null}
+            </View>
+          ))}
+          {aiInsight.disclaimer ? (
+            <Text className='order-page__insight-disc'>{aiInsight.disclaimer}</Text>
+          ) : null}
+        </View>
+      ) : null}
+
       <View className='order-page__sec-row'>
         <Text className='order-page__section-title'>我的预约</Text>
       </View>
@@ -353,6 +493,18 @@ export default function OrderIndexPage() {
           filteredOrders.map((order) => <OrderCard key={order.id} order={order} />)
         )}
       </View>
+
+      <AiPromptSheet
+        visible={aiOpen}
+        title='✨ 说句话点菜'
+        hint='只匹配当前厨房在售菜品，生成预约草稿，不会自动提交。'
+        placeholder='例如：明天中午两个人，想吃清淡点，来个鱼和素菜，少辣'
+        submitting={aiSubmitting}
+        text={aiText}
+        onTextChange={setAiText}
+        onClose={() => setAiOpen(false)}
+        onSubmit={() => void runAiOrderDraft()}
+      />
     </View>
   )
 }

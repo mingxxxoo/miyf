@@ -3,16 +3,11 @@ spring:
     name: miyf
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
-  # spring-ai-alibaba：缺类 / Agent 无 Key 仍装配，统一排除（业务仅用 Chat）
-  autoconfigure:
-    exclude:
-      - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeMultimodalEmbeddingAutoConfiguration
-      - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAgentAutoConfiguration
   jackson:
     # Boot 4 默认 tools.jackson；业务 ObjectMapper 见 JacksonConfig（com.fasterxml）
     default-property-inclusion: non_null
   ai:
-    # none：不加载对应模型（默认免 API Key 即可启动）；启用 AI 聊天时设 chat=dashscope
+    # none：不加载 Chat 模型（默认免 API Key 即可启动）；启用时设 chat=openai，走 DashScope 兼容模式
     model:
       chat: ${SPRING_AI_MODEL_CHAT:none}
       embedding: none
@@ -21,10 +16,13 @@ spring:
         speech: none
         transcription: none
       moderation: none
-    dashscope:
+    openai:
       api-key: ${DASHSCOPE_API_KEY:}
+      # Spring AI 会追加 /v1；国内地域用 aliyuncs，国际用 dashscope-intl
+      base-url: ${SPRING_AI_OPENAI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
       chat:
-        model: ${APP_AI_MODEL:qwen-plus}
+        options:
+          model: ${APP_AI_MODEL:qwen-plus}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -191,7 +189,7 @@ app:
     connect-timeout-ms: ${APP_SEARCH_CONNECT_TIMEOUT_MS:3000}
     socket-timeout-ms: ${APP_SEARCH_SOCKET_TIMEOUT_MS:10000}
   ai:
-    # 关闭时接口返回降级产物；开启需同时配置 DASHSCOPE_API_KEY，并将 spring.ai.model.chat=dashscope
+    # 关闭时接口返回降级产物；开启需 DASHSCOPE_API_KEY，并将 spring.ai.model.chat=openai
     enabled: ${APP_AI_ENABLED:false}
     model: ${APP_AI_MODEL:qwen-plus}
     max-tokens: ${APP_AI_MAX_TOKENS:4096}

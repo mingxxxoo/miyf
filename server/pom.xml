@@ -35,7 +35,7 @@
         <springdoc.version>3.0.2</springdoc.version>
         <testcontainers.version>1.21.3</testcontainers.version>
         <flowable.version>8.0.0</flowable.version>
-        <spring-ai-alibaba.version>2.0.0-M1.1</spring-ai-alibaba.version>
+        <spring-ai.version>2.0.0</spring-ai.version>
     </properties>
 
     <dependencyManagement>
@@ -131,10 +131,13 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <!-- Spring AI：OpenAI 协议客户端，对接 DashScope compatible-mode -->
             <dependency>
-                <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-                <version>${spring-ai-alibaba.version}</version>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <dependency>

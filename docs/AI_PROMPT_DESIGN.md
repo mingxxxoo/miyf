@@ -1,10 +1,10 @@
 # miyf AI 能力提示词设计
 
-> 版本：v1.1 · 2026-09-17 · 状态：后端已实现（ai-service）；前端入口待接
+> 版本：v1.2 · 2026-09-18 · 状态：后端已实现；小程序入口已接（api/ai + 厨师建菜 / 食客草稿与饮食参考）
 > 范围：① 系统引入 spring-ai；② 厨师端「文本/网页链接 → 菜品与菜单」；③ 食客端「文本 → 预约单草稿（不提交）+ 健康指标满足度分析」
 >
 > 后端入口：`POST /api/chef/ai/dishes/extract`、`POST /api/ai/orders/draft`、`POST /api/ai/orders/insight`  
-> 启用：`APP_AI_ENABLED=true` + `SPRING_AI_MODEL_CHAT=dashscope` + `DASHSCOPE_API_KEY`
+> 启用：`APP_AI_ENABLED=true` + `SPRING_AI_MODEL_CHAT=openai` + `DASHSCOPE_API_KEY`（OpenAI Starter + DashScope compatible-mode）
 
 ---
 

@@ -1,0 +1,81 @@
+.ai-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  &__mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(43, 38, 34, 0.45);
+  }
+
+  &__panel {
+    position: relative;
+    width: 100%;
+    max-height: 85vh;
+    background: #fff;
+    border-radius: 28px 28px 0 0;
+    padding: 32px 36px calc(32px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  &__title {
+    font-size: 32px;
+    font-weight: 700;
+    color: $ck-ink;
+  }
+
+  &__close {
+    font-size: 24px;
+    color: $ck-muted;
+    padding: 8px 4px;
+  }
+
+  &__hint {
+    display: block;
+    font-size: 22px;
+    color: $ck-faint;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+
+  &__textarea {
+    width: 100%;
+    min-height: 180px;
+    box-sizing: border-box;
+    padding: 20px 24px;
+    border-radius: 16px;
+    background: #faf7f2;
+    border: 1px solid $ck-line;
+    font-size: 26px;
+    color: $ck-ink;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+
+  &__url {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 18px 24px;
+    border-radius: 16px;
+    background: #faf7f2;
+    border: 1px solid $ck-line;
+    font-size: 24px;
+    color: $ck-ink;
+    margin-bottom: 24px;
+  }
+
+  &__submit {
+    width: 100%;
+  }
+}

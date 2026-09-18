@@ -81,8 +81,7 @@ public class AiStructuredCaller {
                         .options(ChatOptions.builder()
                                 .model(aiProperties.getModel())
                                 .temperature(temperature)
-                                .maxTokens(aiProperties.getMaxTokens())
-                                .build())
+                                .maxTokens(aiProperties.getMaxTokens()))
                         .call()
                         .responseEntity(type);
                 T entity = responseEntity.getEntity();
