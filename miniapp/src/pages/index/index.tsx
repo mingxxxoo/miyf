@@ -8,6 +8,7 @@ import AiPromptSheet from '@/components/AiPromptSheet'
 import DishCard from '@/components/DishCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
+import MiniIcon from '@/components/MiniIcon'
 import ServiceSwitcher, { DraftOrderBar } from '@/components/ServiceSwitcher'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { useOrderStore } from '@/stores/orderStore'
@@ -317,7 +318,10 @@ export default function IndexPage() {
         <Text className='index-page__greeting'>{nick}，今天想吃点什么？</Text>
         <Text className='index-page__subtitle'>专属菜单 · 无价格无支付 · 约到就是赚到</Text>
         {kitchenName ? (
-          <Text className='index-page__kitchen-chip'>🍳 {kitchenName} · 营业中</Text>
+          <View className='index-page__kitchen-chip'>
+            <MiniIcon name='kitchen' size='sm' tone='mint' />
+            <Text>{kitchenName} · 营业中</Text>
+          </View>
         ) : null}
         <View
           className='index-page__ai-ask ck-pressable'
@@ -329,7 +333,7 @@ export default function IndexPage() {
             setAiOpen(true)
           }}
         >
-          <Text className='index-page__ai-ico'>✨</Text>
+          <MiniIcon name='spark' size='sm' tone='primary' className='index-page__ai-ico' />
           <Text className='index-page__ai-txt'>说句话就点菜：「明天中午两个人，想吃清淡点…」</Text>
         </View>
       </View>

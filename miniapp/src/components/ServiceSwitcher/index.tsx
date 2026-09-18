@@ -4,8 +4,8 @@ import { useMemo, useState } from 'react'
 import { activateOrSwitchRole } from '@/api/kitchen'
 import { useOrderStore } from '@/stores/orderStore'
 import { useUserStore } from '@/stores/userStore'
+import MiniIcon from '@/components/MiniIcon'
 import {
-  PRODUCT_META,
   useProductStore,
   type ProductCode
 } from '@/stores/productStore'
@@ -105,7 +105,7 @@ export function DraftOrderBar({ className = '' }: { className?: string }) {
                   />
                 ) : (
                   <View className='draft-order-panel__cover draft-order-panel__cover--empty'>
-                    <Text>🍽️</Text>
+                    <MiniIcon name='dish' size='sm' tone='muted' />
                   </View>
                 )}
                 <Text className='draft-order-panel__name'>{item.dishName}</Text>
@@ -138,7 +138,7 @@ export function DraftOrderBar({ className = '' }: { className?: string }) {
 
       <View className='draft-order-bar' onClick={() => setExpanded((v) => !v)}>
         <View className='draft-order-bar__ico'>
-          <Text>🧺</Text>
+          <MiniIcon name='basket' size='md' tone='primary' />
           <Text className='draft-order-bar__badge'>{draftCount > 99 ? '99+' : draftCount}</Text>
         </View>
         <View className='draft-order-bar__txt'>
@@ -260,7 +260,7 @@ export default function ServiceSwitcher({
                     <Text className='service-switcher__option-label'>{opt.label}</Text>
                     <Text className='service-switcher__option-desc'>{opt.desc}</Text>
                   </View>
-                  {active ? <Text className='service-switcher__check'>✓</Text> : null}
+                  {active ? <MiniIcon name='check' size='sm' tone='primary' /> : null}
                 </View>
               )
             })}

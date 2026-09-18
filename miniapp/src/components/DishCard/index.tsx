@@ -1,6 +1,7 @@
 import { View, Text, Image } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import type { Dish } from '@/types'
+import MiniIcon from '@/components/MiniIcon'
 import './DishCard.scss'
 
 interface DishCardProps {
@@ -102,7 +103,7 @@ export default function DishCard({
               lazyLoad
             />
           ) : (
-            <Text className='dish-card__grid-emoji'>🍽️</Text>
+            <MiniIcon name='dish' size='lg' tone='muted' className='dish-card__grid-emoji' />
           )}
           {stock ? (
             <Text
@@ -144,7 +145,7 @@ export default function DishCard({
             lazyLoad
           />
         ) : (
-          <Text className='dish-card__big-emoji'>🥘</Text>
+          <MiniIcon name='dish' size='lg' tone='muted' className='dish-card__big-emoji' />
         )}
         {dish.recommend ? (
           <Text className='dish-card__hot-tag'>🔥 热门</Text>

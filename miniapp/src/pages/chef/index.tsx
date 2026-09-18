@@ -10,6 +10,7 @@ import {
   type ChefOrder
 } from '@/api/kitchen'
 import EmptyState from '@/components/EmptyState'
+import MiniIcon, { type MiniIconName } from '@/components/MiniIcon'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
 import { useChefWorkbench } from '@/hooks/useChefWorkbench'
 import { useUserStore } from '@/stores/userStore'
@@ -17,14 +18,14 @@ import { prefetchChefWxSubscribeConfig, requestChefOrderSubscribe } from '@/util
 import './chef.scss'
 
 const MENUS = [
-  { label: '菜品', url: '/pages/chef/dishes', icon: '🥘', bg: '#FFF1E2' },
-  { label: '菜谱', url: '/pages/chef/recipes', icon: '📗', bg: '#E7F7F0' },
-  { label: '分类', url: '/pages/chef/categories', icon: '🗂️', bg: '#FBF3E0' },
-  { label: '预约', url: '/pages/chef/orders', icon: '📝', bg: '#EBF3FB', badgeKey: 'pending' as const },
-  { label: '食客申请', url: '/pages/chef/bindings', icon: '🤝', bg: '#FCEEEA', badgeKey: 'apply' as const },
-  { label: '邀请码', url: '/pages/chef/invite', icon: '🎟️', bg: '#FFF1E2' },
-  { label: '厨房资料', url: '/pages/chef/kitchen', icon: '🏡', bg: '#E7F7F0' },
-  { label: '经营统计', url: '', icon: '📈', bg: '#F4F0E9', soon: true }
+  { label: '菜品', url: '/pages/chef/dishes', icon: 'dish' as MiniIconName, bg: '#FFF1E2' },
+  { label: '菜谱', url: '/pages/chef/recipes', icon: 'recipe' as MiniIconName, bg: '#E7F7F0' },
+  { label: '分类', url: '/pages/chef/categories', icon: 'category' as MiniIconName, bg: '#FBF3E0' },
+  { label: '预约', url: '/pages/chef/orders', icon: 'order' as MiniIconName, bg: '#EBF3FB', badgeKey: 'pending' as const },
+  { label: '食客申请', url: '/pages/chef/bindings', icon: 'people' as MiniIconName, bg: '#FCEEEA', badgeKey: 'apply' as const },
+  { label: '邀请码', url: '/pages/chef/invite', icon: 'ticket' as MiniIconName, bg: '#FFF1E2' },
+  { label: '厨房资料', url: '/pages/chef/kitchen', icon: 'home' as MiniIconName, bg: '#E7F7F0' },
+  { label: '经营统计', url: '', icon: 'trend' as MiniIconName, bg: '#F4F0E9', soon: true }
 ]
 
 const NEXT: Record<string, { status: string; label: string }> = {
@@ -225,7 +226,7 @@ export default function ChefHomePage() {
               }}
             >
               <View className='chef-page__g8-ico' style={{ background: m.bg }}>
-                <Text>{m.icon}</Text>
+                <MiniIcon name={m.icon} size='md' tone={m.label === '菜谱' || m.label === '厨房资料' ? 'mint' : 'default'} />
               </View>
               <Text className='chef-page__g8-label'>{m.label}</Text>
               {badge > 0 ? (
