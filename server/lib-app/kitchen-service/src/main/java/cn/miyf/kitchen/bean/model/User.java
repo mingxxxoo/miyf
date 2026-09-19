@@ -16,6 +16,8 @@ public class User {
     private String nickname;
     private String phone;
     private String wechatId;
+    private String huaweiOpenId;
+    private String huaweiUnionId;
     private String avatarUrl;
     private String status;
     private String activeRole;
@@ -79,6 +81,22 @@ public class User {
 
     public void setWechatId(String wechatId) {
         this.wechatId = wechatId;
+    }
+
+    public String getHuaweiOpenId() {
+        return huaweiOpenId;
+    }
+
+    public void setHuaweiOpenId(String huaweiOpenId) {
+        this.huaweiOpenId = huaweiOpenId;
+    }
+
+    public String getHuaweiUnionId() {
+        return huaweiUnionId;
+    }
+
+    public void setHuaweiUnionId(String huaweiUnionId) {
+        this.huaweiUnionId = huaweiUnionId;
     }
 
     public String getAvatarUrl() {

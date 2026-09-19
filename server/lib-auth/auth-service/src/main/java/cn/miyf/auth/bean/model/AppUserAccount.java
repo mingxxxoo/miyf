@@ -15,6 +15,14 @@ public class AppUserAccount {
     private String nickname;
     private String phone;
     private String wechatId;
+    /**
+     * 华为 openId，与微信 openid 分开存
+     */
+    private String huaweiOpenId;
+    /**
+     * 华为 unionId，登录查找与跨端合并的键
+     */
+    private String huaweiUnionId;
     private String avatarUrl;
     private String status;
 
@@ -78,6 +86,24 @@ public class AppUserAccount {
 
     public AppUserAccount setWechatId(String wechatId) {
         this.wechatId = wechatId;
+        return this;
+    }
+
+    public String getHuaweiOpenId() {
+        return huaweiOpenId;
+    }
+
+    public AppUserAccount setHuaweiOpenId(String huaweiOpenId) {
+        this.huaweiOpenId = huaweiOpenId;
+        return this;
+    }
+
+    public String getHuaweiUnionId() {
+        return huaweiUnionId;
+    }
+
+    public AppUserAccount setHuaweiUnionId(String huaweiUnionId) {
+        this.huaweiUnionId = huaweiUnionId;
         return this;
     }
 

@@ -58,6 +58,14 @@ public class UserEntity extends BaseEntity {
     @Schema(description = "微信号")
     private String wechatId;
 
+    @TableField("huawei_open_id")
+    @Schema(description = "华为 openId")
+    private String huaweiOpenId;
+
+    @TableField("huawei_union_id")
+    @Schema(description = "华为 unionId")
+    private String huaweiUnionId;
+
     @TableField("avatar_url")
     @Schema(description = "头像 URL")
     private String avatarUrl;

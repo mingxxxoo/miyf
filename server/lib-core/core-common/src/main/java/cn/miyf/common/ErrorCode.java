@@ -25,6 +25,7 @@ public enum ErrorCode {
     USER_DISABLED(41005, "用户已被禁用"),
     LOGIN_FAILED(41006, "用户名或密码错误"),
     WX_AUTH_FAILED(41007, "微信登录失败"),
+    HUAWEI_AUTH_FAILED(41014, "华为账号登录失败"),
     INVALID_FILE(41008, "文件类型或内容不合法"),
     FILE_TOO_LARGE(41009, "文件过大"),
     STORAGE_UNAVAILABLE(41010, "文件存储暂不可用"),

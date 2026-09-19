@@ -1,0 +1,11 @@
+{
+  "modelVersion": "5.0.0",
+  "name": "miyf",
+  "version": "1.0.0",
+  "description": "miyf HarmonyOS client",
+  "main": "",
+  "author": "miyf",
+  "license": "Apache-2.0",
+  "dependencies": {},
+  "devDependencies": {}
+}

@@ -7,6 +7,9 @@ wx:
     mock-enabled: true
 
 app:
+  auth:
+    huawei:
+      mock-enabled: true
   health:
     huawei:
       mock-enabled: true

@@ -145,6 +145,15 @@ app:
   security:
     # 是否放行 Swagger；生产 profile 关闭
     expose-docs: ${APP_SECURITY_EXPOSE_DOCS:false}
+  auth:
+    huawei:
+      # 开发 profile 打开 Mock；生产/容器必须 false。密钥不要写入仓库。
+      mock-enabled: ${APP_AUTH_HUAWEI_MOCK:false}
+      client-id: ${HUAWEI_ACCOUNT_CLIENT_ID:}
+      client-secret: ${HUAWEI_ACCOUNT_CLIENT_SECRET:}
+      token-url: https://oauth-login.cloud.huawei.com/oauth2/v3/token
+      token-info-url: https://oauth-login.cloud.huawei.com/oauth2/v3/tokeninfo
+      user-info-url: https://account.cloud.huawei.com/rest.php
   health:
     enabled: ${APP_HEALTH_ENABLED:true}
     sync:

@@ -9,6 +9,7 @@ import cn.miyf.kitchen.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -35,6 +36,30 @@ public class KitchenAppUserAccountStore implements AppUserAccountStore {
     public Optional<AppUserAccount> findByOpenid(String openid) {
         return Optional.ofNullable(EntityConverters.toUser(userRepository.selectByOpenid(openid)))
                 .map(this::toAccount);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-19 XieMingJie Created.
+     */
+    @Override
+    public Optional<AppUserAccount> findByHuaweiUnionId(String huaweiUnionId) {
+        return Optional.ofNullable(EntityConverters.toUser(userRepository.selectByHuaweiUnionId(huaweiUnionId)))
+                .map(this::toAccount);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @history 1.00 2026-09-19 XieMingJie Created.
+     */
+    @Override
+    public List<AppUserAccount> findByPhone(String phone) {
+        return userRepository.selectByPhone(phone).stream()
+                .map(EntityConverters::toUser)
+                .map(this::toAccount)
+                .toList();
     }
 
     /**
@@ -77,6 +102,8 @@ public class KitchenAppUserAccountStore implements AppUserAccountStore {
                 .setNickname(user.getNickname())
                 .setPhone(user.getPhone())
                 .setWechatId(user.getWechatId())
+                .setHuaweiOpenId(user.getHuaweiOpenId())
+                .setHuaweiUnionId(user.getHuaweiUnionId())
                 .setAvatarUrl(user.getAvatarUrl())
                 .setStatus(user.getStatus());
     }
@@ -97,6 +124,8 @@ public class KitchenAppUserAccountStore implements AppUserAccountStore {
         user.setNickname(account.getNickname());
         user.setPhone(account.getPhone());
         user.setWechatId(account.getWechatId());
+        user.setHuaweiOpenId(account.getHuaweiOpenId());
+        user.setHuaweiUnionId(account.getHuaweiUnionId());
         user.setAvatarUrl(account.getAvatarUrl());
         user.setStatus(account.getStatus());
         return user;

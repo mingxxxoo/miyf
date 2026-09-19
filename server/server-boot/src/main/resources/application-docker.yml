@@ -14,6 +14,9 @@ wx:
     mock-enabled: ${WX_AUTH_MOCK_ENABLED:false}
 
 app:
+  auth:
+    huawei:
+      mock-enabled: ${APP_AUTH_HUAWEI_MOCK:false}
   health:
     huawei:
       mock-enabled: ${APP_HEALTH_HUAWEI_MOCK:false}

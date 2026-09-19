@@ -5,6 +5,8 @@
 >
 > 后端入口：`POST /api/chef/ai/dishes/extract`、`POST /api/ai/orders/draft`、`POST /api/ai/orders/insight`  
 > 启用：`APP_AI_ENABLED=true` + `SPRING_AI_MODEL_CHAT=openai` + `DASHSCOPE_API_KEY`（OpenAI Starter + DashScope compatible-mode）
+>
+> 原生三端 UI / 鸿蒙工程提示词见 [`design/NATIVE_CLIENT_PROMPTS.md`](../design/NATIVE_CLIENT_PROMPTS.md)。
 
 ---
 

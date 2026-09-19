@@ -5,7 +5,8 @@
 <mapper namespace="cn.miyf.kitchen.repository.UserRepository">
 
     <select id="selectByOpenid" resultType="cn.miyf.kitchen.bean.entity.UserEntity">
-        SELECT id, openid, unionid, username, nickname, phone, wechat_id, avatar_url, status,
+        SELECT id, openid, unionid, username, nickname, phone, wechat_id, huawei_open_id, huawei_union_id,
+               avatar_url, status,
                active_role, is_chef AS chef, is_diner AS diner, role_chosen_at,
                create_time, last_modify_time
         FROM kitchen_user
@@ -13,8 +14,28 @@
         LIMIT 1
     </select>
 
+    <select id="selectByHuaweiUnionId" resultType="cn.miyf.kitchen.bean.entity.UserEntity">
+        SELECT id, openid, unionid, username, nickname, phone, wechat_id, huawei_open_id, huawei_union_id,
+               avatar_url, status,
+               active_role, is_chef AS chef, is_diner AS diner, role_chosen_at,
+               create_time, last_modify_time
+        FROM kitchen_user
+        WHERE huawei_union_id = #{huaweiUnionId}
+        LIMIT 1
+    </select>
+
+    <select id="selectByPhone" resultType="cn.miyf.kitchen.bean.entity.UserEntity">
+        SELECT id, openid, unionid, username, nickname, phone, wechat_id, huawei_open_id, huawei_union_id,
+               avatar_url, status,
+               active_role, is_chef AS chef, is_diner AS diner, role_chosen_at,
+               create_time, last_modify_time
+        FROM kitchen_user
+        WHERE phone = #{phone}
+    </select>
+
     <select id="selectAdminPage" resultType="cn.miyf.kitchen.bean.entity.UserEntity">
-        SELECT id, openid, unionid, username, nickname, phone, wechat_id, avatar_url, status,
+        SELECT id, openid, unionid, username, nickname, phone, wechat_id, huawei_open_id, huawei_union_id,
+               avatar_url, status,
                active_role, is_chef AS chef, is_diner AS diner, role_chosen_at,
                create_time, last_modify_time
         FROM kitchen_user

@@ -2,6 +2,7 @@ package cn.miyf.auth.spi;
 
 import cn.miyf.auth.bean.model.AppUserAccount;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -22,6 +23,24 @@ public interface AppUserAccountStore {
      * @history 1.00 2026-09-09 XieMingJie Created.
      */
     Optional<AppUserAccount> findByOpenid(String openid);
+
+    /**
+     * 按华为 unionId 查找。微信登录不走此方法。
+     *
+     * @param huaweiUnionId 华为 unionId
+     * @return 账号
+     * @history 1.00 2026-09-19 XieMingJie Created.
+     */
+    Optional<AppUserAccount> findByHuaweiUnionId(String huaweiUnionId);
+
+    /**
+     * 按手机号查找，供华为登录合并。返回全部命中，由调用方判断是否唯一。
+     *
+     * @param phone 11 位手机号
+     * @return 命中账号，无则空列表
+     * @history 1.00 2026-09-19 XieMingJie Created.
+     */
+    List<AppUserAccount> findByPhone(String phone);
 
     /**
      * 新建或更新账号。

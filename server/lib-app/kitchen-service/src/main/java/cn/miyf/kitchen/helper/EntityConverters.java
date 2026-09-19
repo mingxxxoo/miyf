@@ -41,6 +41,8 @@ public final class EntityConverters {
         u.setNickname(e.getNickname());
         u.setPhone(e.getPhone());
         u.setWechatId(e.getWechatId());
+        u.setHuaweiOpenId(e.getHuaweiOpenId());
+        u.setHuaweiUnionId(e.getHuaweiUnionId());
         u.setAvatarUrl(e.getAvatarUrl());
         u.setStatus(e.getStatus());
         u.setActiveRole(e.getActiveRole());
@@ -61,6 +63,8 @@ public final class EntityConverters {
         e.setNickname(u.getNickname());
         e.setPhone(u.getPhone());
         e.setWechatId(u.getWechatId());
+        e.setHuaweiOpenId(u.getHuaweiOpenId());
+        e.setHuaweiUnionId(u.getHuaweiUnionId());
         e.setAvatarUrl(u.getAvatarUrl());
         e.setStatus(u.getStatus());
         e.setActiveRole(u.getActiveRole());

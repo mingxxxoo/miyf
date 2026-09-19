@@ -4,6 +4,8 @@
 > 范围：① 系统引入 spring-ai；② 厨师端「文本/网页链接 → 菜品与菜单」；③ 食客端「文本 → 预约单草稿（不提交）+ 健康指标满足度分析」
 >
 > 详见 `docs/AI_PROMPT_DESIGN.md`。后端入口：`POST /api/chef/ai/dishes/extract`、`POST /api/ai/orders/draft`、`POST /api/ai/orders/insight`
+>
+> 原生三端（安卓 / iOS / 鸿蒙）界面与工程提示词见 `design/NATIVE_CLIENT_PROMPTS.md`。
 
 ---
 

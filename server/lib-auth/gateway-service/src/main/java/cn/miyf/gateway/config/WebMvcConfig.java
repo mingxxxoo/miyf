@@ -31,6 +31,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/**")
                 .excludePathPatterns(
                         "/api/auth/wx-login",
+                        "/api/auth/huawei-login",
                         "/api/admin/auth/login",
                         "/api/admin/auth/login-status",
                         "/api/admin/auth/captcha",

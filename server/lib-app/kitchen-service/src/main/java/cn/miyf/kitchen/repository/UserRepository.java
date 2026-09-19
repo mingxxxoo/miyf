@@ -28,6 +28,24 @@ public interface UserRepository extends BaseMapper<UserEntity> {
     UserEntity selectByOpenid(@Param("openid") String openid);
 
     /**
+     * 按华为 unionId 查询，用于鸿蒙登录。
+     *
+     * @param huaweiUnionId 华为 unionId
+     * @return 用户实体，不存在时为 null
+     * @history 1.00 2026-09-19 XieMingJie Created.
+     */
+    UserEntity selectByHuaweiUnionId(@Param("huaweiUnionId") String huaweiUnionId);
+
+    /**
+     * 按手机号查询全部命中，供登录合并判断是否唯一。
+     *
+     * @param phone 手机号
+     * @return 用户列表
+     * @history 1.00 2026-09-19 XieMingJie Created.
+     */
+    List<UserEntity> selectByPhone(@Param("phone") String phone);
+
+    /**
      * 管理端用户分页列表，支持昵称关键词与状态筛选。
      *
      * @param keyword 关键词，可空

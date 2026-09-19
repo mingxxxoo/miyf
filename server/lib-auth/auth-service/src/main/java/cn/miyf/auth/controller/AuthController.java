@@ -1,7 +1,9 @@
 package cn.miyf.auth.controller;
 
+import cn.miyf.auth.bean.dto.HuaweiLoginDto;
 import cn.miyf.auth.bean.dto.WxLoginDto;
 import cn.miyf.auth.bean.vo.LoginVo;
+import cn.miyf.auth.service.HuaweiLoginService;
 import cn.miyf.auth.service.WxLoginService;
 import cn.miyf.common.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 用户端认证接口（微信登录等）。
+ * 用户端认证接口（微信登录、鸿蒙华为账号登录）。两种登录签发同一结构的 JWT。
  *
  * @author XieMingJie
  * @since 2026-09-04 17:06
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final WxLoginService wxLoginService;
+    private final HuaweiLoginService huaweiLoginService;
 
     /**
      * 微信登录。
@@ -40,5 +43,19 @@ public class AuthController {
     @PostMapping("/wx-login")
     public ApiResult<LoginVo> wxLogin(@Valid @RequestBody WxLoginDto dto) {
         return ApiResult.ok(wxLoginService.wxLogin(dto));
+    }
+
+    /**
+     * 鸿蒙 Account Kit 授权码登录。不接受管理端账号。
+     *
+     * @param dto 授权码
+     * @return 登录结果
+     * @history 1.00 2026-09-19 XieMingJie Created.
+     */
+    @Operation(summary = "华为账号登录")
+    @SecurityRequirements
+    @PostMapping("/huawei-login")
+    public ApiResult<LoginVo> huaweiLogin(@Valid @RequestBody HuaweiLoginDto dto) {
+        return ApiResult.ok(huaweiLoginService.huaweiLogin(dto));
     }
 }

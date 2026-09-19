@@ -1,0 +1,10 @@
+{
+  "src": [
+    "pages/Index",
+    "pages/Login",
+    "pages/RoleSelect",
+    "pages/Join",
+    "pages/Main",
+    "pages/DishDetail"
+  ]
+}

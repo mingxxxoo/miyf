@@ -88,6 +88,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         List<String> publicPaths = new ArrayList<>(List.of(
                 webAppProperties.api("/auth/wx-login"),
+                webAppProperties.api("/auth/huawei-login"),
                 webAppProperties.api("/admin/auth/login"),
                 webAppProperties.api("/admin/auth/login-status"),
                 webAppProperties.api("/admin/auth/captcha"),
