@@ -1,5 +1,5 @@
-import { del, get, post, put } from '@/api/request'
-import { asId, asOptionalId } from '@/utils/id'
+import {del, get, post, put} from '@/api/request'
+import {asId, asOptionalId} from '@/utils/id'
 
 export interface HealthSubject {
   id: string
@@ -104,6 +104,52 @@ function mapSample(raw: SampleRaw): HealthSample {
 export async function fetchMyHealth(): Promise<HealthSubject> {
   const raw = await get<SubjectRaw>('/api/health/me')
   return mapSubject(raw)
+}
+
+export interface HealthScore {
+  score: number
+  title: string
+  withData: number
+  alerts: number
+  normal: number
+  firstAlert?: {
+    metricCode: string
+    label: string
+    level: string
+    message: string
+    latest?: number
+    unit?: string
+  }
+  disclaimer?: string
+}
+
+/** 服务端综合评分；失败时返回 null，由页面回落本地启发式 */
+export async function fetchMyHealthScore(): Promise<HealthScore | null> {
+  try {
+    const raw = await get<HealthScore>('/api/health/me/score', undefined, { showError: false })
+    if (!raw) return null
+    return {
+      score: Number(raw.score || 0),
+      title: raw.title || '暂无数据',
+      withData: Number(raw.withData || 0),
+      alerts: Number(raw.alerts || 0),
+      normal: Number(raw.normal || 0),
+      firstAlert: raw.firstAlert
+        ? {
+            metricCode: String(raw.firstAlert.metricCode || ''),
+            label: String(raw.firstAlert.label || ''),
+            level: String(raw.firstAlert.level || ''),
+            message: String(raw.firstAlert.message || ''),
+            latest:
+              raw.firstAlert.latest == null ? undefined : Number(raw.firstAlert.latest),
+            unit: raw.firstAlert.unit ? String(raw.firstAlert.unit) : undefined
+          }
+        : undefined,
+      disclaimer: raw.disclaimer
+    }
+  } catch {
+    return null
+  }
 }
 
 export async function updateMyHealth(payload: {

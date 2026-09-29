@@ -1,8 +1,8 @@
 import Taro from '@tarojs/taro'
-import { clearToken, getToken, get, post, put, del } from '@/api/request'
-import type { PageResult } from '@/types'
-import { asId } from '@/utils/id'
-import { toAbsoluteResourceUrl, toResourceUrl } from '@/utils/resourceUrl'
+import {clearToken, del, get, getToken, post, put} from '@/api/request'
+import type {PageResult} from '@/types'
+import {asId} from '@/utils/id'
+import {toAbsoluteResourceUrl, toResourceUrl} from '@/utils/resourceUrl'
 
 const BASE_URL = process.env.TARO_APP_API_BASE || 'https://www.miyf.cn'
 
@@ -105,8 +105,53 @@ export async function fetchMyKitchen(): Promise<KitchenVo | null> {
   return get<KitchenVo | null>('/api/my-kitchen', undefined, { showError: false }).catch(() => null)
 }
 
-export async function saveMyKitchen(payload: { name: string; intro?: string; status?: string }) {
+export async function saveMyKitchen(payload: {
+  name: string
+  intro?: string
+  status?: string
+  coverImage?: string
+}) {
   return put<KitchenVo>('/api/my-kitchen', payload)
+}
+
+/** 上传厨房封面，返回可写入 DTO 的 /r/{id} 路径 */
+export async function uploadKitchenCover(filePath: string): Promise<string> {
+  const token = getToken()
+  const res = await Taro.uploadFile({
+    url: `${BASE_URL}/api/my-kitchen/cover/upload`,
+    filePath,
+    name: 'file',
+    header: token ? { Authorization: `Bearer ${token}` } : {}
+  })
+  if (res.statusCode === 401) {
+    clearToken()
+    try {
+      Taro.eventCenter.trigger('miyf:auth-expired')
+    } catch {
+      // ignore
+    }
+    throw new Error('请先登录')
+  }
+  let body: { code?: number; message?: string; data?: { url?: string } } | null = null
+  try {
+    body = typeof res.data === 'string' ? JSON.parse(res.data) : (res.data as typeof body)
+  } catch {
+    throw new Error('图片上传失败')
+  }
+  if (body && body.code === 40100) {
+    clearToken()
+    try {
+      Taro.eventCenter.trigger('miyf:auth-expired')
+    } catch {
+      // ignore
+    }
+    throw new Error('请先登录')
+  }
+  const url = body?.data?.url
+  if (!body || body.code !== 0 || !url) {
+    throw new Error(body?.message || '图片上传失败')
+  }
+  return toResourceUrl(url) || url
 }
 
 export async function fetchInvite(): Promise<InviteVo> {
@@ -233,6 +278,84 @@ export async function updateChefOrderStatus(id: string, status: string) {
   return put(`/api/chef/orders/${asId(id)}/status`, { status })
 }
 
+/** 厨师工作台首页汇总（角标 + 最新预约） */
+export interface ChefWorkbenchSummary {
+  kitchenId?: string
+  kitchenName?: string
+  kitchenStatus?: string
+  pendingOrders: number
+  preparingOrders: number
+  readyOrders: number
+  onSaleDishes: number
+  boundDiners: number
+  pendingBindings: number
+  recentOrders: ChefOrder[]
+}
+
+export async function fetchChefWorkbenchSummary(): Promise<ChefWorkbenchSummary> {
+  const raw = await get<{
+    kitchenId?: string
+    kitchenName?: string
+    kitchenStatus?: string
+    pendingOrders?: number
+    preparingOrders?: number
+    readyOrders?: number
+    onSaleDishes?: number
+    boundDiners?: number
+    pendingBindings?: number
+    recentOrders?: ChefOrderRaw[]
+  }>('/api/chef/workbench/summary')
+  return {
+    kitchenId: raw.kitchenId != null ? asId(raw.kitchenId) : undefined,
+    kitchenName: raw.kitchenName,
+    kitchenStatus: raw.kitchenStatus,
+    pendingOrders: Number(raw.pendingOrders || 0),
+    preparingOrders: Number(raw.preparingOrders || 0),
+    readyOrders: Number(raw.readyOrders || 0),
+    onSaleDishes: Number(raw.onSaleDishes || 0),
+    boundDiners: Number(raw.boundDiners || 0),
+    pendingBindings: Number(raw.pendingBindings || 0),
+    recentOrders: (raw.recentOrders || []).map(mapChefOrder)
+  }
+}
+
+export interface ChefKitchenStats {
+  todayOrders: number
+  weekOrders: number
+  onSaleDishes: number
+  boundDiners: number
+  pendingOrders: number
+  reservationTrend: { date: string; count: number }[]
+  hotDishes: { name: string; count: number }[]
+}
+
+export async function fetchChefStats(): Promise<ChefKitchenStats> {
+  const raw = await get<{
+    todayOrders?: number
+    weekOrders?: number
+    onSaleDishes?: number
+    boundDiners?: number
+    pendingOrders?: number
+    reservationTrend?: { date?: string; count?: number }[]
+    hotDishes?: { name?: string; count?: number }[]
+  }>('/api/chef/stats')
+  return {
+    todayOrders: Number(raw.todayOrders || 0),
+    weekOrders: Number(raw.weekOrders || 0),
+    onSaleDishes: Number(raw.onSaleDishes || 0),
+    boundDiners: Number(raw.boundDiners || 0),
+    pendingOrders: Number(raw.pendingOrders || 0),
+    reservationTrend: (raw.reservationTrend || []).map((p) => ({
+      date: String(p.date || ''),
+      count: Number(p.count || 0)
+    })),
+    hotDishes: (raw.hotDishes || []).map((h) => ({
+      name: String(h.name || ''),
+      count: Number(h.count || 0)
+    }))
+  }
+}
+
 export interface ChefCategory {
   id: string
   name: string
@@ -342,6 +465,10 @@ export interface ChefOrder {
   userNickname?: string
   status: string
   remark?: string
+  mealDate?: string
+  mealType?: string
+  mealTime?: string
+  guestCount?: number
   createTime?: string
   items: ChefOrderItem[]
 }
@@ -353,6 +480,10 @@ interface ChefOrderRaw {
   userNickname?: string
   status: string
   remark?: string
+  mealDate?: string
+  mealType?: string
+  mealTime?: string
+  guestCount?: number
   createTime?: string
   items?: {
     id?: string
@@ -374,6 +505,10 @@ function mapChefOrder(raw: ChefOrderRaw): ChefOrder {
     userNickname: raw.userNickname,
     status: raw.status,
     remark: raw.remark,
+    mealDate: raw.mealDate || undefined,
+    mealType: raw.mealType || undefined,
+    mealTime: raw.mealTime || undefined,
+    guestCount: raw.guestCount != null ? Number(raw.guestCount) : undefined,
     createTime: raw.createTime,
     items: (raw.items || []).map((it) => ({
       id: it.id != null ? asId(it.id) : undefined,

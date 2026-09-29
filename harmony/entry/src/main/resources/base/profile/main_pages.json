@@ -5,6 +5,16 @@
     "pages/RoleSelect",
     "pages/Join",
     "pages/Main",
-    "pages/DishDetail"
+    "pages/DishDetail",
+    "pages/OrderDetail",
+    "pages/chef/ChefWorkbench",
+    "pages/chef/ChefDishes",
+    "pages/chef/ChefOrders",
+    "pages/chef/ChefKitchen",
+    "pages/chef/ChefBindings",
+    "pages/chef/ChefAiExtract",
+    "pages/health/HealthHome",
+    "pages/health/HealthDetail",
+    "pages/health/HealthSources"
   ]
 }

@@ -1,17 +1,22 @@
-import { View, Text, Button, Input, Picker, ScrollView } from '@tarojs/components'
-import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
-import { useEffect, useMemo, useState } from 'react'
-import { analyzeOrderInsight, draftOrderFromText } from '@/api/ai'
-import { fetchMyBinding } from '@/api/kitchen'
+import {Button, Input, Picker, ScrollView, Text, View} from '@tarojs/components'
+import Taro, {useDidShow, usePullDownRefresh} from '@tarojs/taro'
+import {useEffect, useMemo, useState} from 'react'
+import {analyzeOrderInsight, draftOrderFromText} from '@/api/ai'
+import {fetchMyBinding} from '@/api/kitchen'
 import AiPromptSheet from '@/components/AiPromptSheet'
 import OrderCard from '@/components/OrderCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
-import { useOrderStore } from '@/stores/orderStore'
-import { PRODUCT_META, useProductStore } from '@/stores/productStore'
-import { useUserStore } from '@/stores/userStore'
-import type { OrderStatus } from '@/types'
+import {useOrderStore} from '@/stores/orderStore'
+import {PRODUCT_META, useProductStore} from '@/stores/productStore'
+import {useUserStore} from '@/stores/userStore'
+import type {OrderStatus} from '@/types'
+import {
+    isDinerSubscribeReady,
+    prefetchDinerWxSubscribeConfig,
+    requestDinerOrderStatusSubscribe
+} from '@/utils/wxSubscribe'
 import './index.scss'
 
 type TabKey = 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'ALL'
@@ -73,6 +78,7 @@ export default function OrderIndexPage() {
   const [aiOpen, setAiOpen] = useState(false)
   const [aiText, setAiText] = useState('')
   const [aiSubmitting, setAiSubmitting] = useState(false)
+  const [subscribeReady, setSubscribeReady] = useState(false)
   const minDate = todayStr()
 
   const reload = () => fetchOrders()
@@ -108,6 +114,9 @@ export default function OrderIndexPage() {
         setNeedJoin(false)
         setPending(false)
         await reload()
+        void prefetchDinerWxSubscribeConfig().then(() => {
+          setSubscribeReady(isDinerSubscribeReady())
+        })
       }
     } catch {
       setNeedJoin(true)
@@ -158,6 +167,8 @@ export default function OrderIndexPage() {
     }
     const ok = await ensureLogin()
     if (!ok) return
+    // 订阅授权须在用户手势链路内；失败不挡提交
+    await requestDinerOrderStatusSubscribe()
     const order = await submitOrder()
     if (order) {
       Taro.showToast({ title: order.displayTip || '厨房收到啦', icon: 'success' })
@@ -408,6 +419,11 @@ export default function OrderIndexPage() {
               <Text>提交预约</Text>
             </View>
           </View>
+          {subscribeReady ? (
+            <Text className='order-page__subscribe-hint'>
+              提交时将请求订阅：预约有新动态时通知我（可跳过）
+            </Text>
+          ) : null}
         </View>
       )}
 

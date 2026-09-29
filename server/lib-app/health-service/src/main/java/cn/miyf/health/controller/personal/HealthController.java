@@ -8,6 +8,7 @@ import cn.miyf.health.bean.dto.HealthSyncRequestDto;
 import cn.miyf.health.bean.vo.HealthProviderBindingVo;
 import cn.miyf.health.bean.vo.HealthProviderVo;
 import cn.miyf.health.bean.vo.HealthSampleVo;
+import cn.miyf.health.bean.vo.HealthScoreVo;
 import cn.miyf.health.bean.vo.HealthSubjectVo;
 import cn.miyf.health.bean.vo.HealthSyncRunVo;
 import cn.miyf.health.bean.vo.HealthTrendVo;
@@ -58,6 +59,18 @@ public class HealthController {
     @GetMapping("/me")
     public ApiResult<HealthSubjectVo> me() {
         return ApiResult.ok(healthCrudApplicationService.getOrCreateMySubject());
+    }
+
+    /**
+     * 我的健康综合评分（生活方式参考）。
+     *
+     * @return 评分
+     */
+    @Operation(summary = "我的健康综合评分")
+    @MiyfPermission(code = "health:user:me:view")
+    @GetMapping("/me/score")
+    public ApiResult<HealthScoreVo> myScore() {
+        return ApiResult.ok(healthCrudApplicationService.myScore());
     }
 
     /**

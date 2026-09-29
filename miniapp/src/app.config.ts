@@ -12,6 +12,7 @@ export default defineAppConfig({
     'pages/chef/invite',
     'pages/chef/bindings',
     'pages/chef/orders',
+    'pages/chef/stats',
     'pages/category/index',
     'pages/dish/detail',
     'pages/order/index',

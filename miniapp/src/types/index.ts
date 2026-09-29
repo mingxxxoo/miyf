@@ -86,9 +86,12 @@ export interface Order {
   note?: string
   remark?: string
   displayTip?: string
-  /** 草稿辅助字段，后端无对应列 */
-  scheduledTime?: string
+  mealDate?: string
+  mealType?: string
+  mealTime?: string
   guestCount?: number
+  /** @deprecated 草稿本地字段，提交后见 mealDate */
+  scheduledTime?: string
 }
 
 export interface Comment {

@@ -4,6 +4,7 @@ import { AppConfig, Theme } from '../common/AppConfig'
 import { ApiError } from '../api/ApiClient'
 import { MiyfApi } from '../api/MiyfApi'
 import { SessionStore } from '../session/SessionStore'
+import { AppNav } from '../session/AppNav'
 import { requestHuaweiAuthorizationCode } from '../platform/HuaweiLogin'
 
 @Entry
@@ -19,20 +20,7 @@ struct Login {
   private async afterLogin(token: string, expireSeconds: number): Promise<void> {
     await SessionStore.save(this.context(), token, expireSeconds)
     const me = await MiyfApi.fetchMe()
-    if (me.activeRole === undefined || me.activeRole.length === 0) {
-      router.replaceUrl({ url: 'pages/RoleSelect' })
-      return
-    }
-    if (me.activeRole === 'CHEF') {
-      this.tip = '厨师工作台下一期开放，请先以食客身份使用'
-      return
-    }
-    const binding = await MiyfApi.fetchMyBinding()
-    if (binding === null || binding.status !== 'BOUND') {
-      router.replaceUrl({ url: 'pages/Join' })
-      return
-    }
-    router.replaceUrl({ url: 'pages/Main' })
+    await AppNav.afterAuth(me)
   }
 
   private async loginWithCode(code: string): Promise<void> {
@@ -52,24 +40,56 @@ struct Login {
 
   build() {
     Column() {
+      Column() {
+        Text('m')
+          .fontSize(28)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(Theme.white)
+      }
+      .width(72)
+      .height(72)
+      .borderRadius(22)
+      .linearGradient({
+        angle: 135,
+        colors: [[Theme.orange2, 0], [Theme.orange, 1]]
+      })
+      .justifyContent(FlexAlign.Center)
+      .margin({ top: 88 })
+
       Text('miyf')
-        .fontSize(36)
+        .fontSize(28)
         .fontWeight(FontWeight.Bold)
         .fontColor(Theme.ink)
-        .margin({ top: 96 })
-      Text('胡闹厨房 · 预约与健康')
-        .fontSize(14)
-        .fontColor(Theme.muted)
-        .margin({ top: 8 })
-      Text('家庭厨房预约，没有价格与支付')
+        .margin({ top: 20 })
+      Text('家庭厨房预约 · 健康数据\n今天吃什么，不外卖')
         .fontSize(13)
-        .fontColor(Theme.faint)
-        .margin({ top: 24, bottom: 40 })
+        .fontColor(Theme.muted)
+        .textAlign(TextAlign.Center)
+        .margin({ top: 10 })
+      Row({ space: 8 }) {
+        Text('胡闹厨房')
+          .fontSize(11)
+          .fontColor(Theme.muted)
+          .padding({ left: 12, right: 12, top: 5, bottom: 5 })
+          .borderRadius(99)
+          .backgroundColor(Theme.orangeSofter)
+          .border({ width: 1, color: Theme.line })
+        Text('胡闹健康')
+          .fontSize(11)
+          .fontColor(Theme.muted)
+          .padding({ left: 12, right: 12, top: 5, bottom: 5 })
+          .borderRadius(99)
+          .backgroundColor(Theme.orangeSofter)
+          .border({ width: 1, color: Theme.line })
+      }
+      .margin({ top: 16 })
+
+      Blank()
 
       Button(this.busy ? '登录中…' : '华为账号登录')
         .width('100%')
         .height(48)
-        .backgroundColor(Theme.orange)
+        .backgroundColor('#1A1A1A')
         .fontColor(Theme.white)
         .borderRadius(16)
         .enabled(!this.busy)
@@ -84,16 +104,28 @@ struct Login {
         })
 
       if (AppConfig.DEV_LOGIN) {
-        Button('开发登录（Mock）')
+        Button('开发登录 · 食客')
           .width('100%')
           .height(48)
-          .margin({ top: 12 })
+          .margin({ top: 10 })
+          .backgroundColor(Theme.white)
+          .fontColor(Theme.ink)
+          .border({ width: 1, color: Theme.line })
+          .borderRadius(16)
+          .enabled(!this.busy)
+          .onClick(async () => {
+            await this.loginWithCode('mock:diner')
+          })
+        Button('开发登录 · 厨师')
+          .width('100%')
+          .height(48)
+          .margin({ top: 10 })
           .backgroundColor(Theme.orangeSoft)
           .fontColor(Theme.orange)
           .borderRadius(16)
           .enabled(!this.busy)
           .onClick(async () => {
-            await this.loginWithCode('mock:diner')
+            await this.loginWithCode('mock:cook')
           })
       }
 
@@ -101,8 +133,13 @@ struct Login {
         Text(this.tip)
           .fontSize(12)
           .fontColor(Theme.red)
-          .margin({ top: 16 })
+          .margin({ top: 12 })
       }
+      Text('登录即表示同意用户协议与隐私政策\n手机号验证码登录后续开放')
+        .fontSize(11)
+        .fontColor(Theme.faint)
+        .textAlign(TextAlign.Center)
+        .margin({ top: 14, bottom: 12 })
     }
     .width('100%')
     .height('100%')

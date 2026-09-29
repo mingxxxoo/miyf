@@ -1,13 +1,9 @@
 import Taro from '@tarojs/taro'
-import { create } from 'zustand'
-import type {
-  OrderDraftAiResult,
-  OrderDraftAiUnmatched,
-  OrderInsightAiResult
-} from '@/api/ai'
-import { fetchDishDetail } from '@/api/dish'
+import {create} from 'zustand'
+import type {OrderDraftAiResult, OrderDraftAiUnmatched, OrderInsightAiResult} from '@/api/ai'
+import {fetchDishDetail} from '@/api/dish'
 import * as orderApi from '@/api/order'
-import type { Order, OrderItem } from '@/types'
+import type {Order, OrderItem} from '@/types'
 
 const DRAFT_KEY = 'miyf_order_draft'
 
@@ -98,25 +94,24 @@ function readStoredDraft(): OrderDraft {
 }
 
 function buildRemark(draft: OrderDraft): string {
-  const parts: string[] = []
-  if (draft.note?.trim()) {
-    parts.push(`给厨房的备注：${draft.note.trim()}`)
-  }
-  if (draft.scheduledTime && draft.scheduledTimeOfDay) {
-    parts.push(`期望用餐 ${draft.scheduledTime} ${draft.scheduledTimeOfDay}`)
-  } else if (draft.scheduledTime) {
-    parts.push(`期望用餐 ${draft.scheduledTime}`)
-  } else if (draft.scheduledTimeOfDay) {
-    parts.push(`期望用餐时间 ${draft.scheduledTimeOfDay}`)
-  }
-  if (draft.guestCount) parts.push(`${draft.guestCount} 位用餐`)
-  return parts.join('；') || ''
+  // 餐次已走结构化字段，remark 只保留口味偏好
+  return draft.note?.trim() || ''
+}
+
+function timeToMealType(timeOfDay?: string): string | undefined {
+  if (!timeOfDay || !/^\d{2}:\d{2}$/.test(timeOfDay)) return undefined
+  const hour = Number(timeOfDay.slice(0, 2))
+  if (hour >= 5 && hour < 10) return 'BREAKFAST'
+  if (hour >= 10 && hour < 15) return 'LUNCH'
+  if (hour >= 15 && hour < 21) return 'DINNER'
+  return 'SNACK'
 }
 
 function mealTypeToTime(mealType?: string): string {
   const t = (mealType || '').toUpperCase()
   if (t === 'DINNER') return '18:00'
   if (t === 'LUNCH') return '12:00'
+  if (t === 'BREAKFAST') return '08:00'
   return ''
 }
 
@@ -269,7 +264,11 @@ export const useOrderStore = create<OrderState>((set, getState) => ({
       }
 
       const order = await orderApi.createOrder({
-        remark: buildRemark(draft),
+        remark: buildRemark(draft) || undefined,
+        mealDate: draft.scheduledTime || undefined,
+        mealType: timeToMealType(draft.scheduledTimeOfDay),
+        mealTime: draft.scheduledTimeOfDay || undefined,
+        guestCount: draft.guestCount > 0 ? draft.guestCount : undefined,
         items: draft.items.map((i) => ({
           dishId: i.dishId,
           quantity: i.quantity,

@@ -94,6 +94,9 @@ public class DishVo extends BaseVo {
     @Schema(description = "评价人数")
     private Integer ratingCount;
 
+    @Schema(description = "准备分钟数（来自菜谱，无菜谱时为空）")
+    private Integer prepMinutes;
+
     @FileAccess
     @Schema(description = "图片列表")
     private List<String> images;

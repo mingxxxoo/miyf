@@ -18,9 +18,11 @@ import cn.miyf.health.bean.vo.HealthOverviewVo;
 import cn.miyf.health.bean.vo.HealthProviderBindingVo;
 import cn.miyf.health.bean.vo.HealthProviderVo;
 import cn.miyf.health.bean.vo.HealthSampleVo;
+import cn.miyf.health.bean.vo.HealthScoreVo;
 import cn.miyf.health.bean.vo.HealthSubjectVo;
 import cn.miyf.health.bean.vo.HealthTrendVo;
 import cn.miyf.health.config.HealthProperties;
+import cn.miyf.health.domain.HealthMetricAlertRules;
 import cn.miyf.health.domain.HealthMetricCodes;
 import cn.miyf.health.provider.ManualHealthDataProvider;
 import cn.miyf.health.provider.huawei.HuaweiHealthOAuthService;
@@ -40,6 +42,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -643,6 +646,81 @@ public class HealthCrudApplicationService {
         Long subjectId = getOrCreateMySubjectEntity().getId();
         return trend(subjectId, metricCode, from, to, limit);
     }
+
+    /**
+     * 当前用户健康综合评分（生活方式参考，非诊断）。
+     * 算法对齐小程序：base 72 + min(28, withData×4) − alerts×10，夹在 35～98；无数据为 0。
+     *
+     * @return 评分 VO
+     */
+    public HealthScoreVo myScore() {
+        Long subjectId = getOrCreateMySubjectEntity().getId();
+        Instant from = Instant.now().minus(30, ChronoUnit.DAYS);
+        int withData = 0;
+        int alerts = 0;
+        HealthScoreVo.AlertItem firstAlert = null;
+
+        for (String code : SCORE_METRIC_CODES) {
+            HealthTrendVo trend = trend(subjectId, code, from, null, 1);
+            if (trend == null || trend.getPointCount() <= 0 || trend.getLatest() == null) {
+                continue;
+            }
+            withData++;
+            HealthMetricAlertRules.AlertHit hit =
+                    HealthMetricAlertRules.assess(code, trend.getLatest().doubleValue());
+            if (hit != null) {
+                alerts++;
+                if (firstAlert == null) {
+                    firstAlert = new HealthScoreVo.AlertItem()
+                            .setMetricCode(hit.metricCode())
+                            .setLabel(hit.label())
+                            .setLevel(hit.level())
+                            .setMessage(hit.message())
+                            .setLatest(trend.getLatest())
+                            .setUnit(trend.getUnit());
+                }
+            }
+        }
+
+        int score = 0;
+        String title = "暂无数据";
+        if (withData > 0) {
+            int base = 72;
+            int bonus = Math.min(28, withData * 4);
+            int penalty = alerts * 10;
+            score = Math.max(35, Math.min(98, base + bonus - penalty));
+            if (alerts == 0) {
+                title = "状态不错，继续保持";
+            } else if (alerts <= 2) {
+                title = "需要留意一下";
+            } else {
+                title = "建议多关注身体";
+            }
+        }
+
+        return new HealthScoreVo()
+                .setScore(score)
+                .setTitle(title)
+                .setWithData(withData)
+                .setAlerts(alerts)
+                .setNormal(Math.max(0, withData - alerts))
+                .setFirstAlert(firstAlert)
+                .setDisclaimer("以上为一般性生活方式参考，不构成医疗建议");
+    }
+
+    private static final String[] SCORE_METRIC_CODES = {
+            HealthMetricCodes.WEIGHT,
+            HealthMetricCodes.HEART_RATE,
+            HealthMetricCodes.STEPS,
+            HealthMetricCodes.BLOOD_PRESSURE_SYS,
+            HealthMetricCodes.BLOOD_PRESSURE_DIA,
+            HealthMetricCodes.BLOOD_GLUCOSE,
+            HealthMetricCodes.BODY_FAT,
+            HealthMetricCodes.BMI,
+            HealthMetricCodes.HEIGHT,
+            HealthMetricCodes.SLEEP_MINUTES,
+            HealthMetricCodes.STRESS
+    };
 
     /**
      * 当前用户的数据源绑定。

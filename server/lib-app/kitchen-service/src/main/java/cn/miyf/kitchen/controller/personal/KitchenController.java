@@ -8,16 +8,20 @@ import cn.miyf.kitchen.bean.vo.KitchenVo;
 import cn.miyf.kitchen.security.KitchenPersonalPopedom;
 import cn.miyf.kitchen.service.InviteApplicationService;
 import cn.miyf.kitchen.service.KitchenApplicationService;
+import cn.miyf.oss.bean.vo.UploadedFileVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 厨师厨房与邀请。
@@ -61,6 +65,19 @@ public class KitchenController {
     @PutMapping
     public ApiResult<KitchenVo> save(@Valid @RequestBody KitchenSaveDto dto) {
         return ApiResult.ok(kitchenApplicationService.saveMine(dto));
+    }
+
+    /**
+     * 上传厨房封面。
+     *
+     * @param file 图片文件
+     * @return 上传结果（含 /r/{id}）
+     */
+    @Operation(summary = "上传厨房封面")
+    @MiyfPermission(code = "kitchen:user:profile:update")
+    @PostMapping(value = "/cover/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResult<UploadedFileVo> uploadCover(@RequestPart("file") MultipartFile file) {
+        return ApiResult.ok(kitchenApplicationService.uploadCover(file));
     }
 
     /**

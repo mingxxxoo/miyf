@@ -1,20 +1,13 @@
-import { View, Text, Button } from '@tarojs/components'
-import Taro, { useDidShow } from '@tarojs/taro'
-import { useMemo, useState } from 'react'
-import {
-  fetchChefBindings,
-  fetchChefDishes,
-  fetchChefOrders,
-  fetchMyKitchen,
-  updateChefOrderStatus,
-  type ChefOrder
-} from '@/api/kitchen'
+import {Button, Text, View} from '@tarojs/components'
+import Taro, {useDidShow} from '@tarojs/taro'
+import {useMemo, useState} from 'react'
+import {type ChefOrder, fetchChefWorkbenchSummary, updateChefOrderStatus} from '@/api/kitchen'
 import EmptyState from '@/components/EmptyState'
-import MiniIcon, { type MiniIconName } from '@/components/MiniIcon'
+import MiniIcon, {type MiniIconName} from '@/components/MiniIcon'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
-import { useChefWorkbench } from '@/hooks/useChefWorkbench'
-import { useUserStore } from '@/stores/userStore'
-import { prefetchChefWxSubscribeConfig, requestChefOrderSubscribe } from '@/utils/wxSubscribe'
+import {useChefWorkbench} from '@/hooks/useChefWorkbench'
+import {useUserStore} from '@/stores/userStore'
+import {prefetchChefWxSubscribeConfig, requestChefOrderSubscribe} from '@/utils/wxSubscribe'
 import './chef.scss'
 
 const MENUS = [
@@ -25,7 +18,7 @@ const MENUS = [
   { label: '食客申请', url: '/pages/chef/bindings', icon: 'people' as MiniIconName, bg: '#FCEEEA', badgeKey: 'apply' as const },
   { label: '邀请码', url: '/pages/chef/invite', icon: 'ticket' as MiniIconName, bg: '#FFF1E2' },
   { label: '厨房资料', url: '/pages/chef/kitchen', icon: 'home' as MiniIconName, bg: '#E7F7F0' },
-  { label: '经营统计', url: '', icon: 'trend' as MiniIconName, bg: '#F4F0E9', soon: true }
+  { label: '经营统计', url: '/pages/chef/stats', icon: 'trend' as MiniIconName, bg: '#F4F0E9' }
 ]
 
 const NEXT: Record<string, { status: string; label: string }> = {
@@ -73,6 +66,14 @@ function itemSummary(order: ChefOrder) {
   return items.map((it) => `${it.dishName} ×${it.quantity}`).join(' · ')
 }
 
+function mealLine(order: ChefOrder): string {
+  const parts: string[] = []
+  if (order.mealDate) parts.push(order.mealDate)
+  if (order.mealTime) parts.push(order.mealTime)
+  if (order.guestCount) parts.push(`${order.guestCount} 人`)
+  return parts.join(' · ')
+}
+
 function nickInitial(name?: string) {
   const n = (name || '客').trim()
   return n.slice(0, 1)
@@ -82,6 +83,7 @@ export default function ChefHomePage() {
   useChefWorkbench()
   const user = useUserStore((s) => s.user)
   const [kitchenName, setKitchenName] = useState('我的厨房')
+  const [kitchenStatus, setKitchenStatus] = useState<string | undefined>()
   const [pending, setPending] = useState(0)
   const [preparing, setPreparing] = useState(0)
   const [onSale, setOnSale] = useState(0)
@@ -96,23 +98,15 @@ export default function ChefHomePage() {
   )
 
   const load = async () => {
-    const [kitchen, pendingPage, preparingPage, dishes, bound, apply, recentPage] =
-      await Promise.all([
-        fetchMyKitchen(),
-        fetchChefOrders('PENDING').catch(() => null),
-        fetchChefOrders('PREPARING').catch(() => null),
-        fetchChefDishes().catch(() => null),
-        fetchChefBindings('BOUND').catch(() => null),
-        fetchChefBindings('PENDING').catch(() => null),
-        fetchChefOrders().catch(() => null)
-      ])
-    if (kitchen?.name) setKitchenName(kitchen.name)
-    setPending(Number(pendingPage?.total || pendingPage?.records?.length || 0))
-    setPreparing(Number(preparingPage?.total || preparingPage?.records?.length || 0))
-    setOnSale((dishes?.records || []).filter((d) => d.status === 'ON_SALE').length)
-    setDiners(Number(bound?.total || bound?.records?.length || 0))
-    setApplyCount(Number(apply?.total || apply?.records?.length || 0))
-    setRecent((recentPage?.records || []).slice(0, 5))
+    const summary = await fetchChefWorkbenchSummary()
+    if (summary.kitchenName) setKitchenName(summary.kitchenName)
+    setKitchenStatus(summary.kitchenStatus)
+    setPending(summary.pendingOrders)
+    setPreparing(summary.preparingOrders)
+    setOnSale(summary.onSaleDishes)
+    setDiners(summary.boundDiners)
+    setApplyCount(summary.pendingBindings)
+    setRecent(summary.recentOrders.slice(0, 5))
   }
 
   useDidShow(() => {
@@ -184,7 +178,9 @@ export default function ChefHomePage() {
         </Text>
         <View className='chef-page__kname'>
           <Text className='chef-page__kname-text'>{kitchenName}</Text>
-          <Text className='chef-page__verify'>已认证厨房</Text>
+          <Text className='chef-page__verify'>
+            {kitchenStatus === 'OPEN' ? '营业中' : kitchenStatus === 'CLOSED' ? '暂停营业' : '我的厨房'}
+          </Text>
         </View>
         <View className='chef-page__stats'>
           <View className='chef-page__stat'>
@@ -218,8 +214,8 @@ export default function ChefHomePage() {
               key={m.label}
               className='chef-page__g8 ck-pressable'
               onClick={() => {
-                if (m.soon || !m.url) {
-                  Taro.showToast({ title: '经营统计即将开放', icon: 'none' })
+                if (!m.url) {
+                  Taro.showToast({ title: '即将开放', icon: 'none' })
                   return
                 }
                 go(m.url, m.url.includes('/chef/orders'))
@@ -274,13 +270,18 @@ export default function ChefHomePage() {
                 <Text className={`ck-chip ${chip.cls}`}>{chip.text}</Text>
               </View>
               <Text className='chef-page__oc-dishes'>{itemSummary(o)}</Text>
+              {mealLine(o) ? (
+                <Text className='chef-page__oc-meta' style={{ marginTop: '8px' }}>
+                  用餐 {mealLine(o)}
+                </Text>
+              ) : null}
               {o.remark ? (
                 <Text className='chef-page__oc-meta' style={{ marginTop: '8px' }}>
                   备注：{o.remark}
                 </Text>
               ) : null}
               <View className='chef-page__oc-foot'>
-                <Text className='chef-page__oc-meta'>🕐 单号 #{o.orderNo}</Text>
+                <Text className='chef-page__oc-meta'>单号 #{o.orderNo}</Text>
                 {next ? (
                   <View className='chef-page__oc-actions'>
                     {o.status === 'PENDING' ? (

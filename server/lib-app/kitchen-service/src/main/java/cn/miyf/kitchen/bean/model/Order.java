@@ -1,6 +1,7 @@
 package cn.miyf.kitchen.bean.model;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,6 +18,10 @@ public class Order {
     private Long kitchenId;
     private String status;
     private String remark;
+    private LocalDate mealDate;
+    private String mealType;
+    private String mealTime;
+    private Integer guestCount;
     private Instant createTime;
     private Instant lastModifyTime;
     private List<OrderItem> items = new ArrayList<>();
@@ -67,6 +72,38 @@ public class Order {
 
     public void setRemark(String remark) {
         this.remark = remark;
+    }
+
+    public LocalDate getMealDate() {
+        return mealDate;
+    }
+
+    public void setMealDate(LocalDate mealDate) {
+        this.mealDate = mealDate;
+    }
+
+    public String getMealType() {
+        return mealType;
+    }
+
+    public void setMealType(String mealType) {
+        this.mealType = mealType;
+    }
+
+    public String getMealTime() {
+        return mealTime;
+    }
+
+    public void setMealTime(String mealTime) {
+        this.mealTime = mealTime;
+    }
+
+    public Integer getGuestCount() {
+        return guestCount;
+    }
+
+    public void setGuestCount(Integer guestCount) {
+        this.guestCount = guestCount;
     }
 
     public Instant getCreateTime() {

@@ -3,6 +3,7 @@ import { common } from '@kit.AbilityKit'
 import { Theme } from '../common/AppConfig'
 import { MiyfApi } from '../api/MiyfApi'
 import { SessionStore } from '../session/SessionStore'
+import { AppNav } from '../session/AppNav'
 
 @Entry
 @Component
@@ -25,21 +26,7 @@ struct Index {
         return
       }
       const me = await MiyfApi.fetchMe()
-      if (me.activeRole === undefined || me.activeRole.length === 0) {
-        router.replaceUrl({ url: 'pages/RoleSelect' })
-        return
-      }
-      if (me.activeRole !== 'DINER') {
-        this.tip = '厨师工作台下一期开放，请先切换食客'
-        router.replaceUrl({ url: 'pages/RoleSelect' })
-        return
-      }
-      const binding = await MiyfApi.fetchMyBinding()
-      if (binding === null || binding.status !== 'BOUND') {
-        router.replaceUrl({ url: 'pages/Join' })
-        return
-      }
-      router.replaceUrl({ url: 'pages/Main' })
+      await AppNav.afterAuth(me)
     } catch (_err) {
       await SessionStore.clear(this.context())
       router.replaceUrl({ url: 'pages/Login' })

@@ -68,6 +68,7 @@ public class OrderApplicationService extends BaseApplicationService {
     private final UserRepository userRepository;
     private final KitchenAccessService kitchenAccessService;
     private final OrderChefWxNotifyService orderChefWxNotifyService;
+    private final OrderDinerWxNotifyService orderDinerWxNotifyService;
 
     /**
      * 用户创建预约：校验上架 → 原子扣库存 → 写单头与明细。
@@ -112,6 +113,10 @@ public class OrderApplicationService extends BaseApplicationService {
         order.setKitchenId(kitchenId);
         order.setStatus(OrderStatus.PENDING.name());
         order.setRemark(dto.getRemark());
+        order.setMealDate(dto.getMealDate());
+        order.setMealType(normalizeMealType(dto.getMealType()));
+        order.setMealTime(normalizeMealTime(dto.getMealTime()));
+        order.setGuestCount(normalizeGuestCount(dto.getGuestCount()));
         order.setItems(items);
         Order saved = insertWithItems(order);
         OrderVo vo = toVo(saved);
@@ -251,7 +256,34 @@ public class OrderApplicationService extends BaseApplicationService {
         Order order = requireChefOrder(id);
         OrderStatus target = parseStatus(dto.getStatus());
         transitAndRestore(order, target);
-        return toVo(requireOrder(id));
+        Order updated = requireOrder(id);
+        scheduleDinerWxNotifyAfterCommit(updated);
+        return toVo(updated);
+    }
+
+    /**
+     * 事务提交后异步通知食客状态变更。
+     *
+     * @param order 已更新预约（含明细）
+     */
+    private void scheduleDinerWxNotifyAfterCommit(Order order) {
+        Runnable send = () -> {
+            try {
+                orderDinerWxNotifyService.notifyStatusChanged(order);
+            } catch (Exception ignored) {
+                // notify 内部已吞异常
+            }
+        };
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            CompletableFuture.runAsync(send);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                CompletableFuture.runAsync(send);
+            }
+        });
     }
 
     /** 校验预约归属当前厨师厨房。 */
@@ -492,9 +524,41 @@ public class OrderApplicationService extends BaseApplicationService {
                 .setKitchenId(order.getKitchenId())
                 .setStatus(order.getStatus())
                 .setRemark(order.getRemark())
+                .setMealDate(order.getMealDate())
+                .setMealType(order.getMealType())
+                .setMealTime(order.getMealTime())
+                .setGuestCount(order.getGuestCount())
                 .setCreateTime(order.getCreateTime())
                 .setLastModifyTime(order.getLastModifyTime())
                 .setItems(items);
+    }
+
+    private static final Set<String> MEAL_TYPES = Set.of("BREAKFAST", "LUNCH", "DINNER", "SNACK", "OTHER");
+
+    private String normalizeMealType(String mealType) {
+        if (mealType == null || mealType.isBlank()) {
+            return null;
+        }
+        String normalized = mealType.trim().toUpperCase();
+        requireTrue(MEAL_TYPES.contains(normalized), ErrorCode.BAD_REQUEST, "餐次无效");
+        return normalized;
+    }
+
+    private String normalizeMealTime(String mealTime) {
+        if (mealTime == null || mealTime.isBlank()) {
+            return null;
+        }
+        String t = mealTime.trim();
+        requireTrue(t.matches("^([01]\\d|2[0-3]):[0-5]\\d$"), ErrorCode.BAD_REQUEST, "用餐时间格式应为 HH:mm");
+        return t;
+    }
+
+    private Integer normalizeGuestCount(Integer guestCount) {
+        if (guestCount == null) {
+            return null;
+        }
+        requireTrue(guestCount >= 1 && guestCount <= 50, ErrorCode.BAD_REQUEST, "用餐人数须在 1～50");
+        return guestCount;
     }
 
     private Map<Long, String> resolveNicknameMap(Collection<Order> orders) {

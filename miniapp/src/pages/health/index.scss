@@ -90,6 +90,14 @@
     line-height: 1.55;
   }
 
+  &__score-disclaimer {
+    display: block;
+    font-size: 18px;
+    opacity: 0.65;
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+
   &__score-tags {
     display: flex;
     flex-wrap: wrap;

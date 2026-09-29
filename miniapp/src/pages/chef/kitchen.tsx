@@ -1,28 +1,55 @@
-import { View, Text, Input, Textarea, Button } from '@tarojs/components'
-import Taro, { useDidShow } from '@tarojs/taro'
-import { useState } from 'react'
-import { fetchInvite, fetchMyKitchen, saveMyKitchen, type InviteVo } from '@/api/kitchen'
+import {Button, Image, Input, Text, Textarea, View} from '@tarojs/components'
+import Taro, {useDidShow} from '@tarojs/taro'
+import {useState} from 'react'
+import {fetchInvite, fetchMyKitchen, type InviteVo, saveMyKitchen, uploadKitchenCover} from '@/api/kitchen'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
-import { useChefWorkbench } from '@/hooks/useChefWorkbench'
+import {useChefWorkbench} from '@/hooks/useChefWorkbench'
+import {toAbsoluteResourceUrl} from '@/utils/resourceUrl'
 import './chef.scss'
 
 export default function ChefKitchenPage() {
   useChefWorkbench()
   const [name, setName] = useState('')
   const [intro, setIntro] = useState('')
+  const [coverImage, setCoverImage] = useState('')
+  const [coverPreview, setCoverPreview] = useState('')
   const [invite, setInvite] = useState<InviteVo | null>(null)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   useDidShow(() => {
     void fetchMyKitchen().then((k) => {
       if (!k) return
       setName(k.name || '')
       setIntro(k.intro || '')
+      setCoverImage(k.coverImage || '')
+      setCoverPreview(toAbsoluteResourceUrl(k.coverImage) || '')
     })
     void fetchInvite()
       .then(setInvite)
       .catch(() => setInvite(null))
   })
+
+  const pickCover = async () => {
+    if (uploading) return
+    try {
+      const picked = await Taro.chooseImage({ count: 1, sizeType: ['compressed'] })
+      const path = picked.tempFilePaths?.[0]
+      if (!path) return
+      setUploading(true)
+      const url = await uploadKitchenCover(path)
+      setCoverImage(url)
+      setCoverPreview(toAbsoluteResourceUrl(url) || path)
+      Taro.showToast({ title: '封面已上传', icon: 'success' })
+    } catch (err) {
+      Taro.showToast({
+        title: err instanceof Error ? err.message : '上传失败',
+        icon: 'none'
+      })
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const save = async () => {
     if (!name.trim()) {
@@ -32,7 +59,11 @@ export default function ChefKitchenPage() {
     if (saving) return
     setSaving(true)
     try {
-      await saveMyKitchen({ name: name.trim(), intro: intro.trim() })
+      await saveMyKitchen({
+        name: name.trim(),
+        intro: intro.trim(),
+        coverImage: coverImage || undefined
+      })
       Taro.showToast({ title: '已保存', icon: 'success' })
     } finally {
       setSaving(false)
@@ -44,9 +75,17 @@ export default function ChefKitchenPage() {
       <View className='chef-page__svc-switch'>
         <ServiceSwitcher compact activeKey='chef' />
       </View>
-      <View className='chef-page__cover'>
+      <View className='chef-page__cover' onClick={() => void pickCover()}>
+        {coverPreview ? (
+          <Image className='chef-page__cover-img' src={coverPreview} mode='aspectFill' />
+        ) : null}
+        <Text className='chef-page__edit-cover'>{uploading ? '上传中…' : '更换封面'}</Text>
         <View className='chef-page__big-avatar'>
-          <Text>🍳</Text>
+          {coverPreview ? (
+            <Image className='chef-page__avatar-img' src={coverPreview} mode='aspectFill' />
+          ) : (
+            <Text>🍳</Text>
+          )}
         </View>
       </View>
 

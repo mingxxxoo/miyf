@@ -14,6 +14,7 @@ import lombok.experimental.Accessors;
 
 import java.io.Serial;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -58,6 +59,18 @@ public class OrderVo extends BaseVo {
 
     @Schema(description = "整单备注")
     private String remark;
+
+    @Schema(description = "期望用餐日期")
+    private LocalDate mealDate;
+
+    @Schema(description = "餐次 BREAKFAST/LUNCH/DINNER/SNACK/OTHER")
+    private String mealType;
+
+    @Schema(description = "期望用餐时间 HH:mm")
+    private String mealTime;
+
+    @Schema(description = "用餐人数")
+    private Integer guestCount;
 
     @Schema(description = "创建时间")
     private Instant createTime;

@@ -6,8 +6,10 @@ import cn.miyf.common.PageResult;
 import cn.miyf.kitchen.bean.dto.OrderCreateDto;
 import cn.miyf.kitchen.bean.qo.OrderPageQo;
 import cn.miyf.kitchen.bean.vo.OrderVo;
+import cn.miyf.kitchen.bean.vo.WxSubscribeConfigVo;
 import cn.miyf.kitchen.security.KitchenPersonalPopedom;
 import cn.miyf.kitchen.service.OrderApplicationService;
+import cn.miyf.kitchen.service.OrderDinerWxNotifyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * 用户端预约接口。
@@ -33,6 +37,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
 
     private final OrderApplicationService orderApplicationService;
+    private final OrderDinerWxNotifyService orderDinerWxNotifyService;
+
+    /**
+     * 微信订阅消息配置（食客端：预约状态变更提醒）。
+     *
+     * @return 开关与模板 ID
+     */
+    @Operation(summary = "预约状态订阅消息配置")
+    @MiyfPermission(code = "kitchen:user:order:create")
+    @GetMapping("/wx-subscribe-config")
+    public ApiResult<WxSubscribeConfigVo> wxSubscribeConfig() {
+        String templateId = orderDinerWxNotifyService.resolveTemplateId();
+        boolean enabled = orderDinerWxNotifyService.isEnabled()
+                && templateId != null && !templateId.isBlank();
+        return ApiResult.ok(new WxSubscribeConfigVo()
+                .setEnabled(enabled)
+                .setTemplateIds(enabled ? List.of(templateId.trim()) : List.of()));
+    }
 
     /**
      * 创建预约。

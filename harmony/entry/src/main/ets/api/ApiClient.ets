@@ -40,6 +40,10 @@ export class ApiClient {
     return ApiClient.request(http.RequestMethod.PUT, path, body, '')
   }
 
+  static async del(path: string, body: string = ''): Promise<Object | null> {
+    return ApiClient.request(http.RequestMethod.DELETE, path, body, '')
+  }
+
   private static async request(method: http.RequestMethod, path: string, body: string,
     query: string): Promise<Object | null> {
     const client = http.createHttp()

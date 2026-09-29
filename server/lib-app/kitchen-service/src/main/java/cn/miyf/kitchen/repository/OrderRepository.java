@@ -152,4 +152,13 @@ public interface OrderRepository extends BaseMapper<OrderEntity> {
                                      @Param("limit") long limit);
 
     long countChefPage(@Param("kitchenId") Long kitchenId, @Param("status") String status);
+
+    long countSinceByKitchen(@Param("kitchenId") Long kitchenId, @Param("since") Instant since);
+
+    List<Map<String, Object>> countDailySinceByKitchen(@Param("kitchenId") Long kitchenId,
+                                                       @Param("since") Instant since);
+
+    List<Map<String, Object>> hotDishesSinceByKitchen(@Param("kitchenId") Long kitchenId,
+                                                      @Param("since") Instant since,
+                                                      @Param("limit") int limit);
 }

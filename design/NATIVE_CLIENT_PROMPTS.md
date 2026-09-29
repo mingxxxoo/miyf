@@ -2,7 +2,8 @@
 
 > 版本：v1.0 · 2026-09-19  
 > 范围：安卓 / iOS / 鸿蒙 NEXT 的界面生成提示词，以及鸿蒙一期工程开发提示词  
-> 视觉基线对齐：`design/miniapp-redesign.html`  
+> 视觉基线对齐：`design/miniapp-redesign.html` / `design/MINIAPP_APP_DESIGN.md` + 演示 `design/miniapp-app-design.html`  
+> 鸿蒙完整设计：`design/HARMONY_APP_DESIGN.md` + 演示 `design/harmony-app-design.html`  
 > 业务 API 对齐：`miniapp/src/api/*`、`server/` 个人端 Controller  
 > 鸿蒙工程：`harmony/`（一期食客主链路已落地）
 
@@ -215,28 +216,84 @@
 验收：未登录进不了菜品；未绑定进不了点菜；提交后的单在列表里是待确认；取消已确认的单按钮不可用。不要出现金额。
 ```
 
-### 5.2 后续分期（提示词骨架，待开期时补全）
+### 5.2 第二期：厨师工作台与预约处理
 
-| 期次 | 范围         | 说明                                                     |
-|----|------------|--------------------------------------------------------|
-| 二期 | 厨师工作台与预约处理 | 对齐 `pages/chef/*` 与 `/api/chef/**`、`/api/bindings` 审核  |
-| 三期 | 健康总览与华为授权  | 对齐 `/api/health/**`、浏览器 OAuth 回跳轮询                     |
-| 四期 | AI 草稿      | 对齐 `/api/chef/ai/dishes/extract`、`/api/ai/orders/draft |insight` |
-| 五期 | 2×2 服务卡片   | 仅展示备餐中与取餐提示，点击打开预约详情                                   |
+> 状态（2026-09-29）：`harmony/pages/chef/*` 已落地工作台、菜品、预约、资料、食客申请。
 
-开期时：先贴 **§5 总控**，再单独写该期完整提示词（范围、接口、验收），不要与一期混做。
+```text
+按总控，只做第二期。不要做健康、AI、服务卡片。
+
+1. 厨师登录后进入工作台（无底部四栏）。从食客「我的 → 进入厨房工作台」可切换角色进入。
+2. 工作台：厨房名、四格（待确认 / 备餐中 / 在售 / 食客）、宫格入口带角标、最新预约可确认或 CANCELLED 驳回。
+3. 菜品：GET/POST /api/chef/dishes，提交审核、上架、下架。本期内新建表单可简化（名称 + 库存）。
+4. 预约：GET /api/chef/orders，PUT /api/chef/orders/{id}/status 按 PENDING→CONFIRMED→PREPARING→READY→COMPLETED。
+5. 厨房资料：GET/PUT /api/my-kitchen，邀请码 GET /api/my-kitchen/invite 可复制。
+6. 食客申请：GET /api/bindings，approve / reject。
+
+验收：厨师无底栏；状态推进合法；无金额。
+```
+
+### 5.3 第三期：健康总览与华为授权
+
+> 状态（2026-09-29）：`harmony/pages/health/*` 已落地总览、详情、数据源与浏览器 OAuth 轮询。
+
+```text
+按总控，只做第三期。不要做 AI、服务卡片。
+
+1. 从食客首页服务切换或「我的 → 胡闹健康」进入健康总览（不进底部四栏）。
+2. 总览：GET /api/health/me，各指标 GET /api/health/me/trends；评分与需关注横幅；禁诊断文案。
+3. 详情：趋势 + samples，时间范围切换。
+4. 数据源：华为运动健康第一位。GET authorize-url → 系统浏览器打开 → 轮询 GET oauth/status；POST sync；DELETE oauth 解除。禁止端上 Health Kit 另做上报，禁止废弃 callback。
+5. 失败展示「暂不可用」，不空白。
+
+验收：未授权可去授权；授权后可同步；解除后状态正确；无医疗诊断文案。
+```
+
+### 5.4 第四期：AI 草稿
+
+> 状态（2026-09-29）：食客点菜半模态、饮食参考卡、厨师 AI 建菜已落地。
+
+```text
+按总控，只做第四期。不要做服务卡片。
+
+1. 食客首页「说一句话点菜」半模态：POST /api/ai/orders/draft。只匹配在售菜；unmatched 必展示；禁止编造。加入草稿后可异步 POST /api/ai/orders/insight，失败则预约页不显示卡。
+2. 预约页嵌饮食参考卡：合适/需注意/不建议 + 免责声明。提交后清草稿与卡。
+3. 厨师「用文字生成」：POST /api/chef/ai/dishes/extract → 可编辑/勾选草稿 → 创建菜品并 submit-audit，不直接上架。降级回手动新建。
+
+验收：AI 不可用时主流程可手动作；无金额；免责声明可见。
+```
+
+### 5.5 第五期：2×2 服务卡片
+
+> 状态（2026-09-29）：`MiyfFormAbility` + `OrderStatusCard` + `FormCardUpdater` + `OrderDetail` 已落地。
+
+```text
+按总控，只做第五期。
+
+1. FormExtensionAbility + form_config：仅 2×2，奶油底灶橙点缀；标题厨房名、一行状态、小字菜品；无进行中显示空态。
+2. 数据：主进程拉 GET /api/orders，只挑 PREPARING 优先否则 READY 一张；写入 Preferences 后 formProvider.updateForm。Form 进程只读快照。
+3. 刷新时机：启动、预约列表加载/提交/取消、预约详情、厨师推进状态。
+4. 点击：postCardAction router 到 EntryAbility，带 orderId；冷启动经登录后打开 pages/OrderDetail（GET /api/orders/{id}）。无活跃预约则打开 App 主页。
+5. 不要多预约堆叠，不要金额，不要把卡片画进 App 页面。
+
+验收：有备餐中/可取餐时卡片有内容；点进详情；完成后卡片回空态。
+```
 
 ---
 
 ## 6. 相关文档
 
-| 文档                             | 用途                                                |
-|--------------------------------|---------------------------------------------------|
-| `design/miniapp-redesign.html` | 小程序高保真与 Design Tokens                             |
-| `docs/AI_PROMPT_DESIGN.md`     | 后端 spring-ai 业务提示词（建菜 / 点菜 / 饮食参考）                |
-| `docs/MODULE_ARCHITECTURE.md`  | 服务端模块边界                                           |
-| `harmony/README.md`            | 鸿蒙工程联调说明                                          |
-| `deploy/.env.example`          | `HUAWEI_ACCOUNT_*` / `APP_AUTH_HUAWEI_MOCK` 等环境变量 |
+| 文档                                | 用途                                                |
+|-----------------------------------|---------------------------------------------------|
+| `design/HARMONY_APP_DESIGN.md`    | 鸿蒙完整应用设计（IA / Token / 全屏清单 / 分期）                  |
+| `design/harmony-app-design.html`  | 鸿蒙高保真演示（360×780，入门 / 食客 / 厨师 / 健康 / AI / 服务卡片） |
+| `design/MINIAPP_APP_DESIGN.md`    | 微信小程序完整设计 + 前后端同步（v3）                             |
+| `design/miniapp-app-design.html`  | 微信小程序高保真演示（v3，375×812 + 胶囊）                         |
+| `design/miniapp-redesign.html`    | 小程序 v2 提案对照（Token 同源）                                |
+| `docs/AI_PROMPT_DESIGN.md`        | 后端 spring-ai 业务提示词（建菜 / 点菜 / 饮食参考）                |
+| `docs/MODULE_ARCHITECTURE.md`     | 服务端模块边界                                           |
+| `harmony/README.md`               | 鸿蒙工程联调说明                                          |
+| `deploy/.env.example`             | `HUAWEI_ACCOUNT_*` / `APP_AUTH_HUAWEI_MOCK` 等环境变量 |
 
 ---
 

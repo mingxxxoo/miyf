@@ -13,7 +13,9 @@
     </update>
 
     <select id="selectUserPage" resultType="cn.miyf.kitchen.bean.entity.OrderEntity">
-        SELECT id, order_no, user_id, kitchen_id, status, remark, create_time, last_modify_time
+        SELECT id, order_no, user_id, kitchen_id, status, remark,
+               meal_date, meal_type, meal_time, guest_count,
+               create_time, last_modify_time
         FROM kitchen_order
         WHERE user_id = #{userId}
           <if test="status != null and status != ''">
@@ -33,7 +35,9 @@
     </select>
 
     <select id="selectAdminPage" resultType="cn.miyf.kitchen.bean.entity.OrderEntity">
-        SELECT id, order_no, user_id, kitchen_id, status, remark, create_time, last_modify_time
+        SELECT id, order_no, user_id, kitchen_id, status, remark,
+               meal_date, meal_type, meal_time, guest_count,
+               create_time, last_modify_time
         FROM kitchen_order
         WHERE 1 = 1
           <if test="status != null and status != ''">
@@ -128,7 +132,9 @@
     </select>
 
     <select id="selectChefPage" resultType="cn.miyf.kitchen.bean.entity.OrderEntity">
-        SELECT id, order_no, user_id, kitchen_id, status, remark, create_time, last_modify_time
+        SELECT id, order_no, user_id, kitchen_id, status, remark,
+               meal_date, meal_type, meal_time, guest_count,
+               create_time, last_modify_time
         FROM kitchen_order
         WHERE kitchen_id = #{kitchenId}
           <if test="status != null and status != ''">
@@ -145,5 +151,37 @@
           <if test="status != null and status != ''">
               AND status = #{status}
           </if>
+    </select>
+
+    <select id="countSinceByKitchen" resultType="long">
+        SELECT COUNT(1)
+        FROM kitchen_order
+        WHERE kitchen_id = #{kitchenId}
+          <if test="since != null">
+              AND create_time &gt;= #{since}
+          </if>
+    </select>
+
+    <select id="countDailySinceByKitchen" resultType="map">
+        SELECT TO_CHAR(create_time AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD') AS day_key,
+               TO_CHAR(create_time AT TIME ZONE 'Asia/Shanghai', 'MM-DD') AS day_label,
+               COUNT(1) AS cnt
+        FROM kitchen_order
+        WHERE kitchen_id = #{kitchenId}
+          AND create_time &gt;= #{since}
+        GROUP BY day_key, day_label
+        ORDER BY day_key
+    </select>
+
+    <select id="hotDishesSinceByKitchen" resultType="map">
+        SELECT oi.dish_name AS name,
+               SUM(oi.quantity) AS cnt
+        FROM kitchen_order_item oi
+                 INNER JOIN kitchen_order o ON o.id = oi.order_id
+        WHERE o.kitchen_id = #{kitchenId}
+          AND o.create_time &gt;= #{since}
+        GROUP BY oi.dish_name
+        ORDER BY cnt DESC
+        LIMIT #{limit}
     </select>
 </mapper>

@@ -10,12 +10,15 @@ import cn.miyf.kitchen.bean.dto.RecipeSaveDto;
 import cn.miyf.kitchen.bean.qo.DishPageQo;
 import cn.miyf.kitchen.bean.qo.OrderPageQo;
 import cn.miyf.kitchen.bean.vo.CategoryVo;
+import cn.miyf.kitchen.bean.vo.ChefKitchenStatsVo;
+import cn.miyf.kitchen.bean.vo.ChefWorkbenchSummaryVo;
 import cn.miyf.kitchen.bean.vo.DishVo;
 import cn.miyf.kitchen.bean.vo.OrderVo;
 import cn.miyf.kitchen.bean.vo.RecipeVo;
 import cn.miyf.kitchen.bean.vo.WxSubscribeConfigVo;
 import cn.miyf.kitchen.security.KitchenPersonalPopedom;
 import cn.miyf.kitchen.service.CategoryApplicationService;
+import cn.miyf.kitchen.service.ChefWorkbenchApplicationService;
 import cn.miyf.kitchen.service.DishApplicationService;
 import cn.miyf.kitchen.service.KitchenAccessService;
 import cn.miyf.kitchen.service.OrderApplicationService;
@@ -61,6 +64,31 @@ public class ChefController {
     private final RecipeApplicationService recipeApplicationService;
     private final OrderChefWxNotifyService orderChefWxNotifyService;
     private final KitchenAccessService kitchenAccessService;
+    private final ChefWorkbenchApplicationService chefWorkbenchApplicationService;
+
+    /**
+     * 工作台首页汇总（角标 + 最新预约），替代前端多次列表扇出。
+     *
+     * @return 汇总
+     */
+    @Operation(summary = "厨师工作台汇总")
+    @MiyfPermission(code = "kitchen:user:order:list")
+    @GetMapping("/workbench/summary")
+    public ApiResult<ChefWorkbenchSummaryVo> workbenchSummary() {
+        return ApiResult.ok(chefWorkbenchApplicationService.summary());
+    }
+
+    /**
+     * 本厨经营统计（近 7 日趋势与热门菜）。
+     *
+     * @return 统计
+     */
+    @Operation(summary = "厨师经营统计")
+    @MiyfPermission(code = "kitchen:user:order:list")
+    @GetMapping("/stats")
+    public ApiResult<ChefKitchenStatsVo> stats() {
+        return ApiResult.ok(chefWorkbenchApplicationService.stats());
+    }
 
     /**
      * 微信订阅消息配置（厨师端授权用）。

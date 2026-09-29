@@ -1,49 +1,52 @@
-import { View, Text, Button } from '@tarojs/components'
-import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {Button, Text, View} from '@tarojs/components'
+import Taro, {useDidShow, usePullDownRefresh} from '@tarojs/taro'
+import {useEffect, useMemo, useRef, useState} from 'react'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
+import MiniIcon, {type MiniIconName} from '@/components/MiniIcon'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
 import {
-  assessMetricValue,
-  fetchHuaweiAuthorizeUrl,
-  fetchHuaweiOAuthStatus,
-  fetchMyBindings,
-  fetchMyHealth,
-  fetchMyTrend,
-  fetchProviders,
-  formatMeasuredTime,
-  formatStatValue,
-  METRIC_OPTIONS,
-  providerLabel,
-  revokeHuaweiOAuth,
-  syncMyProvider,
-  type HealthProvider,
-  type HealthProviderBinding,
-  type HealthSubject,
-  type HealthTrend
+    assessMetricValue,
+    fetchHuaweiAuthorizeUrl,
+    fetchHuaweiOAuthStatus,
+    fetchMyBindings,
+    fetchMyHealth,
+    fetchMyHealthScore,
+    fetchMyTrend,
+    fetchProviders,
+    formatMeasuredTime,
+    formatStatValue,
+    type HealthProvider,
+    type HealthProviderBinding,
+    type HealthScore,
+    type HealthSubject,
+    type HealthTrend,
+    METRIC_OPTIONS,
+    providerLabel,
+    revokeHuaweiOAuth,
+    syncMyProvider
 } from '@/api/health'
-import { useAuthGuard } from '@/hooks/useAuthGuard'
-import { PRODUCT_META, useProductStore } from '@/stores/productStore'
+import {useAuthGuard} from '@/hooks/useAuthGuard'
+import {PRODUCT_META, useProductStore} from '@/stores/productStore'
 import './index.scss'
 
 const HUAWEI_POLL_MS = 3000
 const HUAWEI_POLL_MAX_MS = 3 * 60 * 1000
 
-const METRIC_ICONS: Record<string, { icon: string; bg: string }> = {
-  WEIGHT: { icon: '⚖️', bg: '#E7F7F0' },
-  HEART_RATE: { icon: '💗', bg: '#FCEEEA' },
-  STEPS: { icon: '👟', bg: '#FBF3E0' },
-  BLOOD_PRESSURE_SYS: { icon: '🩺', bg: '#EBF3FB' },
-  BLOOD_PRESSURE_DIA: { icon: '💉', bg: '#EBF3FB' },
-  BLOOD_GLUCOSE: { icon: '🍬', bg: '#FFF1E2' },
-  BODY_FAT: { icon: '🫧', bg: '#F0EBFB' },
-  BMI: { icon: '📏', bg: '#E7F7F0' },
-  HEIGHT: { icon: '📐', bg: '#F4F0E9' },
-  SPO2: { icon: '🫁', bg: '#EBF3FB' },
-  SLEEP_MINUTES: { icon: '😴', bg: '#F0EBFB' },
-  STRESS: { icon: '😮‍💨', bg: '#FBF3E0' },
-  CALORIES: { icon: '🔥', bg: '#FFF1E2' }
+const METRIC_ICONS: Record<string, { icon: MiniIconName; bg: string }> = {
+  WEIGHT: { icon: 'weight', bg: '#E7F7F0' },
+  HEART_RATE: { icon: 'heart', bg: '#FCEEEA' },
+  STEPS: { icon: 'steps', bg: '#FBF3E0' },
+  BLOOD_PRESSURE_SYS: { icon: 'activity', bg: '#EBF3FB' },
+  BLOOD_PRESSURE_DIA: { icon: 'activity', bg: '#EBF3FB' },
+  BLOOD_GLUCOSE: { icon: 'droplet', bg: '#FFF1E2' },
+  BODY_FAT: { icon: 'empty', bg: '#F0EBFB' },
+  BMI: { icon: 'ruler', bg: '#E7F7F0' },
+  HEIGHT: { icon: 'ruler', bg: '#F4F0E9' },
+  SPO2: { icon: 'droplet', bg: '#EBF3FB' },
+  SLEEP_MINUTES: { icon: 'moon', bg: '#F0EBFB' },
+  STRESS: { icon: 'wind', bg: '#FBF3E0' },
+  CALORIES: { icon: 'flame', bg: '#FFF1E2' }
 }
 
 function MiniSpark({
@@ -86,6 +89,7 @@ export default function HealthPage() {
   const [authorizeUrl, setAuthorizeUrl] = useState('')
   const [providers, setProviders] = useState<HealthProvider[]>([])
   const [bindings, setBindings] = useState<HealthProviderBinding[]>([])
+  const [scoreApi, setScoreApi] = useState<HealthScore | null>(null)
 
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollDeadlineRef = useRef(0)
@@ -119,19 +123,25 @@ export default function HealthPage() {
   }, [cards])
 
   const healthScore = useMemo(() => {
+    if (scoreApi) return scoreApi.score
     if (!summary.withData) return 0
     const base = 72
     const bonus = Math.min(28, summary.withData * 4)
     const penalty = summary.alerts * 10
     return Math.max(35, Math.min(98, base + bonus - penalty))
-  }, [summary])
+  }, [scoreApi, summary])
 
   const scoreTitle = useMemo(() => {
+    if (scoreApi?.title) {
+      return scoreApi.alerts === 0 && scoreApi.withData > 0
+        ? `${scoreApi.title} 🌿`
+        : scoreApi.title
+    }
     if (!summary.withData) return '暂无数据'
     if (summary.alerts === 0) return '状态不错，继续保持 🌿'
     if (summary.alerts <= 2) return '需要留意一下'
     return '建议多关注身体'
-  }, [summary])
+  }, [scoreApi, summary])
 
   const firstAlert = useMemo(() => {
     return cards.find((c) => c.latestAlert) || null
@@ -242,6 +252,7 @@ export default function HealthPage() {
       setSubject(me)
       await Promise.all([
         loadTrends(),
+        fetchMyHealthScore().then(setScoreApi).catch(() => setScoreApi(null)),
         refreshHuaweiStatus({ quiet: true }),
         fetchProviders()
           .then((list) => setProviders(list.filter((p) => p.code)))
@@ -399,20 +410,36 @@ export default function HealthPage() {
         <View className='health-page__score-info'>
           <Text className='health-page__score-title'>{scoreTitle}</Text>
           <Text className='health-page__score-desc'>
-            {summary.withData
-              ? `${summary.withData} 项指标中 ${Math.max(0, summary.withData - summary.alerts)} 项正常${
-                  summary.alerts > 0 ? `，${summary.alerts} 项需关注` : ''
+            {(scoreApi?.withData ?? summary.withData)
+              ? `${scoreApi?.withData ?? summary.withData} 项指标中 ${Math.max(
+                  0,
+                  (scoreApi?.withData ?? summary.withData) -
+                    (scoreApi?.alerts ?? summary.alerts)
+                )} 项正常${
+                  (scoreApi?.alerts ?? summary.alerts) > 0
+                    ? `，${scoreApi?.alerts ?? summary.alerts} 项需关注`
+                    : ''
                 }`
               : '连接数据源后，这里会汇总你的健康状态'}
           </Text>
+          {scoreApi?.disclaimer ? (
+            <Text className='health-page__score-disclaimer'>{scoreApi.disclaimer}</Text>
+          ) : null}
           <View className='health-page__score-tags'>
-            {summary.withData > 0 ? (
+            {(scoreApi?.withData ?? summary.withData) > 0 ? (
               <Text className='health-page__score-tag'>
-                {Math.max(0, summary.withData - summary.alerts)} 正常
+                {Math.max(
+                  0,
+                  (scoreApi?.withData ?? summary.withData) -
+                    (scoreApi?.alerts ?? summary.alerts)
+                )}{' '}
+                正常
               </Text>
             ) : null}
-            {summary.alerts > 0 ? (
-              <Text className='health-page__score-tag'>{summary.alerts} 需关注</Text>
+            {(scoreApi?.alerts ?? summary.alerts) > 0 ? (
+              <Text className='health-page__score-tag'>
+                {scoreApi?.alerts ?? summary.alerts} 需关注
+              </Text>
             ) : null}
           </View>
         </View>
@@ -444,7 +471,10 @@ export default function HealthPage() {
       </View>
       <View className='health-page__metric-grid'>
         {cards.map(({ metric, trend, latestAlert }) => {
-          const meta = METRIC_ICONS[metric.code] || { icon: '📌', bg: '#F4F0E9' }
+          const meta = METRIC_ICONS[metric.code] || {
+            icon: 'empty' as MiniIconName,
+            bg: '#F4F0E9'
+          }
           const warn = Boolean(latestAlert)
           return (
             <View
@@ -456,7 +486,7 @@ export default function HealthPage() {
             >
               <View className='health-page__m-top'>
                 <View className='health-page__m-ico' style={{ background: meta.bg }}>
-                  <Text>{meta.icon}</Text>
+                  <MiniIcon name={meta.icon} size='md' tone='bare' />
                 </View>
                 <Text className='health-page__m-name'>{metric.label}</Text>
                 {latestAlert ? (

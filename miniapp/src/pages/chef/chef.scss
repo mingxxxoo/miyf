@@ -469,6 +469,26 @@
     display: flex;
     align-items: flex-end;
     margin-bottom: 60px;
+    overflow: hidden;
+  }
+
+  &__cover-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  &__edit-cover {
+    position: absolute;
+    right: 28px;
+    top: 28px;
+    z-index: 2;
+    font-size: 22px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.28);
+    padding: 8px 20px;
+    border-radius: 99px;
   }
 
   &__big-avatar {
@@ -485,6 +505,13 @@
     justify-content: center;
     font-size: 52px;
     box-shadow: 0 6px 16px rgba(80, 50, 10, 0.18);
+    overflow: hidden;
+    z-index: 2;
+  }
+
+  &__avatar-img {
+    width: 100%;
+    height: 100%;
   }
 
   &__card {
@@ -929,5 +956,87 @@
     font-size: 22px;
     color: $ck-faint;
     line-height: 1.45;
+  }
+
+  &__stats-card {
+    padding: 28px 24px 20px;
+  }
+
+  &__trend {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 140px;
+  }
+
+  &__trend-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__trend-bar {
+    width: 70%;
+    max-width: 28px;
+    border-radius: 8px 8px 4px 4px;
+    background: linear-gradient(180deg, #f07b1f, #f5a25a);
+    min-height: 8px;
+  }
+
+  &__trend-count {
+    font-size: 18px;
+    color: $ck-muted;
+  }
+
+  &__trend-day {
+    font-size: 16px;
+    color: $ck-faint;
+  }
+
+  &__hot-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+
+    & + & {
+      border-top: 1px solid $ck-line;
+    }
+  }
+
+  &__hot-name {
+    width: 140px;
+    flex-shrink: 0;
+    font-size: 26px;
+    color: $ck-ink;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__hot-track {
+    flex: 1;
+    height: 12px;
+    border-radius: 99px;
+    background: #f4f0e9;
+    overflow: hidden;
+  }
+
+  &__hot-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #18a885, #5dceb0);
+    min-width: 8px;
+  }
+
+  &__hot-count {
+    width: 48px;
+    text-align: right;
+    font-size: 24px;
+    font-weight: 600;
+    color: $ck-muted;
   }
 }

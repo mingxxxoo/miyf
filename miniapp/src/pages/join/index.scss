@@ -1,0 +1,107 @@
+@import '../../styles/variables.scss';
+
+.join-page {
+  min-height: 100vh;
+  padding: 48px 36px 64px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 12% 0%, rgba($ck-primary, 0.18), transparent 40%),
+    $ck-bg;
+
+  &__title {
+    display: block;
+    font-size: 40px;
+    font-weight: 700;
+    color: $ck-ink;
+    margin-bottom: 12px;
+  }
+
+  &__sub {
+    display: block;
+    font-size: 26px;
+    color: $ck-muted;
+    line-height: 1.7;
+    margin-bottom: 32px;
+  }
+
+  &__status {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 24px 28px;
+    border-radius: 28px;
+    border: 1px solid $ck-line;
+    background: #fff;
+    margin-bottom: 28px;
+
+    &--warn {
+      background: $ck-amber-soft;
+      border-color: #F0DDB4;
+      .join-page__status-dot { color: $ck-amber; }
+    }
+
+    &--ok {
+      background: $ck-hg-soft;
+      border-color: #CBEBDD;
+      .join-page__status-dot { color: $ck-hg; }
+    }
+
+    &--bad {
+      background: $ck-red-soft;
+      border-color: #F3D3CE;
+      .join-page__status-dot { color: $ck-red; }
+    }
+  }
+
+  &__status-dot {
+    font-size: 22px;
+    line-height: 1.4;
+    flex: none;
+  }
+
+  &__status-title {
+    display: block;
+    font-size: 28px;
+    font-weight: 600;
+    color: $ck-ink;
+  }
+
+  &__status-desc {
+    display: block;
+    font-size: 24px;
+    color: $ck-muted;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  &__code-wrap {
+    background: #fff;
+    border: 1px solid $ck-line;
+    border-radius: 24px;
+    padding: 8px 24px;
+    margin-bottom: 28px;
+  }
+
+  &__code {
+    height: 88px;
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: 8px;
+    color: $ck-ink;
+  }
+
+  &__btn {
+    height: 96px;
+    line-height: 96px;
+    border-radius: 32px;
+    background: linear-gradient(135deg, $ck-primary, $ck-primary-deep);
+    color: #fff;
+    font-size: 30px;
+    font-weight: 600;
+    border: none;
+
+    &::after {
+      border: none;
+    }
+  }
+}

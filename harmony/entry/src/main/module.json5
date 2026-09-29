@@ -32,6 +32,22 @@
         ]
       }
     ],
+    "extensionAbilities": [
+      {
+        "name": "MiyfFormAbility",
+        "srcEntry": "./ets/entryformability/MiyfFormAbility.ets",
+        "label": "$string:order_card_display_name",
+        "description": "$string:order_card_desc",
+        "type": "form",
+        "exported": true,
+        "metadata": [
+          {
+            "name": "ohos.extension.form",
+            "resource": "$profile:form_config"
+          }
+        ]
+      }
+    ],
     "requestPermissions": [
       {
         "name": "ohos.permission.INTERNET"

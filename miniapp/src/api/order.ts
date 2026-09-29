@@ -1,8 +1,8 @@
-import { get, post } from '@/api/request'
-import type { Order, OrderItem, PageResult } from '@/types'
-import { pageRecords } from '@/types'
-import { asId, asOptionalId } from '@/utils/id'
-import { toResourceUrl } from '@/utils/resourceUrl'
+import {get, post} from '@/api/request'
+import type {Order, OrderItem, PageResult} from '@/types'
+import {pageRecords} from '@/types'
+import {asId, asOptionalId} from '@/utils/id'
+import {toResourceUrl} from '@/utils/resourceUrl'
 
 interface OrderItemRaw {
   id?: string
@@ -22,6 +22,10 @@ interface OrderRaw {
   userId?: string
   status: string
   remark?: string
+  mealDate?: string
+  mealType?: string
+  mealTime?: string
+  guestCount?: number
   createTime: string
   lastModifyTime?: string
   items?: OrderItemRaw[]
@@ -53,6 +57,10 @@ function mapOrder(raw: OrderRaw): Order {
     lastModifyTime: raw.lastModifyTime,
     note: raw.remark,
     remark: raw.remark,
+    mealDate: raw.mealDate || undefined,
+    mealType: raw.mealType || undefined,
+    mealTime: raw.mealTime || undefined,
+    guestCount: raw.guestCount != null ? Number(raw.guestCount) : undefined,
     displayTip: raw.displayTip
   }
 }
@@ -78,6 +86,10 @@ export async function fetchOrderDetail(id: string): Promise<Order> {
 
 export async function createOrder(payload: {
   remark?: string
+  mealDate?: string
+  mealType?: string
+  mealTime?: string
+  guestCount?: number
   items: { dishId: string; quantity: number; remark?: string }[]
 }): Promise<Order> {
   const body = {

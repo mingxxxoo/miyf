@@ -1,20 +1,20 @@
-import { View, Text, ScrollView, Image } from '@tarojs/components'
-import Taro, { useDidHide, useDidShow, usePullDownRefresh } from '@tarojs/taro'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { analyzeOrderInsight, draftOrderFromText } from '@/api/ai'
-import { fetchDishes } from '@/api/dish'
-import { fetchMyBinding } from '@/api/kitchen'
+import {Image, ScrollView, Text, View} from '@tarojs/components'
+import Taro, {useDidHide, useDidShow, usePullDownRefresh} from '@tarojs/taro'
+import {useEffect, useMemo, useRef, useState} from 'react'
+import {analyzeOrderInsight, draftOrderFromText} from '@/api/ai'
+import {fetchDishes, fetchRecommendDishes} from '@/api/dish'
+import {fetchMyBinding} from '@/api/kitchen'
 import AiPromptSheet from '@/components/AiPromptSheet'
 import DishCard from '@/components/DishCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
 import MiniIcon from '@/components/MiniIcon'
-import ServiceSwitcher, { DraftOrderBar } from '@/components/ServiceSwitcher'
-import { useAuthGuard } from '@/hooks/useAuthGuard'
-import { useOrderStore } from '@/stores/orderStore'
-import { PRODUCT_META, useProductStore } from '@/stores/productStore'
-import { useUserStore } from '@/stores/userStore'
-import type { Dish } from '@/types'
+import ServiceSwitcher, {DraftOrderBar} from '@/components/ServiceSwitcher'
+import {useAuthGuard} from '@/hooks/useAuthGuard'
+import {useOrderStore} from '@/stores/orderStore'
+import {PRODUCT_META, useProductStore} from '@/stores/productStore'
+import {useUserStore} from '@/stores/userStore'
+import type {Dish} from '@/types'
 import './index.scss'
 
 const DISH_EMOJIS = ['🍖', '🥬', '🍅', '🐟', '🥗', '🍲', '🍛', '🥘']
@@ -44,7 +44,10 @@ export default function IndexPage() {
   const scrollTopRef = useRef(0)
 
   const recommended = useMemo(
-    () => dishes.filter((d) => d.recommend).slice(0, 6),
+    () => {
+      const marked = dishes.filter((d) => d.recommend)
+      return (marked.length ? marked : dishes).slice(0, 6)
+    },
     [dishes]
   )
 
@@ -143,8 +146,13 @@ export default function IndexPage() {
         setRejectReason('')
         setKitchenName(binding.kitchenName || '')
         try {
-          const page = await fetchDishes({ page: 1, rows: 20 })
-          setDishes(page.records || [])
+          const [rec, page] = await Promise.all([
+            fetchRecommendDishes(6).catch(() => [] as Dish[]),
+            fetchDishes({ page: 1, rows: 20 })
+          ])
+          const all = page.records || []
+          // 推荐接口优先；失败或为空时回落全量列表中的推荐标记
+          setDishes(rec.length ? [...rec, ...all.filter((d) => !rec.some((r) => r.id === d.id))] : all)
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err || '')
           if (/停业|封禁|暂不可用/i.test(msg)) {

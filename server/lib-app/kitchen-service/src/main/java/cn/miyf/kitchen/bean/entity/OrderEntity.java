@@ -13,6 +13,7 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import java.io.Serial;
+import java.time.LocalDate;
 
 /**
  * 预约单表实体。
@@ -53,4 +54,20 @@ public class OrderEntity extends BaseEntity {
     @TableField("remark")
     @Schema(description = "备注")
     private String remark;
+
+    @TableField("meal_date")
+    @Schema(description = "期望用餐日期")
+    private LocalDate mealDate;
+
+    @TableField("meal_type")
+    @Schema(description = "餐次 BREAKFAST/LUNCH/DINNER/SNACK/OTHER")
+    private String mealType;
+
+    @TableField("meal_time")
+    @Schema(description = "期望用餐时间 HH:mm")
+    private String mealTime;
+
+    @TableField("guest_count")
+    @Schema(description = "用餐人数")
+    private Integer guestCount;
 }

@@ -9,12 +9,19 @@ import cn.miyf.kitchen.bean.entity.UserEntity;
 import cn.miyf.kitchen.bean.qo.KitchenPageQo;
 import cn.miyf.kitchen.bean.vo.KitchenVo;
 import cn.miyf.kitchen.repository.KitchenRepository;
+import cn.miyf.oss.bean.dto.FileUploadCommand;
+import cn.miyf.oss.bean.vo.UploadedFileVo;
+import cn.miyf.oss.enums.FileAccessPermission;
+import cn.miyf.oss.service.FileResourceApplicationService;
 import cn.miyf.service.BaseApplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Set;
 
 /**
@@ -35,6 +42,7 @@ public class KitchenApplicationService extends BaseApplicationService {
     private final KitchenRepository kitchenRepository;
     private final KitchenAccessService kitchenAccessService;
     private final BindingApplicationService bindingApplicationService;
+    private final FileResourceApplicationService fileResourceApplicationService;
 
     /**
      * 当前厨师的厨房；尚未创建时返回 null。
@@ -78,7 +86,9 @@ public class KitchenApplicationService extends BaseApplicationService {
         }
         existing.setName(name);
         existing.setIntro(dto.getIntro());
-        existing.setCoverImage(dto.getCoverImage());
+        if (dto.getCoverImage() != null) {
+            existing.setCoverImage(dto.getCoverImage());
+        }
         if (StringUtils.hasText(dto.getStatus())) {
             String status = dto.getStatus().trim().toUpperCase();
             requireTrue(CHEF_STATUS.contains(status), ErrorCode.BAD_REQUEST, "厨房状态无效");
@@ -90,6 +100,36 @@ public class KitchenApplicationService extends BaseApplicationService {
         kitchenRepository.updateById(existing);
         bindingApplicationService.ensureOwnerSelfBinding(existing);
         return kitchenAccessService.toKitchenVo(existing);
+    }
+
+    /**
+     * 上传厨房封面图。
+     *
+     * @param file 图片
+     * @return 上传结果（含 /r/{id}）
+     */
+    public UploadedFileVo uploadCover(MultipartFile file) {
+        kitchenAccessService.requireOwnedKitchen();
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_FILE, "请选择图片");
+        }
+        FileUploadCommand command = new FileUploadCommand()
+                .setAppCode("kitchen")
+                .setSource("kitchen")
+                .setTemp(false)
+                .setCompress(true)
+                .setAccessPermission(FileAccessPermission.PUBLIC);
+        try (InputStream in = file.getInputStream()) {
+            return fileResourceApplicationService.store(
+                    in,
+                    file.getSize(),
+                    file.getContentType(),
+                    file.getOriginalFilename(),
+                    command
+            );
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.STORAGE_UNAVAILABLE, "读取图片失败");
+        }
     }
 
     /**

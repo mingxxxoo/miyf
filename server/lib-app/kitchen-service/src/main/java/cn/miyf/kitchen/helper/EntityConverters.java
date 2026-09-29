@@ -206,6 +206,10 @@ public final class EntityConverters {
         o.setKitchenId(e.getKitchenId());
         o.setStatus(e.getStatus());
         o.setRemark(e.getRemark());
+        o.setMealDate(e.getMealDate());
+        o.setMealType(e.getMealType());
+        o.setMealTime(e.getMealTime());
+        o.setGuestCount(e.getGuestCount());
         o.setCreateTime(e.getCreateTime());
         o.setLastModifyTime(e.getLastModifyTime());
         if (items != null) {
@@ -235,6 +239,10 @@ public final class EntityConverters {
         e.setKitchenId(o.getKitchenId());
         e.setStatus(o.getStatus());
         e.setRemark(o.getRemark());
+        e.setMealDate(o.getMealDate());
+        e.setMealType(o.getMealType());
+        e.setMealTime(o.getMealTime());
+        e.setGuestCount(o.getGuestCount());
         e.setCreateTime(o.getCreateTime());
         e.setLastModifyTime(o.getLastModifyTime());
         return e;

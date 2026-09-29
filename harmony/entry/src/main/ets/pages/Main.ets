@@ -1,4 +1,5 @@
 import { Theme } from '../common/AppConfig'
+import { AppNav } from '../session/AppNav'
 import { HomeTab } from './tabs/HomeTab'
 import { DishTab } from './tabs/DishTab'
 import { OrderTab } from './tabs/OrderTab'
@@ -9,11 +10,23 @@ import { MineTab } from './tabs/MineTab'
 struct Main {
   @State current: number = 0
 
+  aboutToAppear(): void {
+    this.current = AppNav.tabIndex
+    AppNav.watch(() => {
+      this.current = AppNav.tabIndex
+    })
+  }
+
   @Builder
   tabBuilder(title: string, target: number) {
-    Column() {
+    Column({ space: 4 }) {
+      Column()
+        .width(22)
+        .height(4)
+        .borderRadius(99)
+        .backgroundColor(this.current === target ? Theme.orange : Color.Transparent)
       Text(title)
-        .fontSize(12)
+        .fontSize(10)
         .fontColor(this.current === target ? Theme.orange : Theme.faint)
         .fontWeight(this.current === target ? FontWeight.Medium : FontWeight.Regular)
     }
@@ -42,6 +55,7 @@ struct Main {
     .barBackgroundColor(Theme.white)
     .onChange((index: number) => {
       this.current = index
+      AppNav.tabIndex = index
     })
   }
 }

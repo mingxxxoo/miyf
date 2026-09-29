@@ -14,6 +14,7 @@ import cn.miyf.kitchen.bean.entity.CategoryEntity;
 import cn.miyf.kitchen.bean.entity.DishEntity;
 import cn.miyf.kitchen.bean.entity.DishImageEntity;
 import cn.miyf.kitchen.bean.entity.KitchenEntity;
+import cn.miyf.kitchen.bean.entity.RecipeEntity;
 import cn.miyf.kitchen.bean.model.Dish;
 import cn.miyf.kitchen.bean.qo.DishPageQo;
 import cn.miyf.kitchen.bean.vo.DishVo;
@@ -21,12 +22,14 @@ import cn.miyf.kitchen.helper.EntityConverters;
 import cn.miyf.kitchen.repository.CategoryRepository;
 import cn.miyf.kitchen.repository.DishImageRepository;
 import cn.miyf.kitchen.repository.DishRepository;
+import cn.miyf.kitchen.repository.RecipeRepository;
 import cn.miyf.kitchen.search.DishSearchIndexService;
 import cn.miyf.oss.bean.dto.FileUploadCommand;
 import cn.miyf.oss.bean.vo.UploadedFileVo;
 import cn.miyf.oss.enums.FileAccessPermission;
 import cn.miyf.oss.service.FileResourceApplicationService;
 import cn.miyf.service.BaseApplicationService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,6 +42,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -63,6 +67,7 @@ public class DishApplicationService extends BaseApplicationService {
     private final DishRepository dishRepository;
     private final DishImageRepository dishImageRepository;
     private final CategoryRepository categoryRepository;
+    private final RecipeRepository recipeRepository;
     private final ListCache<DishVo> dishListCache;
     private final RedisAppProperties redisAppProperties;
     private final KitchenCacheEvictService kitchenCacheEvictService;
@@ -74,6 +79,7 @@ public class DishApplicationService extends BaseApplicationService {
     public DishApplicationService(DishRepository dishRepository,
                                   DishImageRepository dishImageRepository,
                                   CategoryRepository categoryRepository,
+                                  RecipeRepository recipeRepository,
                                   CacheClient cacheClient,
                                   RedisAppProperties redisAppProperties,
                                   KitchenCacheEvictService kitchenCacheEvictService,
@@ -84,6 +90,7 @@ public class DishApplicationService extends BaseApplicationService {
         this.dishRepository = dishRepository;
         this.dishImageRepository = dishImageRepository;
         this.categoryRepository = categoryRepository;
+        this.recipeRepository = recipeRepository;
         this.dishListCache = cacheClient.lists(DishVo.class);
         this.redisAppProperties = redisAppProperties;
         this.kitchenCacheEvictService = kitchenCacheEvictService;
@@ -110,6 +117,7 @@ public class DishApplicationService extends BaseApplicationService {
             List<DishVo> records = dishRepository.selectUserPage(
                             kitchenId, qo.getCategoryId(), qo.getKeyword(), qo.getRecommend(), off, pageSize)
                     .stream().map(e -> toVo(enrich(EntityConverters.toDish(e)))).toList();
+            enrichPrepMinutes(records);
             long total = dishRepository.countUserPage(
                     kitchenId, qo.getCategoryId(), qo.getKeyword(), qo.getRecommend());
             return PageResult.of(records, total, page, pageSize);
@@ -128,7 +136,9 @@ public class DishApplicationService extends BaseApplicationService {
         kitchenAccessService.requireBoundToDish(dish);
         requireTrue("ON_SALE".equals(dish.getStatus()) && "APPROVED".equals(dish.getAuditStatus()),
                 ErrorCode.NOT_FOUND, "菜品不存在或未上架");
-        return toVo(dish);
+        DishVo vo = toVo(dish);
+        enrichPrepMinutes(List.of(vo));
+        return vo;
     }
 
     /**
@@ -141,8 +151,10 @@ public class DishApplicationService extends BaseApplicationService {
     public List<DishVo> listHot(Integer limit) {
         Long kitchenId = kitchenAccessService.requireBoundKitchen().getId();
         int normalized = normalizeListLimit(limit);
-        return dishRepository.selectHot(kitchenId, normalized).stream()
+        List<DishVo> list = dishRepository.selectHot(kitchenId, normalized).stream()
                 .map(e -> toVo(enrich(EntityConverters.toDish(e)))).toList();
+        enrichPrepMinutes(list);
+        return list;
     }
 
     /**
@@ -155,8 +167,10 @@ public class DishApplicationService extends BaseApplicationService {
     public List<DishVo> listRecommend(Integer limit) {
         Long kitchenId = kitchenAccessService.requireBoundKitchen().getId();
         int normalized = normalizeListLimit(limit);
-        return dishRepository.selectRecommend(kitchenId, normalized).stream()
+        List<DishVo> list = dishRepository.selectRecommend(kitchenId, normalized).stream()
                 .map(e -> toVo(enrich(EntityConverters.toDish(e)))).toList();
+        enrichPrepMinutes(list);
+        return list;
     }
 
     /**
@@ -865,6 +879,34 @@ public class DishApplicationService extends BaseApplicationService {
             return DEFAULT_LIST_LIMIT;
         }
         return Math.min(limit, MAX_LIST_LIMIT);
+    }
+
+    /**
+     * 批量填充菜谱准备时长，避免列表 N+1。
+     *
+     * @param vos 菜品 VO 列表
+     */
+    private void enrichPrepMinutes(List<DishVo> vos) {
+        if (vos == null || vos.isEmpty()) {
+            return;
+        }
+        List<Long> ids = vos.stream().map(DishVo::getId).filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        List<RecipeEntity> recipes = recipeRepository.selectList(
+                new LambdaQueryWrapper<RecipeEntity>()
+                        .in(RecipeEntity::getDishId, ids)
+                        .select(RecipeEntity::getDishId, RecipeEntity::getPrepareMinutes));
+        Map<Long, Integer> prepByDish = recipes.stream()
+                .filter(r -> r.getDishId() != null && r.getPrepareMinutes() != null)
+                .collect(Collectors.toMap(RecipeEntity::getDishId, RecipeEntity::getPrepareMinutes, (a, b) -> a));
+        for (DishVo vo : vos) {
+            Integer prep = prepByDish.get(vo.getId());
+            if (prep != null) {
+                vo.setPrepMinutes(prep);
+            }
+        }
     }
 
     /**

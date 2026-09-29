@@ -11,6 +11,14 @@
     {
       "name": "EntryAbility_label",
       "value": "miyf"
+    },
+    {
+      "name": "order_card_display_name",
+      "value": "预约状态"
+    },
+    {
+      "name": "order_card_desc",
+      "value": "备餐中与可取餐提醒"
     }
   ]
 }

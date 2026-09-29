@@ -208,6 +208,14 @@
     background: linear-gradient(135deg, $ck-primary, $ck-primary-deep);
   }
 
+  &__subscribe-hint {
+    display: block;
+    padding: 0 32px 20px;
+    font-size: 22px;
+    color: $ck-faint;
+    line-height: 1.5;
+  }
+
   &__sec-row {
     display: flex;
     justify-content: space-between;

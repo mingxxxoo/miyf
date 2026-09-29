@@ -1,6 +1,6 @@
-import { View, Text } from '@tarojs/components'
+import {Text, View} from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import type { Order } from '@/types'
+import type {Order} from '@/types'
 import StatusBadge from '../StatusBadge'
 import './OrderCard.scss'
 
@@ -24,12 +24,31 @@ function itemSummary(order: Order) {
   return items.map((it) => `${it.dishName} ×${it.quantity}`).join(' · ')
 }
 
+function mealChip(order: Order): string {
+  const parts: string[] = []
+  if (order.mealDate) parts.push(order.mealDate)
+  if (order.mealTime) parts.push(order.mealTime)
+  else if (order.mealType) {
+    const map: Record<string, string> = {
+      BREAKFAST: '早餐',
+      LUNCH: '午餐',
+      DINNER: '晚餐',
+      SNACK: '加餐',
+      OTHER: '其他'
+    }
+    parts.push(map[order.mealType] || order.mealType)
+  }
+  if (order.guestCount) parts.push(`${order.guestCount} 人`)
+  return parts.join(' · ')
+}
+
 export default function OrderCard({ order }: OrderCardProps) {
   const step = flowStep(order.status)
   const active =
     order.status !== 'COMPLETED' &&
     order.status !== 'CANCELLED' &&
     step >= 0
+  const meal = mealChip(order)
 
   const handleTap = () => {
     Taro.navigateTo({ url: `/pages/order/detail?id=${order.id}` })
@@ -50,6 +69,7 @@ export default function OrderCard({ order }: OrderCardProps) {
         <StatusBadge status={order.status} />
       </View>
 
+      {meal ? <Text className='order-card__note'>{meal}</Text> : null}
       {order.note ? <Text className='order-card__note'>{order.note}</Text> : null}
 
       {active ? (
