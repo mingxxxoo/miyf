@@ -4,9 +4,11 @@ import {useEffect, useMemo, useState} from 'react'
 import {analyzeOrderInsight, draftOrderFromText} from '@/api/ai'
 import {fetchMyBinding} from '@/api/kitchen'
 import AiPromptSheet from '@/components/AiPromptSheet'
+import DraftOrderLine from '@/components/DraftOrderLine'
 import OrderCard from '@/components/OrderCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
+import MiniIcon from '@/components/MiniIcon'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
 import {useOrderStore} from '@/stores/orderStore'
 import {PRODUCT_META, useProductStore} from '@/stores/productStore'
@@ -30,9 +32,6 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'ALL', label: '全部' }
 ]
 
-const DISH_EMOJIS = ['🍖', '🥬', '🍅', '🐟', '🥗', '🍲', '🍛', '🥘']
-const EMOJI_BGS = ['#FFF1E2', '#E7F7F0', '#FBF3E0', '#EBF3FB', '#FCEEEA']
-
 function todayStr(): string {
   const d = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -46,10 +45,17 @@ function tomorrowStr(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+function formatShortDate(iso: string): string {
+  if (!iso) return '—'
+  const parts = iso.split('-')
+  if (parts.length < 3) return iso
+  return `${Number(parts[1])}/${Number(parts[2])}`
+}
+
 const MEAL_PRESETS = [
-  { key: 'today-dinner', label: '今天 · 晚餐', date: () => todayStr(), time: '18:00' },
-  { key: 'tomorrow-lunch', label: '明天 · 午餐', date: () => tomorrowStr(), time: '12:00' },
-  { key: 'tomorrow-dinner', label: '明天 · 晚餐', date: () => tomorrowStr(), time: '18:00' }
+  { key: 'today-dinner', label: '今天 · 晚餐', meal: '晚餐', date: () => todayStr(), time: '18:00' },
+  { key: 'tomorrow-lunch', label: '明天 · 午餐', meal: '午餐', date: () => tomorrowStr(), time: '12:00' },
+  { key: 'tomorrow-dinner', label: '明天 · 晚餐', meal: '晚餐', date: () => tomorrowStr(), time: '18:00' }
 ] as const
 
 export default function OrderIndexPage() {
@@ -63,6 +69,7 @@ export default function OrderIndexPage() {
     fetchOrders,
     updateDraft,
     updateDraftItemQty,
+    removeDraftItem,
     setDraftItem,
     submitOrder,
     clearDraft,
@@ -74,6 +81,7 @@ export default function OrderIndexPage() {
   const [tab, setTab] = useState<TabKey>('ACTIVE')
   const [needJoin, setNeedJoin] = useState(false)
   const [pending, setPending] = useState(false)
+  const [kitchenName, setKitchenName] = useState('')
   const [gateLoading, setGateLoading] = useState(true)
   const [aiOpen, setAiOpen] = useState(false)
   const [aiText, setAiText] = useState('')
@@ -97,6 +105,13 @@ export default function OrderIndexPage() {
     )
   }, [draft.scheduledTime, draft.scheduledTimeOfDay])
 
+  const mealChip = useMemo(() => {
+    const preset = MEAL_PRESETS.find((p) => p.key === activeMealKey)
+    const meal = preset?.meal || ''
+    const guests = draft.guestCount ? `${draft.guestCount} 人` : ''
+    return [meal, guests].filter(Boolean).join(' · ') || '待选餐次'
+  }, [activeMealKey, draft.guestCount])
+
   const bootstrapGate = async () => {
     setGateLoading(true)
     const profile = (await refreshProfile()) || user
@@ -109,10 +124,12 @@ export default function OrderIndexPage() {
       if (!binding || binding.status !== 'BOUND') {
         setNeedJoin(true)
         setPending(binding?.status === 'PENDING')
+        setKitchenName(binding?.kitchenName || '')
         clearDraft()
       } else {
         setNeedJoin(false)
         setPending(false)
+        setKitchenName(binding.kitchenName || '')
         await reload()
         void prefetchDinerWxSubscribeConfig().then(() => {
           setSubscribeReady(isDinerSubscribeReady())
@@ -279,7 +296,7 @@ export default function OrderIndexPage() {
     return (
       <View className='order-page'>
         <EmptyState
-          emoji='🔑'
+          icon='ticket'
           title={pending ? '等待厨师确认' : '先加入厨房'}
           description='没有公开菜单。绑定一位厨师后才能预约。'
           actionText='去加入厨房'
@@ -293,12 +310,39 @@ export default function OrderIndexPage() {
     <View className='order-page'>
       <ServiceSwitcher compact className='order-page__switch' />
 
+      <View className='order-page__hero'>
+        <Text className='order-page__hero-kicker'>
+          {kitchenName ? `${kitchenName} · 预约草稿` : '预约草稿'}
+        </Text>
+        <Text className='order-page__hero-title'>明天吃什么？</Text>
+        <Text className='order-page__hero-sub'>
+          确认餐次与份数后提交，厨师确认才会备餐。全程无支付。
+        </Text>
+        <View className='order-page__ord-meta'>
+          <View className='order-page__om'>
+            <Text className='order-page__om-label'>用餐日</Text>
+            <Text className='order-page__om-val'>
+              {draft.scheduledTime
+                ? `${activeMealKey.startsWith('today') ? '今天' : activeMealKey.startsWith('tomorrow') ? '明天' : ''} · ${formatShortDate(draft.scheduledTime)}`.trim()
+                : '待选择'}
+            </Text>
+          </View>
+          <View className='order-page__om'>
+            <Text className='order-page__om-label'>用餐人数</Text>
+            <Text className='order-page__om-val'>{draft.guestCount || 2} 人</Text>
+          </View>
+        </View>
+      </View>
+
       <View
         className='order-page__ai-entry ck-pressable'
         onClick={() => setAiOpen(true)}
       >
-        <Text className='order-page__ai-entry-ico'>✨</Text>
-        <Text className='order-page__ai-entry-txt'>说句话生成预约草稿</Text>
+        <View className='order-page__ai-entry-ico'>
+          <MiniIcon name='spark' size='sm' tone='primary' />
+        </View>
+        <Text className='order-page__ai-entry-txt'>说一句话点菜</Text>
+        <Text className='order-page__ai-entry-go'>去试试</Text>
       </View>
 
       {draft.items.length === 0 && (
@@ -312,57 +356,7 @@ export default function OrderIndexPage() {
       )}
 
       {draft.items.length > 0 && (
-        <View className='order-page__draft'>
-          <View className='order-page__draft-head'>
-            <Text className='order-page__draft-emoji'>🧺</Text>
-            <Text className='order-page__draft-title'>预约单 · {draft.items.length} 样</Text>
-            <Text className='order-page__draft-clear' onClick={clearDraft}>
-              清空
-            </Text>
-          </View>
-
-          {aiMeta?.ambiguityNote ? (
-            <Text className='order-page__ai-note'>{aiMeta.ambiguityNote}</Text>
-          ) : null}
-          {aiMeta?.unmatched?.length ? (
-            <View className='order-page__unmatched'>
-              {aiMeta.unmatched.map((u, i) => (
-                <Text key={`${u.rawText}-${i}`} className='order-page__unmatched-item'>
-                  未匹配「{u.rawText}」：{u.reason}
-                </Text>
-              ))}
-            </View>
-          ) : null}
-
-          {draft.items.map((item, idx) => (
-            <View key={item.dishId} className='order-page__draft-line'>
-              <View
-                className='order-page__draft-emoji-box'
-                style={{ background: EMOJI_BGS[idx % EMOJI_BGS.length] }}
-              >
-                <Text>{DISH_EMOJIS[idx % DISH_EMOJIS.length]}</Text>
-              </View>
-              <View className='order-page__draft-name-wrap'>
-                <Text className='order-page__draft-name'>{item.dishName}</Text>
-              </View>
-              <View className='order-page__qty'>
-                <View
-                  className='order-page__qty-btn'
-                  onClick={() => updateDraftItemQty(item.dishId, item.quantity - 1)}
-                >
-                  <Text>−</Text>
-                </View>
-                <Text className='order-page__qty-num'>{item.quantity}</Text>
-                <View
-                  className='order-page__qty-btn'
-                  onClick={() => updateDraftItemQty(item.dishId, item.quantity + 1)}
-                >
-                  <Text>＋</Text>
-                </View>
-              </View>
-            </View>
-          ))}
-
+        <>
           <View className='order-page__meal-pick'>
             {MEAL_PRESETS.map((p) => (
               <View
@@ -377,54 +371,93 @@ export default function OrderIndexPage() {
             ))}
           </View>
 
-          <View className='order-page__custom-row'>
-            <Picker
-              mode='date'
-              start={minDate}
-              value={draft.scheduledTime || minDate}
-              onChange={handlePickDate}
-            >
-              <View className='order-page__picker order-page__picker--sm'>
-                {draft.scheduledTime || '日期'}
-              </View>
-            </Picker>
-            <Picker
-              mode='time'
-              value={draft.scheduledTimeOfDay || '12:00'}
-              onChange={handlePickTimeOfDay}
-            >
-              <View className='order-page__picker order-page__picker--sm'>
-                {draft.scheduledTimeOfDay || '时间'}
-              </View>
-            </Picker>
-            <Picker
-              mode='selector'
-              range={['1 位', '2 位', '3 位', '4 位', '5 位', '6 位', '8 位', '10 位']}
-              onChange={handlePickGuest}
-            >
-              <View className='order-page__picker order-page__picker--sm'>
-                {draft.guestCount} 位
-              </View>
-            </Picker>
-          </View>
-
-          <View className='order-page__submit-row'>
-            <Input
-              className='order-page__note-input'
-              placeholder='备注：口味偏好、忌口等'
-              value={draft.note}
-              onInput={(e) => updateDraft({ note: e.detail.value })}
-            />
-            <View className='order-page__submit-btn' onClick={handleSubmit}>
-              <Text>提交预约</Text>
+          <View className='order-page__draft'>
+            <View className='order-page__draft-head'>
+              <Text className='order-page__draft-title'>已选菜品</Text>
+              <Text className='order-page__draft-chip'>{mealChip}</Text>
+              <Text className='order-page__draft-clear' onClick={clearDraft}>
+                清空
+              </Text>
             </View>
+
+            {aiMeta?.ambiguityNote ? (
+              <Text className='order-page__ai-note'>{aiMeta.ambiguityNote}</Text>
+            ) : null}
+            {aiMeta?.unmatched?.length ? (
+              <View className='order-page__unmatched'>
+                {aiMeta.unmatched.map((u, i) => (
+                  <Text key={`${u.rawText}-${i}`} className='order-page__unmatched-item'>
+                    未匹配「{u.rawText}」：{u.reason}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+
+            <View className='order-page__draft-lines'>
+              {draft.items.map((item) => (
+                <DraftOrderLine
+                  key={item.dishId}
+                  dishId={item.dishId}
+                  dishName={item.dishName}
+                  coverUrl={item.coverUrl}
+                  quantity={item.quantity}
+                  showDelete
+                  onInc={() => updateDraftItemQty(item.dishId, item.quantity + 1)}
+                  onDec={() => updateDraftItemQty(item.dishId, item.quantity - 1)}
+                  onRemove={() => removeDraftItem(item.dishId)}
+                />
+              ))}
+            </View>
+
+            <View className='order-page__custom-row'>
+              <Picker
+                mode='date'
+                start={minDate}
+                value={draft.scheduledTime || minDate}
+                onChange={handlePickDate}
+              >
+                <View className='order-page__picker order-page__picker--sm'>
+                  {draft.scheduledTime || '日期'}
+                </View>
+              </Picker>
+              <Picker
+                mode='time'
+                value={draft.scheduledTimeOfDay || '12:00'}
+                onChange={handlePickTimeOfDay}
+              >
+                <View className='order-page__picker order-page__picker--sm'>
+                  {draft.scheduledTimeOfDay || '时间'}
+                </View>
+              </Picker>
+              <Picker
+                mode='selector'
+                range={['1 位', '2 位', '3 位', '4 位', '5 位', '6 位', '8 位', '10 位']}
+                onChange={handlePickGuest}
+              >
+                <View className='order-page__picker order-page__picker--sm'>
+                  {draft.guestCount} 位
+                </View>
+              </Picker>
+            </View>
+
+            <View className='order-page__submit-row'>
+              <Input
+                className='order-page__note-input'
+                placeholder='备注：口味偏好、忌口等'
+                value={draft.note}
+                onInput={(e) => updateDraft({ note: e.detail.value })}
+              />
+              <View className='order-page__submit-btn' onClick={handleSubmit}>
+                <Text>提交预约</Text>
+              </View>
+            </View>
+            {subscribeReady ? (
+              <Text className='order-page__subscribe-hint'>
+                提交时将请求订阅：预约有新动态时通知我（可跳过）
+              </Text>
+            ) : null}
           </View>
-          {subscribeReady ? (
-            <Text className='order-page__subscribe-hint'>
-              提交时将请求订阅：预约有新动态时通知我（可跳过）
-            </Text>
-          ) : null}
-        </View>
+        </>
       )}
 
       {aiInsight && !aiInsight.degraded ? (
@@ -491,7 +524,7 @@ export default function OrderIndexPage() {
       <View className='order-page__history'>
         {loadError ? (
           <EmptyState
-            emoji='📋'
+            icon='order'
             title='加载失败'
             description='预约记录暂时拉不下来，请重试'
             actionText='重试'
@@ -499,7 +532,7 @@ export default function OrderIndexPage() {
           />
         ) : filteredOrders.length === 0 ? (
           <EmptyState
-            emoji='📋'
+            icon='order'
             title='还没有预约记录'
             description='挑一道喜欢的菜，告诉厨房你什么时候来'
             actionText='去看看菜品'
@@ -512,7 +545,7 @@ export default function OrderIndexPage() {
 
       <AiPromptSheet
         visible={aiOpen}
-        title='✨ 说句话点菜'
+        title='说句话点菜'
         hint='只匹配当前厨房在售菜品，生成预约草稿，不会自动提交。'
         placeholder='例如：明天中午两个人，想吃清淡点，来个鱼和素菜，少辣'
         submitting={aiSubmitting}

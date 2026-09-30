@@ -84,7 +84,7 @@ export default function ChefKitchenPage() {
           {coverPreview ? (
             <Image className='chef-page__avatar-img' src={coverPreview} mode='aspectFill' />
           ) : (
-            <Text>🍳</Text>
+            <Text>厨</Text>
           )}
         </View>
       </View>

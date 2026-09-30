@@ -6,10 +6,15 @@
   padding: 80px 48px;
   text-align: center;
 
-  &__emoji {
-    font-size: 72px;
-    margin-bottom: 24px;
-    line-height: 1;
+  &__ico {
+    width: 96px;
+    height: 96px;
+    border-radius: 28px;
+    background: $ck-ko-softer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
   }
 
   &__title {
@@ -30,9 +35,9 @@
     margin-top: 32px;
     padding: 20px 48px;
     border-radius: $ck-radius-lg;
-    background: rgba($ck-primary, 0.15);
-    color: $ck-primary-d12;
+    background: $ck-ko-soft;
+    color: $ck-primary-deep;
     font-size: 28px;
-    font-weight: 500;
+    font-weight: 600;
   }
 }

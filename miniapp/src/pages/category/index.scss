@@ -1,71 +1,97 @@
 .category-page {
   min-height: 100vh;
-  padding-bottom: calc(220px + env(safe-area-inset-bottom));
+  padding-bottom: $ck-page-pad-draft;
   background: $ck-bg;
 
-  &__top {
-    padding: 20px 32px 8px;
-    background: $ck-bg;
+  &__nav {
+    padding: 16px 32px 4px;
   }
 
   &__switch {
-    margin-bottom: 16px;
-  }
-
-  &__search {
-    padding: 18px 24px;
-    border-radius: 14px;
-    background: #fff;
-    border: 1px solid $ck-line;
-    font-size: 26px;
-    color: $ck-ink;
+    margin-bottom: 4px;
   }
 
   &__tabs {
     white-space: nowrap;
-    padding: 24px 32px;
-    background: $ck-bg;
-    border-bottom: 1px solid $ck-border;
+    padding: 4px 28px 12px;
+    border-bottom: 1px solid $ck-line;
   }
 
   &__tab {
     display: inline-flex;
     align-items: center;
-    padding: 14px 28px;
-    margin-right: 12px;
-    border-radius: 99px;
+    padding: 18px 24px 20px;
+    margin-right: 4px;
     font-size: 26px;
-    color: $ck-muted;
-    background: #fff;
-    border: 1px solid $ck-border;
+    color: $ck-faint;
+    font-weight: 500;
+    position: relative;
 
     &--active {
-      background: $ck-ink;
-      color: $ck-bg;
-      border-color: $ck-ink;
-      font-weight: 600;
+      color: $ck-ink;
+      font-weight: 700;
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 24px;
+        right: 24px;
+        bottom: 0;
+        height: 6px;
+        border-radius: 99px;
+        background: linear-gradient(90deg, $ck-primary, $ck-primary-deep);
+      }
     }
   }
 
-  &__content {
-    padding: 24px 32px 32px;
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 20px 32px 8px;
   }
 
-  &__count {
+  &__search {
+    flex: 1;
+    height: 72px;
+    padding: 0 24px;
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid $ck-line;
+    font-size: 24px;
+    color: $ck-ink;
+    box-sizing: border-box;
+  }
+
+  &__count-chip {
+    flex-shrink: 0;
+    font-size: 22px;
+    color: $ck-muted;
+    padding: 14px 20px;
+    border-radius: 14px;
+    background: $ck-ko-softer;
+  }
+
+  &__count-n {
+    color: $ck-primary-deep;
+    font-weight: 700;
+  }
+
+  &__content {
+    padding: 16px 32px 32px;
+  }
+
+  &__hint {
     display: block;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     font-size: $ck-font-caption;
     color: $ck-muted;
   }
 
-  &__grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-
-  &__item {
-    min-width: 0;
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
   }
 
   &__more {

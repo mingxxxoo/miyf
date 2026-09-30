@@ -1,0 +1,128 @@
+.rec-dish {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  background: #2b2622;
+
+  &--hero {
+    border-radius: 22px;
+    min-height: 336px;
+    margin-bottom: 20px;
+  }
+
+  &--mini {
+    border-radius: 18px;
+    height: 236px;
+    width: 100%;
+  }
+
+  &__bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+
+    &--empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #3a322c, #2b2622);
+    }
+
+    &--empty-sm {
+      background: linear-gradient(135deg, #3a322c, #2b2622);
+    }
+  }
+
+  &__shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(43, 38, 34, 0.18) 0%,
+      rgba(43, 38, 34, 0.78) 100%
+    );
+    pointer-events: none;
+
+    &--mini {
+      background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.05) 15%,
+        rgba(0, 0, 0, 0.72) 100%
+      );
+    }
+  }
+
+  &__tag {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    z-index: 2;
+    font-size: 20px;
+    background: rgba(255, 255, 255, 0.25);
+    padding: 6px 16px;
+    border-radius: 99px;
+    font-weight: 600;
+  }
+
+  &__body {
+    position: relative;
+    z-index: 1;
+    padding: 36px;
+    min-height: 336px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+
+    &--mini {
+      padding: 24px;
+      min-height: 0;
+      height: 100%;
+    }
+  }
+
+  &__name {
+    display: block;
+    font-size: 36px;
+    font-weight: 700;
+
+    &--mini {
+      font-size: 26px;
+    }
+  }
+
+  &__meta {
+    display: block;
+    margin-top: 8px;
+    font-size: 24px;
+    opacity: 0.9;
+
+    &--mini {
+      font-size: 20px;
+      opacity: 0.88;
+      margin-top: 6px;
+    }
+  }
+
+  &__foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 28px;
+  }
+
+  &__hint {
+    font-size: 22px;
+    opacity: 0.9;
+  }
+
+  &__add {
+    background: rgba(255, 255, 255, 0.95);
+    color: $ck-primary-deep;
+    font-size: 24px;
+    font-weight: 700;
+    padding: 14px 28px;
+    border-radius: 14px;
+  }
+}

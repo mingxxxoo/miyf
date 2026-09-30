@@ -1,9 +1,11 @@
 import {Button, Input, Text, View} from '@tarojs/components'
 import Taro, {useDidShow, useRouter} from '@tarojs/taro'
-import {useRef, useState} from 'react'
+import {useMemo, useRef, useState} from 'react'
 import {activateOrSwitchRole, applyBinding, type BindingVo, fetchMyBinding} from '@/api/kitchen'
 import {useUserStore} from '@/stores/userStore'
 import './index.scss'
+
+const CODE_LEN = 6
 
 export default function JoinKitchenPage() {
   const router = useRouter()
@@ -13,6 +15,11 @@ export default function JoinKitchenPage() {
   const [binding, setBinding] = useState<BindingVo | null>(null)
   const tokenTried = useRef<string | null>(null)
 
+  const cells = useMemo(() => {
+    const chars = code.toUpperCase().slice(0, CODE_LEN).split('')
+    return Array.from({ length: CODE_LEN }, (_, i) => chars[i] || '')
+  }, [code])
+
   const refreshBinding = async () => {
     const b = await fetchMyBinding().catch(() => null)
     setBinding(b)
@@ -21,7 +28,7 @@ export default function JoinKitchenPage() {
 
   useDidShow(() => {
     const qCode = router.params.code
-    if (qCode) setCode(qCode)
+    if (qCode) setCode(String(qCode).toUpperCase().slice(0, CODE_LEN))
     void refreshBinding()
     const token = router.params.token
     if (token && tokenTried.current !== token) {
@@ -76,39 +83,37 @@ export default function JoinKitchenPage() {
       : status === 'BOUND'
         ? '已加入 · ' + (binding?.kitchenName || '厨房')
         : status === 'REJECTED'
-          ? '未通过'
-          : null
+          ? '未绑定 · 未通过'
+          : '未绑定 · 填写邀请码'
 
   return (
     <View className='join-page'>
-      <Text className='join-page__title'>加入厨房</Text>
-      <Text className='join-page__sub'>
-        向厨师要 6 位邀请码。提交后需厨师确认，通过后即可浏览菜品与预约。
-      </Text>
-
-      {statusLabel ? (
-        <View
-          className={`join-page__status ${
-            status === 'REJECTED'
-              ? 'join-page__status--bad'
-              : status === 'BOUND'
-                ? 'join-page__status--ok'
-                : 'join-page__status--warn'
-          }`}
-        >
-          <Text className='join-page__status-dot'>●</Text>
-          <View className='join-page__status-body'>
-            <Text className='join-page__status-title'>{statusLabel}</Text>
-            {status === 'REJECTED' && binding?.rejectReason ? (
-              <Text className='join-page__status-desc'>原因：{binding.rejectReason}</Text>
-            ) : null}
-            {status === 'PENDING' ? (
-              <Text className='join-page__status-desc'>
-                等待「{binding?.kitchenName || '厨房'}」的厨师确认
-              </Text>
-            ) : null}
-          </View>
+      <View className='join-page__hero'>
+        <View className='join-page__hero-shade' />
+        <View className='join-page__hero-body'>
+          <Text className='join-page__hero-title'>输入 6 位邀请码</Text>
+          <Text className='join-page__hero-desc'>
+            向厨师要邀请码。提交后需厨师确认，通过后即可浏览菜品与预约。
+          </Text>
         </View>
+      </View>
+
+      <View
+        className={`join-page__pill ${
+          status === 'REJECTED'
+            ? 'join-page__pill--bad'
+            : status === 'BOUND'
+              ? 'join-page__pill--ok'
+              : status === 'PENDING'
+                ? 'join-page__pill--warn'
+                : ''
+        }`}
+      >
+        <Text>{statusLabel}</Text>
+      </View>
+
+      {status === 'REJECTED' && binding?.rejectReason ? (
+        <Text className='join-page__reject'>原因：{binding.rejectReason}</Text>
       ) : null}
 
       {status === 'BOUND' ? (
@@ -120,15 +125,24 @@ export default function JoinKitchenPage() {
         </Button>
       ) : (
         <>
-          <View className='join-page__code-wrap'>
+          <View className='join-page__boxes'>
+            {cells.map((ch, i) => (
+              <View
+                key={i}
+                className={`join-page__cell${ch ? ' join-page__cell--filled' : ''}`}
+              >
+                <Text>{ch}</Text>
+              </View>
+            ))}
             <Input
-              className='join-page__code'
-              placeholder='输入邀请码'
-              maxlength={8}
+              className='join-page__hidden-input'
+              maxlength={CODE_LEN}
               value={code}
-              onInput={(e) => setCode(e.detail.value.toUpperCase())}
+              focus
+              onInput={(e) => setCode(e.detail.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
             />
           </View>
+          <Text className='join-page__hint'>状态：未绑定 → 待确认 → 已绑定</Text>
           <Button
             className='join-page__btn'
             loading={busy}

@@ -1,14 +1,15 @@
-import { View, Text, Image, Button, ScrollView } from '@tarojs/components'
-import Taro, { useRouter, useDidShow } from '@tarojs/taro'
-import { useState } from 'react'
+import {Button, Image, ScrollView, Text, View} from '@tarojs/components'
+import Taro, {useDidShow, useRouter} from '@tarojs/taro'
+import {useState} from 'react'
 import StarRating from '@/components/StarRating'
 import RecipeStep from '@/components/RecipeStep'
+import QtyStepper from '@/components/QtyStepper'
 import Loading from '@/components/Loading'
 import EmptyState from '@/components/EmptyState'
-import { fetchDishComments, fetchDishDetail, fetchDishRecipe } from '@/api/dish'
-import { useOrderStore } from '@/stores/orderStore'
-import { useUserStore } from '@/stores/userStore'
-import type { Comment, Dish, Recipe } from '@/types'
+import {fetchDishComments, fetchDishDetail, fetchDishRecipe} from '@/api/dish'
+import {useOrderStore} from '@/stores/orderStore'
+import {useUserStore} from '@/stores/userStore'
+import type {Comment, Dish, Recipe} from '@/types'
 import './detail.scss'
 
 function isNotFoundError(err: unknown): boolean {
@@ -163,7 +164,7 @@ export default function DishDetailPage() {
   if (needJoin) {
     return (
       <EmptyState
-        emoji='🔑'
+        icon='ticket'
         title='先加入厨房'
         description='没有公开菜品。绑定厨师后才能查看详情与预约。'
         actionText='去加入厨房'
@@ -175,7 +176,7 @@ export default function DishDetailPage() {
   if (loadError) {
     return (
       <EmptyState
-        emoji='📡'
+        icon='empty'
         title='加载失败'
         description='菜品详情暂时拉不下来，请检查网络后重试'
         actionText='重试'
@@ -187,7 +188,7 @@ export default function DishDetailPage() {
   if (notFound || !dish) {
     return (
       <EmptyState
-        emoji='🍲'
+        icon='dish'
         title='找不到这道菜'
         description='可能已下架，换一道尝尝'
         actionText='回首页'
@@ -393,17 +394,13 @@ export default function DishDetailPage() {
       </View>
 
       <View className='dish-detail__footer'>
-        <View
-          className={`dish-detail__stepper${soldOut ? ' dish-detail__stepper--disabled' : ''}`}
-        >
-          <View className='dish-detail__stepper-op' onClick={() => bumpQty(-1)}>
-            <Text>−</Text>
-          </View>
-          <Text className='dish-detail__stepper-num'>{soldOut ? 0 : quantity}</Text>
-          <View className='dish-detail__stepper-op' onClick={() => bumpQty(1)}>
-            <Text>＋</Text>
-          </View>
-        </View>
+        <QtyStepper
+          value={soldOut ? 0 : quantity}
+          disabled={soldOut}
+          showZeroAsAdd={false}
+          onInc={() => bumpQty(1)}
+          onDec={() => bumpQty(-1)}
+        />
         <Button
           className={`dish-detail__cta${soldOut ? ' dish-detail__cta--disabled' : ''}`}
           disabled={soldOut}

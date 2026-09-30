@@ -1,8 +1,8 @@
 # miyf 微信小程序 · 完整界面设计（v3）
 
-> 版本：v3.4 · 2026-09-29  
-> 状态：设计基线 + **前后端同步优化**（对齐 `miniapp/` 与 `kitchen-service`）· **图标升级为 Lucide**  
-> 演示稿：[`design/miniapp-app-design.html`](./miniapp-app-design.html)  
+> 版本：v3.6 · 2026-09-30  
+> 状态：设计基线 + **可交互设计原型**（单机壳点击流转）· Lucide · 真实照片  
+> 演示稿：[`design/miniapp-app-design.html`](./miniapp-app-design.html)（交互）· 静态对照 [`miniapp-app-design.gallery.html`](./miniapp-app-design.gallery.html)  
 > 上一版提案：[`design/miniapp-redesign.html`](./miniapp-redesign.html)（v2，保留对照）  
 > 跨端同源：[`design/HARMONY_APP_DESIGN.md`](./HARMONY_APP_DESIGN.md)  
 > 工程：[`miniapp/`](../miniapp/) · 业务提示词：[`docs/AI_PROMPT_DESIGN.md`](../docs/AI_PROMPT_DESIGN.md)
@@ -86,7 +86,7 @@
 
 - 字体：PingFang SC / 系统默认；数字等宽感。
 - 字号：品牌 Display 28–32；Hero 22；页标题 16–17；正文 13–14；说明 11–12；角标 9–10。
-- 图标：业务入口优先 `MiniIcon`（[Lucide](https://lucide.dev) 线图标 SVG），菜品封面可继续用食物示意图 / emoji 作占位；禁止整页 emoji 墙。
+- 图标：业务入口优先 `MiniIcon`（[Lucide](https://lucide.dev) 线图标 SVG）；菜品 / 头像 / 厨房封面在演示稿用 `design/assets/demo/` 真实照片，禁止食物 emoji 墙。
 - 动效：150–250ms；半屏浮层轻遮罩，不做夸张弹跳。
 
 ### 3.4 页面氛围（相对 v2）
@@ -248,7 +248,7 @@ PENDING → CANCELLED   （仅食客、仅待确认）
 | 入门流 | 未画 | L1–L3 完整 |
 | 微信壳 | 通用刘海 | 胶囊 + 订阅 + 分享 |
 | 首页首屏 | Hero 数据堆 + 多卡 | 问候 + 一主推荐 + 预约条 |
-| 图标 | 大量 emoji | Lucide 入口图标，菜品保留食欲示意 |
+| 图标 | 大量 emoji | Lucide 入口图标；菜品/头像用真实照片 |
 | 空错态 | 弱 | E1/E2 明确 |
 | 文档 | 仅 HTML | MD 基线 + HTML 演示 |
 | Token | 已定 | 不变，与工程 / 鸿蒙同源 |
@@ -348,5 +348,7 @@ PENDING → CANCELLED   （仅食客、仅待确认）
 | v3.2 | 2026-09-29 | 食客订阅 W1、预约餐次结构化（V37）、厨房封面上传 |
 | v3.3 | 2026-09-29 | 健康评分 API（H1）、厨师经营统计页（`/api/chef/stats`） |
 | v3.4 | 2026-09-29 | 入口/Tab/健康指标改用 Lucide 线图标；`MiniIcon` SVG 化 |
+| v3.5 | 2026-09-30 | 设计稿演示图全部改为 `assets/demo/` 真实照片（菜品/头像/厨房） |
+| v3.6 | 2026-09-30 | 设计 HTML 改为单机壳可交互原型（登录→四栏→AI/订阅/厨师/健康） |
 
 ---

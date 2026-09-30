@@ -122,166 +122,181 @@
   position: fixed;
   inset: 0;
   z-index: 999;
-  background: rgba(43, 38, 34, 0.35);
+  background: rgba(43, 38, 34, 0.4);
   pointer-events: auto;
 }
 
-.draft-order-panel {
+/* 清单 + 底条一体贴底，避免绝对定位悬空 */
+.draft-order-sheet {
   position: absolute;
-  left: 36px;
-  right: 36px;
-  bottom: calc(200px + env(safe-area-inset-bottom));
-  z-index: 1001;
-  background: #fff;
-  border: 1px solid $ck-line;
-  border-radius: 20px;
-  padding: 20px 0 8px;
-  box-shadow: 0 16px 40px rgba(43, 38, 34, 0.22);
-  pointer-events: auto;
-  max-height: 52vh;
+  left: 28px;
+  right: 28px;
+  /* tab 页 fixed 底边已在 tabBar 之上，只留一条缝 */
+  bottom: $ck-draft-bar-gap;
+  z-index: 1002;
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.draft-order-panel {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border: 1px solid $ck-line;
+  border-radius: 24px;
+  padding: 8px 0 4px;
+  box-shadow: 0 16px 40px rgba(43, 38, 34, 0.18);
+  pointer-events: auto;
+  max-height: 46vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &__grab {
+    width: 64px;
+    height: 8px;
+    border-radius: 99px;
+    background: #e2d9cc;
+    margin: 8px auto 4px;
+  }
 
   &__head {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 28px 12px;
+    padding: 12px 28px 16px;
+  }
+
+  &__head-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  &__head-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-shrink: 0;
   }
 
   &__title {
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 700;
     color: $ck-ink;
+  }
+
+  &__count {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 99px;
+    background: $ck-ko-soft;
+    color: $ck-primary-deep;
+    font-size: 22px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__clear {
+    font-size: 24px;
+    color: $ck-red;
+    padding: 8px 4px;
   }
 
   &__close {
     font-size: 24px;
     color: $ck-muted;
+    font-weight: 600;
+    padding: 8px 4px;
   }
 
   &__list {
-    max-height: 42vh;
-    padding: 0 16px 8px;
-  }
-
-  &__row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 12px;
-    border-top: 1px solid $ck-border-l4;
-  }
-
-  &__cover {
-    width: 64px;
-    height: 64px;
-    border-radius: 12px;
-    flex-shrink: 0;
-    background: $ck-ko-soft;
-
-    &--empty {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-  }
-
-  &__name {
-    flex: 1;
-    min-width: 0;
-    font-size: 26px;
-    font-weight: 600;
-    color: $ck-ink;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__qty {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: $ck-ko-softer;
-    border: 1px solid $ck-line;
-    border-radius: 12px;
-    padding: 4px;
-    flex-shrink: 0;
-  }
-
-  &__qty-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    color: $ck-primary-deep;
-    font-weight: 700;
-    box-shadow: 0 1px 4px rgba(60, 45, 20, 0.1);
-  }
-
-  &__qty-num {
-    min-width: 36px;
-    text-align: center;
-    font-size: 26px;
-    font-weight: 600;
-    color: $ck-ink;
-  }
-
-  &__del {
-    font-size: 22px;
-    color: $ck-faint;
-    flex-shrink: 0;
-    padding: 8px 4px;
+    max-height: 38vh;
+    padding: 0 24px 12px;
+    box-sizing: border-box;
   }
 }
 
 .draft-order-bar {
-  position: absolute;
-  left: 36px;
-  right: 36px;
-  bottom: calc(108px + env(safe-area-inset-bottom));
-  z-index: 1002;
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
-  gap: 20px;
-  background: $ck-ink;
-  color: $ck-bg;
-  border-radius: 18px;
-  padding: 20px 24px;
-  box-shadow: 0 12px 28px rgba(43, 38, 34, 0.3);
+  gap: 16px;
+  background: linear-gradient(135deg, #3a322c 0%, #2b2622 100%);
+  color: #fffdf8;
+  border-radius: 22px;
+  padding: 16px 16px 16px 24px;
+  box-shadow: 0 14px 32px rgba(43, 38, 34, 0.35);
   pointer-events: auto;
 
+  &--open {
+    box-shadow: 0 8px 20px rgba(43, 38, 34, 0.22);
+  }
+
+  &__thumbs {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding-right: 4px;
+    position: relative;
+  }
+
+  &__thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    margin-left: -16px;
+    border: 3px solid #3a322c;
+    background: #555;
+    box-sizing: border-box;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:first-child {
+      margin-left: 0;
+    }
+
+    &--empty {
+      background: rgba(255, 255, 255, 0.18);
+    }
+  }
+
   &__ico {
-    width: 68px;
-    height: 68px;
-    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
     background: rgba(255, 255, 255, 0.14);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
-    position: relative;
     flex-shrink: 0;
   }
 
   &__badge {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    min-width: 28px;
-    height: 28px;
-    padding: 0 6px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
     border-radius: 99px;
     background: $ck-red;
     font-size: 18px;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
+    margin-left: -10px;
+    position: relative;
+    z-index: 2;
+    align-self: flex-start;
+    margin-top: -4px;
   }
 
   &__txt {
@@ -298,7 +313,7 @@
   &__sub {
     display: block;
     font-size: 20px;
-    opacity: 0.7;
+    opacity: 0.72;
     margin-top: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -309,8 +324,8 @@
     background: linear-gradient(135deg, $ck-primary, $ck-primary-deep);
     font-size: 24px;
     font-weight: 700;
-    padding: 14px 26px;
-    border-radius: 12px;
+    padding: 18px 26px;
+    border-radius: 16px;
     flex-shrink: 0;
   }
 }

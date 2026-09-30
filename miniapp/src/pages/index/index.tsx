@@ -1,23 +1,22 @@
-import {Image, ScrollView, Text, View} from '@tarojs/components'
+import {ScrollView, Text, View} from '@tarojs/components'
 import Taro, {useDidHide, useDidShow, usePullDownRefresh} from '@tarojs/taro'
 import {useEffect, useMemo, useRef, useState} from 'react'
 import {analyzeOrderInsight, draftOrderFromText} from '@/api/ai'
 import {fetchDishes, fetchRecommendDishes} from '@/api/dish'
 import {fetchMyBinding} from '@/api/kitchen'
 import AiPromptSheet from '@/components/AiPromptSheet'
-import DishCard from '@/components/DishCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
 import MiniIcon from '@/components/MiniIcon'
+import RecommendDishCard from '@/components/RecommendDishCard'
 import ServiceSwitcher, {DraftOrderBar} from '@/components/ServiceSwitcher'
 import {useAuthGuard} from '@/hooks/useAuthGuard'
+import {useDraftDishActions} from '@/hooks/useDraftDishActions'
 import {useOrderStore} from '@/stores/orderStore'
-import {PRODUCT_META, useProductStore} from '@/stores/productStore'
+import {useProductStore} from '@/stores/productStore'
 import {useUserStore} from '@/stores/userStore'
 import type {Dish} from '@/types'
 import './index.scss'
-
-const DISH_EMOJIS = ['🍖', '🥬', '🍅', '🐟', '🥗', '🍲', '🍛', '🥘']
 
 export default function IndexPage() {
   const { bootstrapping } = useAuthGuard({ required: false })
@@ -25,9 +24,7 @@ export default function IndexPage() {
   const user = useUserStore((s) => s.user)
   const isLoggedIn = useUserStore((s) => s.isLoggedIn)
   const refreshProfile = useUserStore((s) => s.refreshProfile)
-  const draft = useOrderStore((s) => s.draft)
-  const setDraftItem = useOrderStore((s) => s.setDraftItem)
-  const updateDraftItemQty = useOrderStore((s) => s.updateDraftItemQty)
+  const { addToDraft } = useDraftDishActions()
   const applyAiDraft = useOrderStore((s) => s.applyAiDraft)
   const setAiInsight = useOrderStore((s) => s.setAiInsight)
   const [loading, setLoading] = useState(true)
@@ -43,21 +40,21 @@ export default function IndexPage() {
   const hasLoadedRef = useRef(false)
   const scrollTopRef = useRef(0)
 
-  const recommended = useMemo(
-    () => {
-      const marked = dishes.filter((d) => d.recommend)
-      return (marked.length ? marked : dishes).slice(0, 6)
-    },
-    [dishes]
-  )
+  const recommended = useMemo(() => {
+    const marked = dishes.filter((d) => d.recommend)
+    return (marked.length ? marked : dishes).slice(0, 3)
+  }, [dishes])
 
-  const draftQtyMap = useMemo(() => {
-    const map: Record<string, number> = {}
-    draft.items.forEach((it) => {
-      map[it.dishId] = it.quantity
-    })
-    return map
-  }, [draft.items])
+  const heroDish = recommended[0]
+  const miniDishes = recommended.slice(1, 3)
+
+  const lowStockTip = useMemo(() => {
+    const hot = dishes.find(
+      (d) => d.stockType === 'LIMITED' && d.stock != null && d.stock > 0 && d.stock <= 2
+    )
+    if (!hot) return ''
+    return `${hot.name}今日还剩 ${hot.stock} 份，想吃抓紧预约`
+  }, [dishes])
 
   const saveScroll = () => {
     try {
@@ -87,9 +84,8 @@ export default function IndexPage() {
 
   useDidShow(() => {
     setProduct('kitchen')
-    Taro.setNavigationBarTitle({ title: PRODUCT_META.kitchen.brand })
+    Taro.setNavigationBarTitle({ title: '首页' })
     if (bootstrapping) return
-    // 已加载过：从详情返回不请求、不重绘列表，只恢复滚动
     if (hasLoadedRef.current) {
       restoreScroll()
       return
@@ -97,7 +93,6 @@ export default function IndexPage() {
     void bootstrapHome({ soft: false })
   })
 
-  // 首次进入时若正值登录引导，等 bootstrapping 结束后再拉首页
   useEffect(() => {
     if (bootstrapping || !isLoggedIn || hasLoadedRef.current) return
     void bootstrapHome({ soft: false })
@@ -151,8 +146,9 @@ export default function IndexPage() {
             fetchDishes({ page: 1, rows: 20 })
           ])
           const all = page.records || []
-          // 推荐接口优先；失败或为空时回落全量列表中的推荐标记
-          setDishes(rec.length ? [...rec, ...all.filter((d) => !rec.some((r) => r.id === d.id))] : all)
+          setDishes(
+            rec.length ? [...rec, ...all.filter((d) => !rec.some((r) => r.id === d.id))] : all
+          )
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err || '')
           if (/停业|封禁|暂不可用/i.test(msg)) {
@@ -174,30 +170,9 @@ export default function IndexPage() {
     }
   }
 
-  const addToDraft = (dish: Dish) => {
-    const soldOut = dish.stockType === 'LIMITED' && (dish.stock == null || dish.stock <= 0)
-    if (soldOut) {
-      Taro.showToast({ title: '今日已约满', icon: 'none' })
-      return
-    }
-    const existing = draft.items.find((i) => i.dishId === dish.id)
-    const nextQty = (existing?.quantity || 0) + 1
-    if (dish.stockType === 'LIMITED' && dish.stock != null && nextQty > dish.stock) {
-      Taro.showToast({ title: `最多预约 ${dish.stock} 份`, icon: 'none' })
-      return
-    }
-    setDraftItem({
-      dishId: dish.id,
-      dishName: dish.name,
-      coverUrl: dish.coverUrl,
-      quantity: nextQty
-    })
-  }
-
-  const decDraft = (dish: Dish) => {
-    const existing = draft.items.find((i) => i.dishId === dish.id)
-    if (!existing) return
-    updateDraftItemQty(dish.id, existing.quantity - 1)
+  const openDish = (dish: Dish) => {
+    saveScroll()
+    Taro.navigateTo({ url: `/pages/dish/detail?id=${dish.id}` })
   }
 
   const runAiOrderDraft = async () => {
@@ -231,7 +206,6 @@ export default function IndexPage() {
         return
       }
 
-      // 异步拉饮食参考，失败静默
       void analyzeOrderInsight({
         dinerText: text,
         draftJson: JSON.stringify(result)
@@ -239,9 +213,7 @@ export default function IndexPage() {
         .then((insight) => {
           if (!insight.degraded) setAiInsight(insight)
         })
-        .catch(() => {
-          // ignore
-        })
+        .catch(() => undefined)
 
       const unmatchedHint =
         result.unmatched?.length > 0 ? `，${result.unmatched.length} 项未匹配` : ''
@@ -267,7 +239,7 @@ export default function IndexPage() {
     return (
       <View className='index-page'>
         <EmptyState
-          emoji='🍳'
+          icon='kitchen'
           title='胡闹厨房'
           description='登录后选择厨师或食客身份。没有公开菜，也没有价格和支付。'
           actionText='去登录'
@@ -309,7 +281,7 @@ export default function IndexPage() {
           </Text>
         </View>
         <EmptyState
-          emoji='🔑'
+          icon='ticket'
           title={title}
           description={desc}
           actionText='去加入厨房'
@@ -322,15 +294,24 @@ export default function IndexPage() {
   return (
     <View className='index-page'>
       <View className='index-page__hero'>
-        <ServiceSwitcher compact className='index-page__switch' />
-        <Text className='index-page__greeting'>{nick}，今天想吃点什么？</Text>
-        <Text className='index-page__subtitle'>专属菜单 · 无价格无支付 · 约到就是赚到</Text>
+        <View className='index-page__top'>
+          <ServiceSwitcher compact className='index-page__switch' />
+        </View>
+
         {kitchenName ? (
           <View className='index-page__kitchen-chip'>
-            <MiniIcon name='kitchen' size='sm' tone='mint' />
-            <Text>{kitchenName} · 营业中</Text>
+            <MiniIcon name='kitchen' size='sm' tone='default' className='index-page__kitchen-ico' />
+            <Text className='index-page__kitchen-name'>{kitchenName}</Text>
+            <Text className='index-page__kitchen-sep'>·</Text>
+            <Text className='index-page__kitchen-ok'>已加入</Text>
           </View>
         ) : null}
+
+        <Text className='index-page__greeting'>今天想吃点什么？</Text>
+        <Text className='index-page__subtitle'>
+          {nick ? `${nick}，` : ''}厨师刚上新了几道，先看看推荐
+        </Text>
+
         <View
           className='index-page__ai-ask ck-pressable'
           onClick={() => {
@@ -341,82 +322,67 @@ export default function IndexPage() {
             setAiOpen(true)
           }}
         >
-          <MiniIcon name='spark' size='sm' tone='primary' className='index-page__ai-ico' />
-          <Text className='index-page__ai-txt'>说句话就点菜：「明天中午两个人，想吃清淡点…」</Text>
+          <View className='index-page__ai-spark'>
+            <MiniIcon name='spark' size='sm' tone='primary' />
+          </View>
+          <Text className='index-page__ai-txt'>说一句话点菜</Text>
+          <Text className='index-page__ai-go'>去试试</Text>
         </View>
       </View>
 
-      {recommended.length > 0 ? (
-        <View className='index-page__section'>
-          <View className='index-page__sec-row'>
-            <Text className='index-page__section-title'>厨师推荐</Text>
-          </View>
-          <ScrollView scrollX className='index-page__rec-scroll' enhanced showScrollbar={false}>
-            {recommended.map((d, i) => (
-              <View
-                key={d.id}
-                className={`index-page__rec-card ck-pressable ${
-                  i % 2 === 1 ? 'index-page__rec-card--alt' : ''
-                }`}
-                onClick={() => {
-                  saveScroll()
-                  Taro.navigateTo({ url: `/pages/dish/detail?id=${d.id}` })
-                }}
-              >
-                <Text className='index-page__rec-tag'>{d.recommend ? '招牌' : '推荐'}</Text>
-                {d.coverUrl ? (
-                  <Image
-                    className='index-page__rec-img'
-                    src={d.coverUrl}
-                    mode='aspectFill'
-                    lazyLoad
-                  />
-                ) : (
-                  <Text className='index-page__rec-emoji'>
-                    {DISH_EMOJIS[i % DISH_EMOJIS.length]}
-                  </Text>
-                )}
-                <Text className='index-page__rec-name'>{d.name}</Text>
-                <Text className='index-page__rec-meta'>
-                  {d.rating != null ? `评分 ${d.rating}` : '厨师力荐'}
-                  {d.stockType === 'LIMITED' && d.stock != null ? ` · 今日剩 ${d.stock} 份` : ''}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      ) : null}
-
       <View className='index-page__section'>
         <View className='index-page__sec-row'>
-          <Text className='index-page__section-title'>今日菜单</Text>
+          <Text className='index-page__section-title'>今日推荐</Text>
           <Text
             className='index-page__sec-more'
             onClick={() => Taro.switchTab({ url: '/pages/category/index' })}
           >
-            全部 {dishes.length} ›
+            全部 ›
           </Text>
         </View>
-        {dishes.length === 0 ? (
-          <EmptyState emoji='🥘' title='厨房还没上菜' description='等厨师审核通过并上架后再来' />
+
+        {!heroDish ? (
+          <EmptyState icon='dish' title='厨房还没上菜' description='等厨师审核通过并上架后再来' />
         ) : (
-          dishes.map((d) => (
-            <DishCard
-              key={d.id}
-              dish={d}
-              quantity={draftQtyMap[d.id] || 0}
+          <>
+            <RecommendDishCard
+              dish={heroDish}
+              variant='hero'
+              onOpen={openDish}
               onAdd={addToDraft}
-              onDec={decDraft}
             />
-          ))
+            {miniDishes.length > 0 ? (
+              <ScrollView scrollX className='index-page__rec-scroll' enhanced showScrollbar={false}>
+                <View className='index-page__rec-row'>
+                  {miniDishes.map((d) => (
+                    <View key={d.id} className='index-page__rec-item'>
+                      <RecommendDishCard
+                        dish={d}
+                        variant='mini'
+                        onOpen={openDish}
+                        onAdd={addToDraft}
+                      />
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            ) : null}
+          </>
         )}
+
+        {lowStockTip ? (
+          <View className='index-page__warn'>
+            <MiniIcon name='alert' size='sm' tone='muted' />
+            <Text className='index-page__warn-txt'>{lowStockTip}</Text>
+          </View>
+        ) : null}
       </View>
 
       <DraftOrderBar />
 
       <AiPromptSheet
         visible={aiOpen}
-        title='✨ 说句话点菜'
+        title='说句话点菜'
         hint='只匹配当前厨房在售菜品，生成预约草稿，不会自动提交。'
         placeholder='例如：明天中午两个人，想吃清淡点，来个鱼和素菜，少辣'
         submitting={aiSubmitting}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>miyf 微信小程序 · 完整界面设计 v3</title>
+<title>miyf 微信小程序 · 可交互设计原型 v3.6</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -299,9 +299,9 @@
     background:rgba(255,255,255,.95); color:var(--ko); font-size:12px; font-weight:700;
     padding:7px 14px; border-radius:12px;
   }
-  .rec-scroll { display:flex; gap:12px; padding:12px 18px 0; overflow:hidden; }
+  .rec-scroll { display:flex; gap:12px; margin:12px 18px 0; padding:0; overflow:hidden; }
   .rec-card {
-    width:140px; flex:none; border-radius:18px; padding:12px; color:#fff; position:relative; overflow:hidden;
+    flex:1; min-width:0; border-radius:18px; padding:12px; color:#fff; position:relative; overflow:hidden;
   }
   .rec-card .rc-emoji { font-size:28px; }
   .rec-card .rc-name { font-size:13px; font-weight:700; margin-top:6px; }
@@ -458,22 +458,46 @@
     border-radius:99px; background:var(--red); color:#fff; font-size:9px; display:flex;
     align-items:center; justify-content:center; font-weight:600; box-shadow:0 0 0 2px #FFFDF8;
   }
+  /* 厨师预约卡 · 餐次优先、疏朗留白 */
   .order-card {
-    margin:0 18px 12px; background:#fff; border:1px solid var(--line); border-radius:20px; padding:14px;
+    margin:0 18px 14px; background:#fff; border:1px solid var(--line); border-radius:18px;
+    padding:16px; box-sizing:border-box;
   }
-  .order-card .oc-top { display:flex; justify-content:space-between; align-items:center; }
-  .order-card .oc-user { display:flex; align-items:center; gap:8px; }
+  .order-card.live { border-color:#f0d5b0; box-shadow:0 8px 20px rgba(240,123,31,.08); }
+  .order-card.mute { background:#fbfaf7; }
+  .order-card .bk-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .order-card .bk-when-main { font-size:17px; font-weight:700; color:var(--ink); letter-spacing:.3px; line-height:1.25; }
+  .order-card .bk-when-sub { font-size:12px; color:var(--muted); margin-top:4px; }
+  .order-card .bk-status {
+    flex:none; margin-top:2px; font-size:11px; font-weight:600; padding:4px 10px;
+    border-radius:99px; line-height:1.2;
+  }
+  .order-card .bk-status.warn { background:#fff3dc; color:#b8740f; }
+  .order-card .bk-status.info { background:var(--ko-soft); color:var(--ko-deep,#F07B1F); }
+  .order-card .bk-status.ok { background:var(--hg-soft); color:var(--hg); }
+  .order-card .bk-status.mute { background:#eeeae3; color:#9a9186; }
+  .order-card .bk-who { display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 10px; margin-top:10px; }
+  .order-card .bk-who-name { font-size:13px; font-weight:600; color:var(--ink); }
+  .order-card .bk-who-time { font-size:11px; color:var(--faint); }
+  .order-card .bk-menu { margin-top:12px; padding-top:2px; }
+  .order-card .bk-dish { display:flex; align-items:center; gap:6px; padding:5px 0; }
+  .order-card .bk-dish-dot { width:10px; text-align:center; font-size:14px; color:var(--ko,#F07B1F); line-height:1; }
+  .order-card .bk-dish-name { flex:1; min-width:0; font-size:14px; font-weight:500; color:var(--ink); }
+  .order-card .bk-dish-qty { flex:none; font-size:13px; font-weight:700; color:var(--ko-deep,#F07B1F); }
+  .order-card .bk-remark {
+    display:block; margin-top:8px; padding:8px 10px; border-radius:10px;
+    background:#faf6ef; font-size:12px; color:var(--muted); line-height:1.5;
+  }
+  .order-card .bk-actions {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-top:14px; padding-top:12px; border-top:1px solid #f3ebe0;
+  }
+  .order-card .bk-actions .btn { min-width:72px; }
+  .order-card .bk-actions .btn-solid-o { flex:1; }
   .avatar {
     width:34px; height:34px; border-radius:50%; display:flex; align-items:center;
     justify-content:center; font-size:13px; font-weight:600; color:#fff;
   }
-  .order-card .oc-name { font-size:13px; font-weight:600; }
-  .order-card .oc-time { font-size:10.5px; color:var(--faint); margin-top:2px; }
-  .order-card .oc-dishes {
-    margin-top:10px; font-size:12.5px; line-height:1.55; background:var(--ko-softer);
-    border-radius:12px; padding:10px 12px;
-  }
-  .order-card .oc-foot { display:flex; justify-content:space-between; align-items:center; margin-top:10px; }
   .oc-actions { display:flex; gap:8px; }
 
   /* Health */
@@ -581,6 +605,67 @@
   }
   .dec-card .pair span.yes { color:#5FCFAE; }
   .dec-card .pair span.no { color:#E15A4B; text-decoration:line-through; opacity:.7; }
+
+  /* ===== Demo real photos ===== */
+  .ph { display:block; width:100%; height:100%; object-fit:cover; background:#EDE7DC; }
+  .rec-main.photo {
+    background:#2B2622; padding:0; min-height:168px;
+  }
+  .rec-main.photo .rm-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .rec-main.photo .rm-shade {
+    position:absolute; inset:0;
+    background:linear-gradient(180deg,rgba(43,38,34,.18) 0%,rgba(43,38,34,.78) 100%);
+  }
+  .rec-main.photo .rm-body { position:relative; z-index:1; padding:18px; }
+  .rec-main.photo .rm-tag { z-index:2; }
+  .rec-card.photo { padding:0; height:118px; background:#2B2622 !important; }
+  .rec-card.photo .rc-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .rec-card.photo .rc-shade {
+    position:absolute; inset:0;
+    background:linear-gradient(180deg,rgba(0,0,0,.05) 15%,rgba(0,0,0,.72) 100%);
+  }
+  .rec-card.photo .rc-body {
+    position:relative; z-index:1; padding:12px; height:100%;
+    display:flex; flex-direction:column; justify-content:flex-end;
+  }
+  .rec-card.photo .rc-tag { position:absolute; top:8px; right:8px; z-index:2;
+    font-size:10px; background:rgba(255,255,255,.25); padding:2px 8px; border-radius:99px; font-weight:600; }
+  .dc-ph, .mk-ph {
+    width:36px; height:36px; border-radius:11px; object-fit:cover; flex:none; background:#EDE7DC;
+  }
+  .mk-ph { width:32px; height:32px; border-radius:10px; }
+  .dish-img { overflow:hidden; padding:0 !important; font-size:0 !important; }
+  .dish-img .ph { border-radius:inherit; }
+  .d3-hero { position:relative; overflow:hidden; font-size:0 !important; }
+  .d3-hero .d3-cover { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .d3-hero .d3-back { z-index:2; }
+  .me-avatar, .avatar, .wx-avatar {
+    overflow:hidden; padding:0 !important; font-size:0 !important;
+    flex:none;
+  }
+  .me-avatar .ph, .avatar .ph, .wx-avatar .ph { border-radius:50%; }
+  .wx-avatar { border:1.5px solid #EFCB9C !important; background:#fff !important; }
+  .join-hero.photo {
+    position:relative; overflow:hidden; color:#fff; border:none;
+    background:#2B2622; min-height:110px;
+  }
+  .join-hero.photo .jh-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .join-hero.photo .jh-shade {
+    position:absolute; inset:0;
+    background:linear-gradient(135deg,rgba(43,38,34,.45),rgba(43,38,34,.72));
+  }
+  .join-hero.photo .jh-body { position:relative; z-index:1; }
+  .join-hero.photo h3 { color:#fff; }
+  .join-hero.photo p { color:rgba(255,255,255,.88); }
+  .k-hero.photo { background:#2B2622; }
+  .k-hero.photo .kh-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .k-hero.photo .kh-shade {
+    position:absolute; inset:0;
+    background:linear-gradient(135deg,rgba(240,123,31,.78) 0%,rgba(229,106,18,.88) 100%);
+  }
+  .k-hero.photo > *:not(.kh-bg):not(.kh-shade) { position:relative; z-index:1; }
+  .k-hero.photo::after { display:none; }
+
 </style>
 <link rel="preconnect" href="https://unpkg.com">
 <script src="https://unpkg.com/lucide@0.469.0"></script>
@@ -636,274 +721,604 @@
   .sc-ico svg.lucide { width: 22px; height: 22px; stroke-width: 2; color: #5A524A; }
   .add-btn svg.lucide { width: 16px; height: 16px; stroke-width: 2.4; }
 </style>
-</head>
-<body>
+<style>
+  body.proto { padding: 28px 24px 80px; }
+  .proto-layout {
+    max-width: 1180px; margin: 0 auto; display: grid;
+    grid-template-columns: 399px 1fr; gap: 36px; align-items: start;
+  }
+  @media (max-width: 920px) {
+    .proto-layout { grid-template-columns: 1fr; justify-items: center; }
+  }
+  .proto-stage { position: sticky; top: 20px; }
+  .proto-hint {
+    margin-top: 14px; font-size: 12px; color: #9a978f; line-height: 1.7; text-align: center;
+  }
+  .proto-toast {
+    position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%) translateY(12px);
+    background: rgba(43,38,34,.92); color: #fff; font-size: 12px; padding: 10px 16px;
+    border-radius: 99px; opacity: 0; pointer-events: none; transition: .25s; z-index: 40;
+    white-space: nowrap; max-width: 86%; overflow: hidden; text-overflow: ellipsis;
+  }
+  .proto-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+  .phone.interactive .screen-stack {
+    position: absolute; inset: 0; background: #FFFDF8;
+  }
+  .panel {
+    position: absolute; inset: 0; display: none; flex-direction: column;
+    background: #FFFDF8; color: #2B2622; overflow: hidden;
+    --cream:#FFFDF8; --ink:#2B2622; --muted:#8A8178; --faint:#B5AC9F; --line:#F1E9DD;
+    --ko:#F07B1F; --ko2:#FFB36B; --ko-soft:#FFF1E2; --ko-softer:#FFF8EF;
+    --hg:#18A885; --hg2:#5FCFAE; --hg-soft:#E7F7F0; --hg-softer:#F4FBF8;
+    --red:#E15A4B; --red-soft:#FCEEEA; --amber:#D99426; --amber-soft:#FBF3E0;
+    --blue:#4A90D9; --blue-soft:#EBF3FB;
+  }
+  .panel.on { display: flex; animation: panelIn .22s ease; }
+  @keyframes panelIn {
+    from { opacity: .55; transform: translateX(10px); }
+    to { opacity: 1; transform: none; }
+  }
+  .panel.theme-mint .tabbar .tb.on .ico svg.lucide { color: var(--hg); }
+  .panel.theme-mint .svc-switch i { background: var(--hg); }
+
+  [data-go], [data-action], .tb, .svc-switch, .role-card, .meal-pick span,
+  .btn, .rm-add, .dr-go, .ai-ask, .rec-main, .rec-card, .dish-row, .dish-card,
+  .me-item, .me-tile, .me-kitchen, .me-stats .ms, .g8, .ab-go, .oc-actions .btn, .examples span, .add-btn {
+    cursor: pointer; user-select: none;
+  }
+  .btn:active, .tb:active, .g8:active, .rec-card:active, .dish-row:active, .dish-card:active, .me-tile:active {
+    transform: scale(.98); opacity: .92;
+  }
+
+  .overlay { position: absolute; inset: 0; z-index: 30; display: none; }
+  .overlay.on { display: block; }
+  .overlay .ov-mask {
+    position: absolute; inset: 0; background: rgba(43,38,34,.4);
+  }
+  .svc-menu {
+    position: absolute; top: 92px; left: 18px; right: 18px; background: #fff;
+    border: 1px solid var(--line); border-radius: 18px; padding: 8px;
+    box-shadow: 0 16px 40px rgba(43,38,34,.18); z-index: 2;
+  }
+  .svc-menu .sm-item {
+    display: flex; align-items: center; gap: 10px; padding: 12px 12px;
+    border-radius: 14px; font-size: 14px; font-weight: 600; color: var(--ink);
+  }
+  .svc-menu .sm-item:hover { background: var(--ko-softer); }
+  .svc-menu .sm-item.on { background: var(--ko-soft); color: var(--ko); }
+  .svc-menu .sm-item.mint.on { background: var(--hg-soft); color: var(--hg); }
+  .svc-menu .sm-sub { display: block; font-size: 11px; font-weight: 400; color: var(--faint); margin-top: 2px; }
+
+  .side { color: #c9c6c0; }
+  .side h2 { font-size: 22px; color: #e8e6e3; margin-bottom: 8px; }
+  .side .lead { font-size: 13.5px; color: #9a978f; line-height: 1.8; margin-bottom: 18px; }
+  .flow-map {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px;
+  }
+  .flow-map button {
+    text-align: left; border: 1px solid #33363f; background: #1d2026; color: #c9c6c0;
+    border-radius: 14px; padding: 12px 14px; cursor: pointer; font: inherit;
+  }
+  .flow-map button:hover, .flow-map button.on {
+    border-color: #FFB36B; color: #FFB36B; background: #23262d;
+  }
+  .flow-map button b { display: block; font-size: 13px; margin-bottom: 4px; }
+  .flow-map button span { font-size: 11px; color: #9a978f; }
+  .flow-map button.on span { color: #c9c6c0; }
+  .side-note {
+    background: #1d2026; border: 1px solid #2c3038; border-left: 3px solid #FFB36B;
+    border-radius: 14px; padding: 14px 16px; font-size: 12.5px; color: #9a978f; line-height: 1.75;
+  }
+  .side-note b { color: #e8e6e3; }
+  .side-list { margin-top: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .side-list a {
+    color: #9a978f; text-decoration: none; font-size: 12.5px; padding: 8px 12px;
+    border-radius: 10px; border: 1px solid transparent;
+  }
+  .side-list a:hover { color: #FFB36B; background: #1d2026; }
+
+  /* ===== D2 菜品 · 重构 ===== */
+  .cat-scroll {
+    display: flex; gap: 4px; padding: 2px 14px 8px; overflow: hidden; flex: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .cat-scroll span {
+    flex: none; font-size: 13px; padding: 10px 14px 12px; border-radius: 0;
+    background: transparent; border: none; color: var(--faint); font-weight: 500;
+    position: relative;
+  }
+  .cat-scroll span.on {
+    background: transparent; border: none; color: var(--ink); font-weight: 700;
+  }
+  .cat-scroll span.on::after {
+    content: ''; position: absolute; left: 14px; right: 14px; bottom: 0;
+    height: 3px; border-radius: 99px; background: linear-gradient(90deg, var(--ko2), var(--ko));
+  }
+  .dish-toolbar {
+    display: flex; align-items: center; gap: 10px; margin: 12px 18px 4px; flex: none;
+  }
+  .dish-search {
+    flex: 1; display: flex; align-items: center; gap: 8px; height: 40px;
+    padding: 0 14px; border-radius: 14px; background: #fff; border: 1px solid var(--line);
+    font-size: 12.5px; color: var(--faint);
+  }
+  .dish-search svg.lucide { width: 15px; height: 15px; color: var(--faint); stroke-width: 2; }
+  .dish-count-chip {
+    flex: none; font-size: 11px; color: var(--muted); padding: 8px 12px;
+    border-radius: 12px; background: var(--ko-softer);
+  }
+  .dish-count-chip b { color: var(--ko); }
+
+  .dish-grid { padding: 8px 18px 12px; display: flex; flex-direction: column; gap: 14px; }
+  .dish-card {
+    position: relative; border-radius: 22px; overflow: hidden; background: #2B2622;
+    box-shadow: 0 10px 28px rgba(80, 50, 10, .08); cursor: pointer;
+  }
+  .dish-card .dc-media {
+    position: relative; height: 148px; overflow: hidden;
+  }
+  .dish-card .dc-media img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform .35s ease;
+  }
+  .dish-card:active .dc-media img { transform: scale(1.03); }
+  .dish-card .dc-fade {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(43,38,34,.05) 35%, rgba(43,38,34,.72) 100%);
+  }
+  .dish-card .dc-badges {
+    position: absolute; top: 12px; left: 12px; right: 12px;
+    display: flex; justify-content: space-between; align-items: flex-start; z-index: 2;
+  }
+  .dish-card .dc-tag {
+    font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 99px;
+    background: rgba(255,255,255,.92); color: var(--ko);
+  }
+  .dish-card .dc-tag.warn { color: var(--amber); }
+  .dish-card .dc-tag.gone { color: var(--muted); background: rgba(255,255,255,.75); }
+  .dish-card .dc-time {
+    font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 99px;
+    background: rgba(43,38,34,.45); color: #fff; backdrop-filter: blur(4px);
+  }
+  .dish-card .dc-info {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+    padding: 14px 14px 14px; display: flex; align-items: flex-end; gap: 10px; color: #fff;
+  }
+  .dish-card .dc-copy { flex: 1; min-width: 0; }
+  .dish-card .dc-name { font-size: 17px; font-weight: 700; letter-spacing: .2px; }
+  .dish-card .dc-meta { font-size: 11.5px; opacity: .88; margin-top: 4px; }
+  .dish-card .dc-stock {
+    margin-top: 8px; display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; padding: 3px 8px; border-radius: 99px;
+    background: rgba(255,255,255,.16);
+  }
+  .dish-card .dc-stock b { font-weight: 700; color: #FFD7A8; }
+  .dish-card .add-btn {
+    width: 36px; height: 36px; border-radius: 13px; flex: none;
+    background: linear-gradient(135deg, var(--ko2), var(--ko)); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 16px rgba(240,123,31,.35);
+  }
+  .dish-card .add-btn svg.lucide { width: 18px; height: 18px; stroke-width: 2.4; color: #fff; }
+  .dish-card.is-sold { filter: grayscale(.35); }
+  .dish-card.is-sold .dc-fade {
+    background: linear-gradient(180deg, rgba(43,38,34,.2) 30%, rgba(43,38,34,.78) 100%);
+  }
+  .dish-card.is-sold .add-btn {
+    background: #C9C2B6; box-shadow: none;
+  }
+
+  /* ===== 底部预约条 · 重构 ===== */
+  .draft-bar {
+    margin: 8px 14px 10px; display: flex; align-items: center; gap: 12px;
+    background: linear-gradient(135deg, #3A322C 0%, #2B2622 100%); color: #FFFDF8;
+    border-radius: 22px; padding: 10px 10px 10px 14px;
+    box-shadow: 0 14px 32px rgba(43,38,34,.35); flex: none;
+  }
+  .draft-bar .dr-thumbs {
+    display: flex; align-items: center; flex: none; padding-right: 4px;
+  }
+  .draft-bar .dr-thumbs img {
+    width: 34px; height: 34px; border-radius: 11px; object-fit: cover;
+    border: 2px solid #3A322C; margin-left: -10px; background: #555;
+  }
+  .draft-bar .dr-thumbs img:first-child { margin-left: 0; }
+  .draft-bar .dr-ico {
+    width: 36px; height: 36px; border-radius: 12px; background: rgba(255,255,255,.14);
+    display: none; align-items: center; justify-content: center; position: relative; flex: none;
+  }
+  .draft-bar .dr-badge {
+    min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px;
+    background: var(--red); font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin-left: -6px; position: relative; z-index: 2; align-self: flex-start; margin-top: -2px;
+  }
+  .draft-bar .dr-txt { flex: 1; min-width: 0; }
+  .draft-bar .dr-txt b { font-size: 13px; display: block; }
+  .draft-bar .dr-txt span { font-size: 10.5px; opacity: .72; }
+  .draft-bar .dr-go {
+    background: linear-gradient(135deg, var(--ko2), var(--ko)); font-size: 13px; font-weight: 700;
+    padding: 12px 16px; border-radius: 16px; flex: none;
+  }
+
+  /* ===== D4 预约 · 重构 ===== */
+  .ord-hero {
+    margin: 6px 18px 0; border-radius: 22px; padding: 16px;
+    background:
+      radial-gradient(120% 80% at 100% 0%, rgba(255,179,107,.28), transparent 55%),
+      linear-gradient(160deg, #FFF8EF, #FFF1E2 60%, #FFE8C8);
+    border: 1px solid #F3D9B8;
+  }
+  .ord-hero .oh-kicker { font-size: 11px; color: var(--ko); font-weight: 600; letter-spacing: .4px; }
+  .ord-hero .oh-title { font-size: 20px; font-weight: 700; margin-top: 4px; color: var(--ink); }
+  .ord-hero .oh-sub { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.55; }
+  .ord-meta {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;
+  }
+  .ord-meta .om {
+    background: rgba(255,255,255,.72); border-radius: 14px; padding: 10px 12px;
+  }
+  .ord-meta .om label { display: block; font-size: 10px; color: var(--faint); }
+  .ord-meta .om b { display: block; font-size: 13px; margin-top: 3px; color: var(--ink); }
+
+  .meal-pick {
+    display: flex; gap: 8px; padding: 14px 18px 0;
+  }
+  .meal-pick span {
+    flex: 1; text-align: center; font-size: 12px; padding: 12px 0 10px; border-radius: 16px;
+    background: #fff; border: 1.5px solid var(--line); color: var(--muted);
+    display: flex; flex-direction: column; align-items: center; gap: 6px; font-weight: 500;
+  }
+  .meal-pick span svg.lucide { width: 18px; height: 18px; stroke-width: 2; color: currentColor; }
+  .meal-pick span.on {
+    background: var(--ko-soft); border-color: var(--ko2); color: var(--ko); font-weight: 700;
+    box-shadow: 0 6px 16px rgba(240,123,31,.12);
+  }
+
+  .draft-card {
+    margin: 14px 18px 0; background: #fff; border: 1px solid var(--line);
+    border-radius: 22px; overflow: hidden;
+    box-shadow: 0 8px 24px rgba(80,50,10,.05);
+  }
+  .draft-card .dc-head {
+    display: flex; align-items: center; gap: 10px; padding: 16px 16px 12px;
+  }
+  .draft-card .dc-head h5 { font-size: 15px; font-weight: 700; flex: 1; }
+  .draft-card .dc-head .chip {
+    background: var(--ko-soft); color: var(--ko);
+  }
+  .draft-card .dc-line {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    border-top: 1px solid #F7F2E9;
+  }
+  .draft-card .dc-ph {
+    width: 52px; height: 52px; border-radius: 14px; object-fit: cover; flex: none;
+    box-shadow: 0 4px 10px rgba(80,50,10,.1);
+  }
+  .draft-card .dc-name { flex: 1; font-size: 14px; font-weight: 600; min-width: 0; }
+  .draft-card .dc-name small {
+    display: block; font-size: 11px; color: var(--faint); margin-top: 3px; font-weight: 400;
+  }
+  .draft-card .dc-qty {
+    display: flex; align-items: center; gap: 8px; flex: none;
+    background: var(--ko-softer); border-radius: 12px; padding: 4px 6px;
+  }
+  .draft-card .dc-qty button {
+    width: 26px; height: 26px; border: none; border-radius: 9px; background: #fff;
+    color: var(--ko); font-size: 16px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  .draft-card .dc-qty b { font-size: 13px; min-width: 14px; text-align: center; }
+
+  .ord-submit-wrap {
+    flex: none; padding: 8px 18px 6px; background: linear-gradient(180deg, transparent, var(--cream) 30%);
+  }
+  .ord-submit-wrap .btn-block {
+    margin: 0; height: 50px; border-radius: 18px; font-size: 15px;
+  }
+
+  .order-hist {
+    margin: 12px 18px 0; background: #fff; border: 1px solid var(--line);
+    border-radius: 20px; padding: 14px; box-shadow: 0 6px 16px rgba(80,50,10,.04);
+  }
+  .order-hist .oh-top { display: flex; justify-content: space-between; align-items: center; }
+  .order-hist .oh-name { font-size: 13.5px; font-weight: 700; }
+  .insight {
+    margin: 12px 18px 0; border-radius: 20px; padding: 14px;
+    background: linear-gradient(135deg, #FFFDF5, #FBF3E0);
+    border: 1px solid #F0DDB4;
+  }
+  .insight.warn { background: linear-gradient(135deg, #FFFDF5, #FBF3E0); border-color: #F0DDB4; }
+
+  .dish-img {
+    width: 72px; height: 72px; border-radius: 14px; overflow: hidden; flex: none; background: #EDE7DC;
+  }
+  .dish-body { flex: 1; min-width: 0; }
+  .dish-body .d-name { font-size: 15px; font-weight: 700; }
+  .dish-body .d-meta { font-size: 11.5px; color: var(--faint); margin-top: 4px; }
+  .dish-body .d-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  .dish-body .d-stock { font-size: 11.5px; color: var(--muted); }
+  .dish-body .d-stock b { color: var(--ko); }
+  .add-btn {
+    width: 28px; height: 28px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--ko2), var(--ko)); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dish-row {
+    margin: 0 18px 12px; background: #fff; border: 1px solid var(--line); border-radius: 18px;
+    padding: 12px; display: flex; gap: 12px; align-items: center;
+  }
+
+  .d3-hero { height: 220px; position: relative; flex: none; background: #2B2622; }
+  .d3-hero .d3-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .d3-hero .d3-back {
+    position: absolute; left: 14px; top: 52px; z-index: 2; width: 34px; height: 34px;
+    border-radius: 50%; background: rgba(255,255,255,.92); display: flex; align-items: center;
+    justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  }
+  .d3-panel { padding: 18px 18px 8px; }
+  .d3-title { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .d3-desc { font-size: 13px; color: var(--muted); line-height: 1.7; margin-top: 8px; }
+  .d3-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .d3-chips span {
+    font-size: 11px; padding: 4px 10px; border-radius: 99px; background: #F4F0E9; color: var(--muted);
+  }
+  .step-item { display: flex; gap: 12px; padding: 10px 18px; }
+  .st-num {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--ko-soft); color: var(--ko);
+    font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .st-txt { font-size: 13px; color: var(--ink); line-height: 1.55; }
+  .bottom-bar {
+    flex: none; display: flex; align-items: center; gap: 12px; padding: 12px 18px 20px;
+    border-top: 1px solid var(--line); background: #fff;
+  }
+  .stepper {
+    display: flex; align-items: center; gap: 14px; background: var(--ko-softer);
+    border-radius: 14px; padding: 10px 14px; font-size: 15px; font-weight: 700;
+  }
+  .stepper span { width: 24px; text-align: center; color: var(--muted); }
+  .bottom-bar .join {
+    flex: 1; height: 48px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--ko2), var(--ko)); color: #fff; font-weight: 700; font-size: 15px;
+  }
+
+  .code-boxes input {
+    width: 100%; height: 52px; border: none; background: transparent; text-align: center;
+    font-size: 20px; font-weight: 700; letter-spacing: 10px; color: var(--ko); outline: none;
+  }
+  .role-card.pick.on { outline: 2px solid var(--ko2); box-shadow: 0 0 0 4px var(--ko-soft); }
+
+  .docs-fold { max-width: 1180px; margin: 56px auto 0; }
+  .docs-fold details {
+    background: #1d2026; border: 1px solid #2c3038; border-radius: 16px; padding: 14px 18px; margin-bottom: 12px;
+  }
+  .docs-fold summary { cursor: pointer; color: #FFB36B; font-weight: 600; font-size: 14px; }
+  .docs-fold .inner { margin-top: 12px; color: #9a978f; font-size: 13px; line-height: 1.75; }
+
+  /* AI sheet inside overlay */
+  .overlay .sheet-mask {
+    position: absolute; inset: 0; display: flex; align-items: flex-end;
+    background: transparent; pointer-events: none;
+  }
+  .overlay .sheet {
+    pointer-events: auto; width: 100%; margin: 0; border-radius: 24px 24px 0 0;
+    position: relative; max-height: 78%; overflow-y: auto;
+  }
+  .overlay .dim-bg {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    padding: 24px; background: transparent; pointer-events: none;
+  }
+  .overlay .sub-card { pointer-events: auto; position: relative; margin: 0; width: 100%; }
+
+  /* ===== D5 我的 · 重构 ===== */
+  .me-hero {
+    margin: 4px 18px 0; border-radius: 24px; overflow: hidden; position: relative;
+    min-height: 168px; color: #fff;
+    box-shadow: 0 12px 28px rgba(80,50,10,.12);
+  }
+  .me-hero .mh-bg {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  }
+  .me-hero .mh-shade {
+    position: absolute; inset: 0;
+    background: linear-gradient(160deg, rgba(43,38,34,.35) 0%, rgba(43,38,34,.78) 70%, rgba(43,38,34,.88) 100%);
+  }
+  .me-hero .mh-body {
+    position: relative; z-index: 1; padding: 20px 18px 16px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .me-hero .mh-top { display: flex; align-items: center; gap: 14px; }
+  .me-hero .me-avatar {
+    width: 64px; height: 64px; border-radius: 50%; overflow: hidden; flex: none;
+    border: 2.5px solid rgba(255,255,255,.85);
+    box-shadow: 0 6px 16px rgba(0,0,0,.25);
+  }
+  .me-hero .me-avatar .ph { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .me-hero .me-name { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .me-hero .me-role {
+    font-size: 10px; background: rgba(255,179,107,.35); border: 1px solid rgba(255,255,255,.35);
+    padding: 3px 9px; border-radius: 99px; font-weight: 600;
+  }
+  .me-hero .me-sub { font-size: 12px; opacity: .85; margin-top: 4px; }
+  .me-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  }
+  .me-stats .ms {
+    background: rgba(255,255,255,.14); border-radius: 14px; padding: 10px 8px; text-align: center;
+    backdrop-filter: blur(4px);
+  }
+  .me-stats .ms b { display: block; font-size: 16px; font-weight: 700; }
+  .me-stats .ms span { display: block; font-size: 10px; opacity: .8; margin-top: 2px; }
+
+  .me-kitchen {
+    margin: 14px 18px 0; border-radius: 22px; overflow: hidden; position: relative;
+    min-height: 92px; color: #fff; cursor: pointer;
+    box-shadow: 0 8px 22px rgba(80,50,10,.08);
+  }
+  .me-kitchen .mk-cover {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  }
+  .me-kitchen .mk-shade {
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(240,123,31,.88) 0%, rgba(240,123,31,.55) 55%, rgba(43,38,34,.35) 100%);
+  }
+  .me-kitchen .mk-inner {
+    position: relative; z-index: 1; padding: 16px; display: flex; align-items: center; gap: 12px;
+  }
+  .me-kitchen .mk-ico {
+    width: 44px; height: 44px; border-radius: 14px; background: rgba(255,255,255,.22);
+    display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .me-kitchen .mk-ico svg.lucide { width: 22px; height: 22px; color: #fff; stroke-width: 2; }
+  .me-kitchen .mk-body { flex: 1; min-width: 0; }
+  .me-kitchen .mk-body b { font-size: 15px; display: block; font-weight: 700; }
+  .me-kitchen .mk-body span { font-size: 11.5px; opacity: .9; margin-top: 3px; display: block; }
+  .me-kitchen .mk-go {
+    font-size: 11px; font-weight: 600; padding: 7px 12px; border-radius: 99px;
+    background: rgba(255,255,255,.95); color: var(--ko); flex: none;
+  }
+
+  .me-sec { margin: 18px 18px 6px; display: flex; align-items: baseline; justify-content: space-between; }
+  .me-sec h4 { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .me-sec span { font-size: 11px; color: var(--faint); }
+
+  .me-tiles {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 18px;
+  }
+  .me-tile {
+    border-radius: 20px; padding: 16px 14px; cursor: pointer; position: relative; overflow: hidden;
+    border: 1px solid var(--line); background: #fff;
+    box-shadow: 0 6px 16px rgba(80,50,10,.05); min-height: 108px;
+  }
+  .me-tile::after {
+    content: ''; position: absolute; right: -20px; bottom: -24px; width: 80px; height: 80px;
+    border-radius: 50%; opacity: .55;
+  }
+  .me-tile.chef { background: linear-gradient(160deg, #FFF8EF, #FFF1E2); border-color: #F3D9B8; }
+  .me-tile.chef::after { background: rgba(240,123,31,.12); }
+  .me-tile.health { background: linear-gradient(160deg, #F4FBF8, #E7F7F0); border-color: #CBEBDD; }
+  .me-tile.health::after { background: rgba(24,168,133,.12); }
+  .me-tile .mt-ico {
+    width: 40px; height: 40px; border-radius: 14px; display: flex; align-items: center;
+    justify-content: center; margin-bottom: 12px; position: relative; z-index: 1;
+  }
+  .me-tile.chef .mt-ico { background: var(--ko-soft); color: var(--ko); }
+  .me-tile.health .mt-ico { background: var(--hg-soft); color: var(--hg); }
+  .me-tile .mt-ico svg.lucide { width: 20px; height: 20px; stroke-width: 2; color: currentColor; }
+  .me-tile .mt-title { font-size: 14px; font-weight: 700; position: relative; z-index: 1; }
+  .me-tile .mt-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.45; position: relative; z-index: 1; }
+
+  .me-list {
+    margin: 12px 18px 0; background: #fff; border: 1px solid var(--line);
+    border-radius: 20px; padding: 4px 6px; box-shadow: 0 6px 16px rgba(80,50,10,.04);
+  }
+  .me-item {
+    display: flex; align-items: center; gap: 12px; padding: 14px 10px;
+    border-bottom: 1px solid #F7F2E9; border-radius: 14px;
+  }
+  .me-item:last-child { border-bottom: none; }
+  .me-item:active { background: var(--ko-softer); }
+  .me-item .mi-ico {
+    width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center;
+    justify-content: center; flex: none;
+  }
+  .me-item .mi-ico svg.lucide { width: 17px; height: 17px; stroke-width: 2; color: #5A524A; }
+  .me-item .mi-body { flex: 1; min-width: 0; }
+  .me-item .mi-name { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .me-item .mi-hint { font-size: 11px; color: var(--faint); margin-top: 2px; }
+  .me-item .mi-arrow { color: var(--faint); font-size: 16px; padding: 0 4px; }
+  .me-item.danger .mi-name { color: var(--red); }
+  .me-item.danger .mi-ico { background: var(--red-soft) !important; }
+  .me-item.danger .mi-ico svg.lucide { color: var(--red); }
+
+  .me-foot {
+    text-align: center; padding: 18px 18px 8px; font-size: 11px; color: var(--faint);
+  }
+</style>
+
+</head>
+<body class="proto">
 <header class="doc-head">
-  <h1>miyf 微信小程序 · <em>完整界面设计 v3</em></h1>
-  <p>
-    家庭厨房预约 + 健康生活方式。微信端主力路径：授权登录、选身份、加入厨房、食客四栏、厨师工作台、健康评分与 AI 半屏。
-    Token 与鸿蒙同源（奶油底 · 灶橙 · 薄荷），无价格与支付。本版对齐
-    <code style="color:#FFB36B">miniapp/</code> 与 <code style="color:#FFB36B">kitchen-service</code> 前后端字段。
-  </p>
+  <h1>miyf 微信小程序 · <em>可交互设计原型</em></h1>
+  <p>左侧手机壳可点击流转：登录 → 身份 → 加入 → 食客四栏 / 详情 / AI / 订阅；可切厨师工作台与健康。右侧跳屏。无价格支付。</p>
   <div class="doc-meta">
-    <span>v3.4 · Lucide 图标 · 2026-09-29</span>
+    <span>v3.7 · 菜品/预约/我的重构 · 2026-09-30</span>
     <span>375×812</span>
-    <span>微信小程序 · 胶囊壳</span>
-    <span>前后端同步</span>
+    <span>点击流转 · 浮层 · Tab</span>
+    <span>真实照片演示</span>
   </div>
 </header>
+<div class="proto-layout">
+  <div class="proto-stage">
+    <div class="phone interactive" id="phone">
+      <div class="screen-stack" id="stack">
 
-<nav class="toc">
-  <a href="#spec">01 Tokens · 微信壳</a>
-  <a href="#sync">02 前后端同步</a>
-  <a href="#onboard">03 入门 L1–L3</a>
-  <a href="#diner">04 食客 D1/D4/D5</a>
-  <a href="#chef">05 厨师 K1</a>
-  <a href="#health">06 健康 H1</a>
-  <a href="#ai">07 AI · 订阅</a>
-  <a href="#notes">08 设计决策</a>
-</nav>
-
-<!-- ================= 01 Spec ================= -->
-<section id="spec">
-  <div class="sec-title"><span class="num">01</span><h2>Design Tokens · 微信壳规范</h2></div>
-  <p class="sec-desc">与鸿蒙 / 工程 variables 同源色板。差异只在壳：胶囊避让、自定义导航、TabBar 仅食客、半屏 AI 浮层。</p>
-  <div class="spec-grid">
-    <div class="spec-card">
-      <h4>品牌色 <small>双主题</small></h4>
-      <div class="sw-row"><div class="sw" style="background:linear-gradient(135deg,#FFB36B,#F07B1F)"></div><div class="sw-info"><b>厨房灶橙</b><span>#FFB36B → #F07B1F</span></div></div>
-      <div class="sw-row"><div class="sw" style="background:linear-gradient(135deg,#5FCFAE,#18A885)"></div><div class="sw-info"><b>健康薄荷</b><span>#5FCFAE → #18A885</span></div></div>
-      <div class="sw-row"><div class="sw" style="background:#FFFDF8;border-color:#555"></div><div class="sw-info"><b>奶油底</b><span>#FFFDF8</span></div></div>
-      <div class="sw-row"><div class="sw" style="background:#2B2622"></div><div class="sw-info"><b>主文案 Ink</b><span>#2B2622</span></div></div>
-    </div>
-    <div class="spec-card">
-      <h4>中性 / 状态 <small>浅底小面积</small></h4>
-      <div class="sw-row"><div class="sw" style="background:#8A8178"></div><div class="sw-info"><b>Muted</b><span>#8A8178</span></div></div>
-      <div class="sw-row"><div class="sw" style="background:#B5AC9F"></div><div class="sw-info"><b>Faint</b><span>#B5AC9F</span></div></div>
-      <div class="sw-row"><div class="sw" style="background:#F1E9DD"></div><div class="sw-info"><b>Line</b><span>#F1E9DD</span></div></div>
-      <div class="sw-row"><div class="sw" style="background:#D99426"></div><div class="sw-info"><b>待处理 Amber</b><span>#D99426</span></div></div>
-    </div>
-    <div class="spec-card">
-      <h4>微信壳 <small>区别鸿蒙</small></h4>
-      <div class="type-row"><code>胶囊</code><span style="font-size:13px">右上 ••• | ○ · 标题避让 ≥100px</span></div>
-      <div class="type-row"><code>导航</code><span style="font-size:13px">底 #FFFDF8 · 黑字 · 可自定义</span></div>
-      <div class="type-row"><code>TabBar</code><span style="font-size:13px">仅食客四栏 · 厨师无底栏</span></div>
-      <div class="type-row"><code>半屏</code><span style="font-size:13px">AI 浮层 · 顶横条 + 奶油内容区</span></div>
-      <div class="type-row"><code>图标</code><span style="font-size:13px">入口用 Lucide 线图标 · 菜品可食物示意</span></div>
-    </div>
-  </div>
-  <div class="note-strip">
-    <b>禁止：</b>价格、购物车金额、优惠券、微信支付绿主 CTA、「购买 / 支付 / ¥」文案、医疗诊断结论。
-    <b>按钮写：</b>微信授权登录（灶橙）· 加入预约 · 提交预约 · 确认 / 驳回。
-  </div>
-</section>
-
-<!-- ================= 02 Sync ================= -->
-<section id="sync">
-  <div class="sec-title"><span class="num">02</span><h2>前后端同步</h2></div>
-  <p class="sec-desc">v3.3 已补齐健康评分 API + 经营统计页；订阅 / 餐次字段 / 厨房封面见 v3.2。</p>
-  <table class="sync-table">
-    <thead>
-      <tr>
-        <th style="width:18%">状态</th>
-        <th style="width:34%">接口 / 字段</th>
-        <th>UI 表现</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="tag-ok">已同步</span></td>
-        <td><code>GET /api/chef/workbench/summary</code></td>
-        <td>K1 hero 四格：待确认 / 备餐中 / 在售 / 食客；宫格角标用 <code>pendingOrders</code>、<code>pendingBindings</code>；最新预约列表可确认</td>
-      </tr>
-      <tr>
-        <td><span class="tag-ok">已同步</span></td>
-        <td><code>DishVo.prepMinutes</code></td>
-        <td>菜品卡 / 详情展示「约 N 分钟」；推荐主卡 meta 可读</td>
-      </tr>
-      <tr>
-        <td><span class="tag-ok">已同步</span></td>
-        <td>推荐菜品列表</td>
-        <td>D1 一主卡 + 横滑；无金额；库存明文</td>
-      </tr>
-      <tr>
-        <td><span class="tag-ok">已同步</span></td>
-        <td>加入厨房绑定状态</td>
-        <td>L3：未绑定 → 待确认（琥珀胶囊）→ 已绑定 / 未通过（可重申）</td>
-      </tr>
-      <tr>
-        <td><span class="tag-ok">已同步</span></td>
-        <td><code>GET /api/orders/wx-subscribe-config</code> + 状态推送</td>
-        <td>W1：提交预约前请求订阅，失败不挡主流程</td>
-      </tr>
-      <tr>
-        <td><span class="tag-ok">已同步</span></td>
-        <td><code>mealDate</code> / <code>mealType</code> / <code>mealTime</code> / <code>guestCount</code></td>
-        <td>D4 草稿与 K1 预约卡展示用餐信息；remark 仅口味</td>
-      </tr>
-      <tr>
-        <td><span class="tag-ok">已同步</span></td>
-        <td><code>POST /api/my-kitchen/cover/upload</code></td>
-        <td>K4 厨房资料封面上传与回显</td>
-      </tr>
-      <tr>
-        <td><span class="tag-wip">可选</span></td>
-        <td>健康综合评分 / 经营统计</td>
-        <td>✅ H1 接 <code>/api/health/me/score</code>；K1 → <code>pages/chef/stats</code></td>
-      </tr>
-    </tbody>
-  </table>
-  <div class="note-strip mint" style="margin-top:20px">
-    <b>验收口径：</b>工作台只打一次 summary；订阅失败不挡提交；餐次走结构化字段。
-    预约与菜品列表<strong>永不展示金额字段</strong>。AI 只出草稿，写库需人确认。
-  </div>
-</section>
-
-<!-- ================= 03 Onboard ================= -->
-<section id="onboard">
-  <div class="sec-title"><span class="num">03</span><h2>入门 · L1–L3</h2></div>
-  <p class="sec-desc">登录阻塞主路径。微信授权拿昵称（必填）与头像（可选）；主按钮用灶橙品牌色，不冒充微信绿。</p>
-  <div class="screens">
-
-    <!-- L1 -->
-    <div class="shot">
-      <div class="phone">
-        <div class="screen">
-          <div class="statusbar"><span>9:41</span><span class="sicons">▮▮▮ Wi‑Fi</span></div>
-          <div class="wx-nav">
-            <div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
-          </div>
+        <div class="panel on" data-screen="L1">
+          <div class="statusbar"><span>9:41</span><span class="sicons">Wi-Fi</span></div>
+          <div class="wx-nav"><div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div></div>
           <div class="grow">
             <div class="login-brand">
-              <div class="login-logo">m</div>
-              <h2>miyf</h2>
+              <div class="login-logo">m</div><h2>miyf</h2>
               <p>家庭厨房预约 · 健康数据<br>今天吃什么，不外卖</p>
-              <div class="login-rooms">
-                <span>胡闹厨房</span><span>胡闹健康</span>
-              </div>
+              <div class="login-rooms"><span>胡闹厨房</span><span>胡闹健康</span></div>
             </div>
             <div class="wx-profile">
-              <div class="wx-avatar"><i data-lucide="user"></i></div>
-              <div class="wp-body">
-                <b>微信昵称 · 头像</b>
-                <span>授权后用于厨房内称呼；头像可选</span>
-              </div>
+              <div class="wx-avatar"><img class="ph" src="assets/demo/avatar-login.jpg" alt=""></div>
+              <div class="wp-body"><b>小陈</b><span>已选微信昵称 · 头像可选</span></div>
             </div>
           </div>
           <div class="login-foot">
-            <div class="btn btn-block">微信授权登录</div>
-            <p class="login-hint">登录即表示同意用户协议与隐私政策<br>不使用微信支付绿作主按钮</p>
+            <div class="btn btn-block" data-go="L2">微信授权登录</div>
+            <p class="login-hint">登录即表示同意用户协议与隐私政策<br>点击主按钮继续演示</p>
             <div class="home-ind"></div>
           </div>
         </div>
-      </div>
-      <div class="caption">
-        <h3><b>L1</b>登录</h3>
-        <ul>
-          <li class="hl">灶橙主按钮「微信授权登录」，非微信绿</li>
-          <li class="hl">昵称必填、头像可选 · 对齐 wx-login</li>
-          <li>胶囊右上预留，标题区不抢位</li>
-        </ul>
-      </div>
-    </div>
 
-    <!-- L2 -->
-    <div class="shot">
-      <div class="phone">
-        <div class="screen">
-          <div class="statusbar"><span>9:41</span><span class="sicons">▮▮▮ Wi‑Fi</span></div>
-          <div class="wx-nav left">
-            <h1>选择身份</h1>
-            <div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
-          </div>
+        <div class="panel" data-screen="L2">
+          <div class="statusbar"><span>9:41</span><span class="sicons">Wi-Fi</span></div>
+          <div class="wx-nav left"><h1>选择身份</h1><div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div></div>
           <div class="grow">
             <p class="pad" style="font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.7">同一账号以后可切换。先选一个开始。</p>
-            <div class="role-card on">
+            <div class="role-card pick on" data-role="diner">
               <div class="rc-ico" style="background:var(--ko-soft)"><i data-lucide="utensils"></i></div>
-              <div>
-                <h3>我是吃饭的</h3>
-                <p>用邀请码加入厨房，浏览在售菜，预约今天吃什么。</p>
-              </div>
+              <div><h3>我是吃饭的</h3><p>用邀请码加入厨房，浏览在售菜，预约今天吃什么。</p></div>
             </div>
-            <div class="role-card">
+            <div class="role-card pick" data-role="chef">
               <div class="rc-ico" style="background:#FFF1E2"><i data-lucide="chef-hat"></i></div>
-              <div>
-                <h3>我是干活的</h3>
-                <p>经营一个厨房：菜品、预约处理、邀请食客。</p>
-              </div>
+              <div><h3>我是干活的</h3><p>经营一个厨房：菜品、预约处理、邀请食客。</p></div>
             </div>
           </div>
-          <div class="btn btn-block">确认身份</div>
+          <div class="btn btn-block" data-action="confirm-role">确认身份</div>
           <div class="home-ind"></div>
         </div>
-      </div>
-      <div class="caption">
-        <h3><b>L2</b>选身份</h3>
-        <ul>
-          <li class="hl">两张大卡 + Lucide 图标，选中描边光晕</li>
-          <li>口语「吃饭的 / 干活的」，非角色术语墙</li>
-        </ul>
-      </div>
-    </div>
 
-    <!-- L3 -->
-    <div class="shot">
-      <div class="phone">
-        <div class="screen">
-          <div class="statusbar"><span>9:41</span><span class="sicons">▮▮▮ Wi‑Fi</span></div>
-          <div class="wx-nav">
-            <div class="back"><i data-lucide="chevron-left"></i></div>
-            <h1>加入厨房</h1>
-            <div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
-          </div>
+        <div class="panel" data-screen="L3">
+          <div class="statusbar"><span>9:41</span><span class="sicons">Wi-Fi</span></div>
+          <div class="wx-nav"><div class="back" data-go="L2"><i data-lucide="chevron-left"></i></div><h1>加入厨房</h1><div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div></div>
           <div class="grow">
-            <div class="join-hero">
-              <h3>输入 6 位邀请码</h3>
-              <p>向厨师要邀请码。提交后需厨师确认，通过后即可预约。</p>
+            <div class="join-hero photo">
+              <img class="jh-bg" src="assets/demo/kitchen.jpg" alt="">
+              <div class="jh-shade"></div>
+              <div class="jh-body"><h3>输入 6 位邀请码</h3><p>向厨师要邀请码。演示中点提交即视为已绑定。</p></div>
             </div>
-            <div class="code-boxes">
-              <span class="filled">K</span><span class="filled">8</span><span class="filled">3</span>
-              <span class="filled">2</span><span class="filled">1</span><span class="filled">A</span>
+            <div class="code-boxes" style="padding:16px 18px 0">
+              <input id="inviteCode" maxlength="6" value="K8321A" aria-label="invite">
             </div>
-            <div class="status-pill">● 待确认 · 已提交申请</div>
-            <p class="pad" style="font-size:12px;color:var(--faint);margin-top:14px;line-height:1.7">
-              状态：未绑定 → 待确认 → 已绑定 / 未通过。未通过可重新申请。
-            </p>
+            <div class="status-pill" id="joinStatus">未绑定 · 填写邀请码</div>
+            <p class="pad" style="font-size:12px;color:var(--faint);margin-top:14px;line-height:1.7">状态：未绑定 → 待确认 → 已绑定。演示跳过待确认。</p>
           </div>
-          <div class="btn btn-block">提交申请</div>
+          <div class="btn btn-block" data-action="join-submit">提交申请</div>
           <div class="home-ind"></div>
         </div>
-      </div>
-      <div class="caption">
-        <h3><b>L3</b>加入厨房</h3>
-        <ul>
-          <li class="hl">6 位码分格 · 待确认用琥珀胶囊</li>
-          <li class="hl">与 bindings 状态机对齐，未通过可重申</li>
-        </ul>
-      </div>
-    </div>
 
-  </div>
-</section>
-
-<!-- ================= 04 Diner ================= -->
-<section id="diner">
-  <div class="sec-title"><span class="num">04</span><h2>食客 · D1 / D4 / D5</h2></div>
-  <p class="sec-desc">底部四栏：首页、菜品、预约、我的。首页首屏收敛为「服务切换 + 一句问候 + 推荐主卡 + 说一句话 + 预约条」。</p>
-  <div class="screens">
-
-    <!-- D1 -->
-    <div class="shot">
-      <div class="phone">
-        <div class="screen">
-          <div class="statusbar"><span>9:41</span><span class="sicons">▮▮▮ Wi‑Fi</span></div>
+        <div class="panel" data-screen="D1">
+          <div class="statusbar"><span>9:41</span><span class="sicons">Wi-Fi</span></div>
           <div class="wx-nav left" style="padding-right:100px">
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <h1 style="font-size:18px">首页</h1>
-              <div class="svc-switch"><i></i>胡闹厨房</div>
-            </div>
-            <div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
+              <h1 style="font-size:18px">首页</h1><div class="svc-switch" data-action="open-svc"><i></i><span class="svc-label">胡闹厨房</span></div>
+            </div><div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
           </div>
           <div class="grow">
             <div class="pad">
@@ -911,200 +1326,330 @@
               <p class="d-sub">今天想吃点什么？</p>
               <p class="d-hint">厨师刚上新了几道，先看看推荐</p>
             </div>
-            <div class="ai-ask"><div class="spark"><i data-lucide="sparkles"></i></div>说一句话点菜<span style="margin-left:auto;color:var(--ko);font-weight:600">去试试</span></div>
-            <div class="sec-row"><h4>今日推荐</h4><a>全部 ›</a></div>
-            <div class="rec-main">
-              <div class="rm-tag">荐</div>
-              <div class="rm-emoji">🥩</div>
-              <div class="rm-name">红烧肉</div>
-              <div class="rm-meta">还剩 6 份 · 约 45 分钟 · 偏甜</div>
-              <div class="rm-foot">
-                <span style="font-size:11px;opacity:.9">prepMinutes · 库存明文</span>
-                <div class="rm-add">加入预约</div>
+            <div class="ai-ask" data-action="open-ai"><div class="spark"><i data-lucide="sparkles"></i></div>说一句话点菜<span style="margin-left:auto;color:var(--ko);font-weight:600">去试试</span></div>
+            <div class="sec-row"><h4>今日推荐</h4><a data-go="D2">全部</a></div>
+            <div class="rec-main photo" data-go="D3" data-dish="pork">
+              <img class="rm-bg" src="assets/demo/pork.jpg" alt=""><div class="rm-shade"></div><div class="rm-tag">荐</div>
+              <div class="rm-body">
+                <div class="rm-name">红烧肉</div>
+                <div class="rm-meta">还剩 6 份 · 约 45 分钟 · 偏甜</div>
+                <div class="rm-foot"><span style="font-size:11px;opacity:.9">点击查看详情</span>
+                  <div class="rm-add" data-action="add-draft" data-dish="pork">加入预约</div></div>
               </div>
             </div>
             <div class="rec-scroll">
-              <div class="rec-card" style="background:linear-gradient(135deg,#5FCFAE,#18A885)">
-                <div class="rc-emoji">🐟</div>
-                <div class="rc-name">清蒸鲈鱼</div>
-                <div class="rc-meta">还剩 4 · 约 25′</div>
+              <div class="rec-card photo" data-go="D3" data-dish="fish">
+                <img class="rc-bg" src="assets/demo/fish.jpg" alt=""><div class="rc-shade"></div>
+                <div class="rc-body"><div class="rc-name">清蒸鲈鱼</div><div class="rc-meta">还剩 4 · 约 25</div></div>
               </div>
-              <div class="rec-card" style="background:linear-gradient(135deg,#E8A33D,#D99426)">
-                <div class="rc-emoji">🍅</div>
-                <div class="rc-name">番茄炒蛋</div>
-                <div class="rc-meta">还剩 2 · 约 15′</div>
+              <div class="rec-card photo" data-go="D3" data-dish="tomato">
+                <img class="rc-bg" src="assets/demo/tomato.jpg" alt=""><div class="rc-shade"></div>
+                <div class="rc-body"><div class="rc-name">番茄炒蛋</div><div class="rc-meta">还剩 2 · 约 15</div></div>
               </div>
             </div>
             <div class="warn-stock"><i data-lucide="triangle-alert"></i> 番茄炒蛋今日还剩 2 份，想吃抓紧预约</div>
           </div>
-          <div class="draft-bar">
-            <div class="dr-ico"><i data-lucide="shopping-basket"></i><i>3</i></div>
-            <div class="dr-txt"><b>已选 3 样</b><span>明天 12:00 午餐</span></div>
+          <div class="draft-bar" data-go="D4">
+            <div class="dr-thumbs">
+              <img src="assets/demo/pork.jpg" alt="">
+              <img src="assets/demo/fish.jpg" alt="">
+              <img src="assets/demo/tomato.jpg" alt="">
+              <span class="dr-badge draft-count">3</span>
+            </div>
+            <div class="dr-txt"><b>已选 <span class="draft-count">3</span> 样</b><span>明天 12:00 午餐</span></div>
             <div class="dr-go">去预约</div>
           </div>
-          <div class="tabbar">
-            <div class="tb on"><div class="ico"><i data-lucide="home"></i></div>首页</div>
-            <div class="tb"><div class="ico"><i data-lucide="utensils"></i></div>菜品</div>
-            <div class="tb"><div class="ico"><i data-lucide="clipboard-list"></i><span class="badge">3</span></div>预约</div>
-            <div class="tb"><div class="ico"><i data-lucide="user"></i></div>我的</div>
-          </div>
+          <div class="tabbar" data-tabs="diner">
+<div class="tb on" data-go="D1"><div class="ico"><i data-lucide="home"></i></div>首页</div>
+<div class="tb" data-go="D2"><div class="ico"><i data-lucide="utensils"></i></div>菜品</div>
+<div class="tb" data-go="D4"><div class="ico"><i data-lucide="clipboard-list"></i><span class="badge draft-count">3</span></div>预约</div>
+<div class="tb" data-go="D5"><div class="ico"><i data-lucide="user"></i></div>我的</div>
+</div>
         </div>
-      </div>
-      <div class="caption">
-        <h3><b>D1</b>食客首页</h3>
-        <ul>
-          <li class="hl">服务切换 + 一句问候 + 推荐主卡</li>
-          <li class="hl">预约条无金额；Tab Lucide 图标</li>
-          <li>「说一句话」进 A2 半屏</li>
-        </ul>
-      </div>
-    </div>
 
-    <!-- D4 -->
-    <div class="shot">
-      <div class="phone">
-        <div class="screen">
-          <div class="statusbar"><span>9:41</span><span class="sicons">▮▮▮ Wi‑Fi</span></div>
+        <div class="panel" data-screen="D2">
+          <div class="statusbar"><span>9:41</span><span class="sicons">Wi-Fi</span></div>
           <div class="wx-nav left" style="padding-right:100px">
-            <h1>预约</h1>
-            <div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <h1 style="font-size:18px">菜品</h1><div class="svc-switch" data-action="open-svc"><i></i><span class="svc-label">胡闹厨房</span></div>
+            </div><div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
+          </div>
+          <div class="cat-scroll"><span class="on">全部</span><span>荤菜</span><span>素菜</span><span>汤羹</span></div>
+          <div class="dish-toolbar">
+            <div class="dish-search"><i data-lucide="search"></i>搜菜名 / 口味</div>
+            <div class="dish-count-chip">在售 <b>12</b></div>
           </div>
           <div class="grow">
-            <div class="meal-pick"><span class="on">午餐</span><span>晚餐</span><span>夜宵</span></div>
-            <div class="draft-card">
-              <div class="dc-head">
-                <h5>预约草稿</h5>
-                <span class="chip" style="background:var(--ko-soft);color:var(--ko)">明天 · 2 人</span>
+            <div class="dish-grid">
+              <div class="dish-card" data-go="D3" data-dish="pork">
+                <div class="dc-media">
+                  <img src="assets/demo/pork.jpg" alt="红烧肉">
+                  <div class="dc-fade"></div>
+                  <div class="dc-badges">
+                    <span class="dc-tag">荐</span>
+                    <span class="dc-time">约 45′</span>
+                  </div>
+                  <div class="dc-info">
+                    <div class="dc-copy">
+                      <div class="dc-name">红烧肉</div>
+                      <div class="dc-meta">肥而不腻 · 偏甜</div>
+                      <div class="dc-stock">今日还剩 <b>6</b> 份</div>
+                    </div>
+                    <div class="add-btn" data-action="add-draft" data-dish="pork"><i data-lucide="plus"></i></div>
+                  </div>
+                </div>
               </div>
-              <div class="dc-line">
-                <div class="dc-emoji" style="background:#FFE8C8">🥩</div>
-                <div class="dc-name">红烧肉<small>少辣 · 约 45′</small></div>
-                <b>×1</b>
+              <div class="dish-card" data-go="D3" data-dish="fish">
+                <div class="dc-media">
+                  <img src="assets/demo/fish.jpg" alt="清蒸鲈鱼">
+                  <div class="dc-fade"></div>
+                  <div class="dc-badges">
+                    <span class="dc-tag" style="color:var(--hg)">鲜</span>
+                    <span class="dc-time">约 25′</span>
+                  </div>
+                  <div class="dc-info">
+                    <div class="dc-copy">
+                      <div class="dc-name">清蒸鲈鱼</div>
+                      <div class="dc-meta">清淡鲜嫩 · 少油</div>
+                      <div class="dc-stock">今日还剩 <b>4</b> 份</div>
+                    </div>
+                    <div class="add-btn" data-action="add-draft" data-dish="fish"><i data-lucide="plus"></i></div>
+                  </div>
+                </div>
               </div>
-              <div class="dc-line">
-                <div class="dc-emoji" style="background:#DDF5EC">🐟</div>
-                <div class="dc-name">清蒸鲈鱼<small>清淡</small></div>
-                <b>×1</b>
+              <div class="dish-card" data-go="D3" data-dish="tomato">
+                <div class="dc-media">
+                  <img src="assets/demo/tomato.jpg" alt="番茄炒蛋">
+                  <div class="dc-fade"></div>
+                  <div class="dc-badges">
+                    <span class="dc-tag warn">仅剩 2</span>
+                    <span class="dc-time">约 15′</span>
+                  </div>
+                  <div class="dc-info">
+                    <div class="dc-copy">
+                      <div class="dc-name">番茄炒蛋</div>
+                      <div class="dc-meta">家常 · 酸甜开胃</div>
+                      <div class="dc-stock">今日还剩 <b>2</b> 份</div>
+                    </div>
+                    <div class="add-btn" data-action="add-draft" data-dish="tomato"><i data-lucide="plus"></i></div>
+                  </div>
+                </div>
               </div>
-              <div class="dc-line">
-                <div class="dc-emoji" style="background:#F5E6D8">🍅</div>
-                <div class="dc-name">番茄炒蛋</div>
-                <b>×1</b>
+              <div class="dish-card is-sold" data-action="toast" data-msg="今日已售罄">
+                <div class="dc-media">
+                  <img src="assets/demo/greens.jpg" alt="蒜蓉生菜">
+                  <div class="dc-fade"></div>
+                  <div class="dc-badges">
+                    <span class="dc-tag gone">售罄</span>
+                    <span class="dc-time">约 10′</span>
+                  </div>
+                  <div class="dc-info">
+                    <div class="dc-copy">
+                      <div class="dc-name">蒜蓉生菜</div>
+                      <div class="dc-meta">清爽素菜</div>
+                      <div class="dc-stock">今日还剩 <b>0</b> 份</div>
+                    </div>
+                    <div class="add-btn">+</div>
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
+          <div class="draft-bar" data-go="D4">
+            <div class="dr-thumbs">
+              <img src="assets/demo/pork.jpg" alt="">
+              <img src="assets/demo/fish.jpg" alt="">
+              <img src="assets/demo/tomato.jpg" alt="">
+              <span class="dr-badge draft-count">3</span>
+            </div>
+            <div class="dr-txt"><b>已选 <span class="draft-count">3</span> 样</b><span>明天 12:00 午餐</span></div>
+            <div class="dr-go">去预约</div>
+          </div>
+          <div class="tabbar" data-tabs="diner">
+<div class="tb" data-go="D1"><div class="ico"><i data-lucide="home"></i></div>首页</div>
+<div class="tb on" data-go="D2"><div class="ico"><i data-lucide="utensils"></i></div>菜品</div>
+<div class="tb" data-go="D4"><div class="ico"><i data-lucide="clipboard-list"></i><span class="badge draft-count">3</span></div>预约</div>
+<div class="tb" data-go="D5"><div class="ico"><i data-lucide="user"></i></div>我的</div>
+</div>
+        </div>
+
+        <div class="panel" data-screen="D3">
+          <div class="d3-hero">
+            <img class="d3-cover" id="d3Cover" src="assets/demo/pork.jpg" alt="">
+            <div class="d3-back" data-action="back"><i data-lucide="chevron-left"></i></div>
+          </div>
+          <div class="grow">
+            <div class="d3-panel">
+              <div class="d3-title"><span id="d3Name">红烧肉</span> <span class="chip" style="background:var(--ko-soft);color:var(--ko)">荐</span></div>
+              <div class="d3-desc" id="d3Desc">肥而不腻，酱香浓郁。适合配米饭。</div>
+              <div class="d3-chips">
+                <span id="d3Tag">偏甜</span><span>家常</span>
+                <span class="chip" style="background:var(--hg-soft);color:var(--hg);border:1px solid #CBEBDD" id="d3Stock">今日 6 份</span>
+              </div>
+            </div>
+            <div class="sec-row"><h4>怎么做</h4></div>
+            <div class="step-item"><div class="st-num">1</div><div class="st-txt">食材洗净切配，准备调料。</div></div>
+            <div class="step-item"><div class="st-num">2</div><div class="st-txt">按厨师习惯下锅，控制火候。</div></div>
+            <div class="step-item"><div class="st-num">3</div><div class="st-txt">出锅装盘，预约取餐时保持热度。</div></div>
+          </div>
+          <div class="bottom-bar">
+            <div class="stepper"><span data-action="qty-minus">-</span><b id="d3Qty">1</b><span style="color:var(--ko)" data-action="qty-plus">+</span></div>
+            <div class="join" data-action="add-detail">加入预约</div>
+          </div>
+        </div>
+
+        <div class="panel" data-screen="D4">
+          <div class="statusbar"><span>9:41</span><span class="sicons">Wi-Fi</span></div>
+          <div class="wx-nav left" style="padding-right:100px"><h1>预约</h1><div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div></div>
+          <div class="grow">
+            <div class="ord-hero">
+              <div class="oh-kicker">老王的灶 · 预约草稿</div>
+              <div class="oh-title">明天吃什么？</div>
+              <div class="oh-sub">确认餐次与份数后提交，厨师确认才会备餐。全程无支付。</div>
+              <div class="ord-meta">
+                <div class="om"><label>用餐日</label><b>明天 · 9/30</b></div>
+                <div class="om"><label>用餐人数</label><b>2 人</b></div>
+              </div>
+            </div>
+            <div class="meal-pick" id="mealPick">
+              <span class="on" data-meal="午餐"><i data-lucide="sun"></i>午餐</span>
+              <span data-meal="晚餐"><i data-lucide="moon"></i>晚餐</span>
+              <span data-meal="夜宵"><i data-lucide="sparkles"></i>夜宵</span>
+            </div>
+            <div class="draft-card">
+              <div class="dc-head">
+                <h5>已选菜品</h5>
+                <span class="chip" id="mealChip">午餐 · 2 人</span>
+              </div>
+              <div id="draftLines"></div>
+            </div>
             <div class="insight warn">
-              <div class="is-head">
-                <span><i data-lucide="salad"></i></span>
-                <div class="is-title">饮食参考 · 需注意</div>
-                <span class="pill pill-warn">需注意</span>
-              </div>
+              <div class="is-head"><span><i data-lucide="salad"></i></span>
+                <div class="is-title">饮食参考 · 需注意</div><span class="pill pill-warn">需注意</span></div>
               <div class="is-sum">红烧肉偏油，建议搭配清淡菜，少放酱汁。</div>
-              <div class="is-dishes">
-                <span class="is-dish"><i>●</i>红烧肉</span>
-                <span class="is-dish"><i>●</i>鲈鱼合适</span>
-              </div>
+              <div class="is-dishes"><span class="is-dish"><i>●</i>红烧肉</span><span class="is-dish"><i>●</i>鲈鱼合适</span></div>
               <div class="is-disclaimer">以上为一般性饮食参考，不构成医疗建议</div>
             </div>
             <div class="order-hist">
-              <div class="oh-top">
-                <div class="oh-name">昨日午餐</div>
-                <span class="pill pill-ok">已完成</span>
-              </div>
-              <div class="mini-flow">
-                <div class="mf done"></div><div class="mf done"></div><div class="mf done"></div><div class="mf done"></div><div class="mf done"></div>
-              </div>
-              <div class="mini-flow-labels">
-                <span>确认</span><span>备餐</span><span>可取</span><span class="cur">完成</span>
-              </div>
+              <div class="oh-top"><div class="oh-name">昨日午餐</div><span class="pill pill-ok">已完成</span></div>
+              <div class="mini-flow"><div class="mf done"></div><div class="mf done"></div><div class="mf done"></div><div class="mf done"></div><div class="mf done"></div></div>
+              <div class="mini-flow-labels"><span>确认</span><span>备餐</span><span>可取</span><span class="cur">完成</span></div>
             </div>
           </div>
-          <div class="btn btn-block">提交预约</div>
-          <div class="tabbar">
-            <div class="tb"><div class="ico"><i data-lucide="home"></i></div>首页</div>
-            <div class="tb"><div class="ico"><i data-lucide="utensils"></i></div>菜品</div>
-            <div class="tb on"><div class="ico"><i data-lucide="clipboard-list"></i></div>预约</div>
-            <div class="tb"><div class="ico"><i data-lucide="user"></i></div>我的</div>
+          <div class="ord-submit-wrap">
+            <div class="btn btn-block" data-action="submit-order">提交预约</div>
           </div>
+          <div class="tabbar" data-tabs="diner">
+<div class="tb" data-go="D1"><div class="ico"><i data-lucide="home"></i></div>首页</div>
+<div class="tb" data-go="D2"><div class="ico"><i data-lucide="utensils"></i></div>菜品</div>
+<div class="tb on" data-go="D4"><div class="ico"><i data-lucide="clipboard-list"></i><span class="badge draft-count">3</span></div>预约</div>
+<div class="tb" data-go="D5"><div class="ico"><i data-lucide="user"></i></div>我的</div>
+</div>
         </div>
-      </div>
-      <div class="caption">
-        <h3><b>D4</b>预约</h3>
-        <ul>
-          <li class="hl">草稿 + 状态流；主按钮「提交预约」</li>
-          <li class="hl">无 ¥；仅 PENDING 可取消</li>
-          <li>饮食参考失败则整卡不出现</li>
-        </ul>
-      </div>
-    </div>
 
-    <!-- D5 -->
-    <div class="shot">
-      <div class="phone">
-        <div class="screen">
-          <div class="statusbar"><span>9:41</span><span class="sicons">▮▮▮ Wi‑Fi</span></div>
+        <div class="panel" data-screen="D5">
+          <div class="statusbar"><span>9:41</span><span class="sicons">Wi-Fi</span></div>
           <div class="wx-nav left" style="padding-right:100px">
-            <h1>我的</h1>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <h1 style="font-size:18px">我的</h1>
+              <div class="svc-switch" data-action="open-svc"><i></i><span class="svc-label">胡闹厨房</span></div>
+            </div>
             <div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
           </div>
           <div class="grow">
-            <div class="me-card">
-              <div class="me-avatar">陈</div>
-              <div>
-                <div class="me-name">小陈 <span class="me-role">食客</span></div>
-                <div class="me-sub">微信授权已登录</div>
+            <div class="me-hero">
+              <img class="mh-bg" src="assets/demo/kitchen.jpg" alt="">
+              <div class="mh-shade"></div>
+              <div class="mh-body">
+                <div class="mh-top">
+                  <div class="me-avatar"><img class="ph" src="assets/demo/avatar-chen.jpg" alt=""></div>
+                  <div>
+                    <div class="me-name">小陈 <span class="me-role">食客</span></div>
+                    <div class="me-sub">微信已登录 · 老王的灶</div>
+                  </div>
+                </div>
+                <div class="me-stats">
+                  <div class="ms" data-go="D4"><b>1</b><span>进行中</span></div>
+                  <div class="ms" data-go="D4"><b>12</b><span>已完成</span></div>
+                  <div class="ms" data-go="D2"><b>3</b><span>草稿菜</span></div>
+                </div>
               </div>
             </div>
-            <div class="me-kitchen">
-              <div class="mk-ico"><i data-lucide="home"></i></div>
-              <div class="mk-body"><b>老王的灶</b><span>已绑定 · 邀请码加入</span></div>
-              <span style="color:var(--faint)">›</span>
+
+            <div class="me-kitchen" data-go="L3">
+              <img class="mk-cover" src="assets/demo/kitchen.jpg" alt="">
+              <div class="mk-shade"></div>
+              <div class="mk-inner">
+                <div class="mk-ico"><i data-lucide="cooking-pot"></i></div>
+                <div class="mk-body">
+                  <b>老王的灶</b>
+                  <span>已绑定 · 邀请码加入</span>
+                </div>
+                <div class="mk-go">查看</div>
+              </div>
             </div>
+
+            <div class="me-sec"><h4>服务入口</h4><span>同一账号可切换</span></div>
+            <div class="me-tiles">
+              <div class="me-tile chef" data-go="K1">
+                <div class="mt-ico"><i data-lucide="chef-hat"></i></div>
+                <div class="mt-title">厨房工作台</div>
+                <div class="mt-desc">切厨师身份，处理预约与菜品</div>
+              </div>
+              <div class="me-tile health" data-go="H1">
+                <div class="mt-ico"><i data-lucide="heart-pulse"></i></div>
+                <div class="mt-title">胡闹健康</div>
+                <div class="mt-desc">评分、指标与数据源</div>
+              </div>
+            </div>
+
+            <div class="me-sec"><h4>账户</h4></div>
             <div class="me-list">
-              <div class="me-item"><div class="mi-ico" style="background:var(--ko-soft)"><i data-lucide="arrow-left-right"></i></div><div class="mi-name">切换为厨师 · 进工作台</div><div class="mi-arrow">›</div></div>
-              <div class="me-item"><div class="mi-ico" style="background:var(--hg-soft)"><i data-lucide="heart-pulse"></i></div><div class="mi-name">胡闹健康</div><div class="mi-arrow">›</div></div>
-              <div class="me-item"><div class="mi-ico" style="background:#F4F0E9"><i data-lucide="log-out"></i></div><div class="mi-name">退出登录</div><div class="mi-arrow">›</div></div>
+              <div class="me-item" data-go="L2">
+                <div class="mi-ico" style="background:var(--ko-soft)"><i data-lucide="users"></i></div>
+                <div class="mi-body">
+                  <div class="mi-name">切换身份</div>
+                  <div class="mi-hint">吃饭的 / 干活的</div>
+                </div>
+                <div class="mi-arrow">›</div>
+              </div>
+              <div class="me-item" data-go="D4">
+                <div class="mi-ico" style="background:var(--amber-soft)"><i data-lucide="clipboard-list"></i></div>
+                <div class="mi-body">
+                  <div class="mi-name">我的预约</div>
+                  <div class="mi-hint">草稿与历史状态</div>
+                </div>
+                <div class="mi-arrow">›</div>
+              </div>
+              <div class="me-item danger" data-go="L1">
+                <div class="mi-ico" style="background:var(--red-soft)"><i data-lucide="log-out"></i></div>
+                <div class="mi-body">
+                  <div class="mi-name">退出登录</div>
+                  <div class="mi-hint">清除本机登录态</div>
+                </div>
+                <div class="mi-arrow">›</div>
+              </div>
             </div>
+            <div class="me-foot">miyf · 家庭厨房预约</div>
           </div>
-          <div class="tabbar">
-            <div class="tb"><div class="ico"><i data-lucide="home"></i></div>首页</div>
-            <div class="tb"><div class="ico"><i data-lucide="utensils"></i></div>菜品</div>
-            <div class="tb"><div class="ico"><i data-lucide="clipboard-list"></i></div>预约</div>
-            <div class="tb on"><div class="ico"><i data-lucide="user"></i></div>我的</div>
-          </div>
+          <div class="tabbar" data-tabs="diner">
+<div class="tb" data-go="D1"><div class="ico"><i data-lucide="home"></i></div>首页</div>
+<div class="tb" data-go="D2"><div class="ico"><i data-lucide="utensils"></i></div>菜品</div>
+<div class="tb" data-go="D4"><div class="ico"><i data-lucide="clipboard-list"></i><span class="badge draft-count">3</span></div>预约</div>
+<div class="tb on" data-go="D5"><div class="ico"><i data-lucide="user"></i></div>我的</div>
+</div>
         </div>
-      </div>
-      <div class="caption">
-        <h3><b>D5</b>我的</h3>
-        <ul>
-          <li class="hl">微信身份 + 绑定厨房卡</li>
-          <li>进厨师工作台从这里进入（无底栏）</li>
-        </ul>
-      </div>
-    </div>
 
-  </div>
-</section>
-
-<!-- ================= 05 Chef ================= -->
-<section id="chef">
-  <div class="sec-title"><span class="num">05</span><h2>厨师工作台 · K1</h2></div>
-  <p class="sec-desc">独立目的地，无底部四栏。Hero 四格数据来自 <code style="color:#FFB36B">GET /api/chef/workbench/summary</code>；宫格角标与最新预约确认同源自该接口。</p>
-  <div class="screens">
-    <div class="shot">
-      <div class="phone">
-        <div class="screen">
-          <div class="statusbar"><span>9:41</span><span class="sicons">▮▮▮ Wi‑Fi</span></div>
-          <div class="wx-nav">
-            <div class="back"><i data-lucide="chevron-left"></i></div>
-            <h1>厨房工作台</h1>
-            <div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
-          </div>
+        <div class="panel" data-screen="K1">
+          <div class="statusbar"><span>9:41</span><span class="sicons">Wi-Fi</span></div>
+          <div class="wx-nav"><div class="back" data-go="D5"><i data-lucide="chevron-left"></i></div><h1>厨房工作台</h1><div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div></div>
           <div class="grow">
-            <div class="k-hero">
+            <div class="k-hero photo">
+              <img class="kh-bg" src="assets/demo/kitchen.jpg" alt=""><div class="kh-shade"></div>
               <div class="hello">下午好，老王</div>
               <div class="kname"><h2>老王的灶</h2><span class="verify">营业中</span></div>
               <div class="k-stats">
-                <div class="st"><b>5</b><span>待确认</span></div>
+                <div class="st"><b id="pendingStat">5</b><span>待确认</span></div>
                 <div class="st"><b>3</b><span>备餐中</span></div>
                 <div class="st"><b>12</b><span>在售</span></div>
                 <div class="st"><b>28</b><span>食客</span></div>
@@ -1112,75 +1657,56 @@
             </div>
             <div class="sec-row"><h4>快捷入口</h4></div>
             <div class="grid8">
-              <div class="g8"><div class="ico-tile" style="background:var(--ko-soft)"><i data-lucide="utensils"></i></div><span>菜品</span></div>
-              <div class="g8"><div class="ico-tile" style="background:#FFF1E2"><i data-lucide="book-open"></i></div><span>菜谱</span></div>
-              <div class="g8"><div class="ico-tile" style="background:#F5E6D8"><i data-lucide="layout-grid"></i></div><span>分类</span></div>
-              <div class="g8"><div class="ico-tile" style="background:var(--amber-soft)"><i data-lucide="clipboard-list"></i></div><span>预约</span><div class="dot-badge">5</div></div>
-              <div class="g8"><div class="ico-tile" style="background:var(--blue-soft)"><i data-lucide="users"></i></div><span>申请</span><div class="dot-badge">2</div></div>
-              <div class="g8"><div class="ico-tile" style="background:var(--hg-soft)"><i data-lucide="ticket"></i></div><span>邀请码</span></div>
-              <div class="g8"><div class="ico-tile" style="background:#F4F0E9"><i data-lucide="home"></i></div><span>资料</span></div>
-              <div class="g8"><div class="ico-tile" style="background:#FFE8C8"><i data-lucide="sparkles"></i></div><span>AI 建菜</span></div>
+              <div class="g8" data-action="toast" data-msg="菜品管理"><div class="ico-tile" style="background:var(--ko-soft)"><i data-lucide="utensils"></i></div><span>菜品</span></div>
+              <div class="g8" data-action="toast" data-msg="菜谱"><div class="ico-tile" style="background:#FFF1E2"><i data-lucide="book-open"></i></div><span>菜谱</span></div>
+              <div class="g8" data-action="toast" data-msg="分类"><div class="ico-tile" style="background:#F5E6D8"><i data-lucide="layout-grid"></i></div><span>分类</span></div>
+              <div class="g8" data-action="toast" data-msg="预约列表"><div class="ico-tile" style="background:var(--amber-soft)"><i data-lucide="clipboard-list"></i></div><span>预约</span><div class="dot-badge" id="orderBadge">5</div></div>
+              <div class="g8" data-action="toast" data-msg="食客申请"><div class="ico-tile" style="background:var(--blue-soft)"><i data-lucide="users"></i></div><span>申请</span><div class="dot-badge">2</div></div>
+              <div class="g8" data-action="toast" data-msg="邀请码 K8321A"><div class="ico-tile" style="background:var(--hg-soft)"><i data-lucide="ticket"></i></div><span>邀请码</span></div>
+              <div class="g8" data-action="toast" data-msg="厨房资料"><div class="ico-tile" style="background:#F4F0E9"><i data-lucide="home"></i></div><span>资料</span></div>
+              <div class="g8" data-action="toast" data-msg="经营统计"><div class="ico-tile" style="background:#FFE8C8"><i data-lucide="trending-up"></i></div><span>统计</span></div>
             </div>
-            <div class="sec-row"><h4>最新预约</h4><a>全部 ›</a></div>
-            <div class="order-card">
-              <div class="oc-top">
-                <div class="oc-user">
-                  <div class="avatar" style="background:linear-gradient(135deg,var(--ko2),var(--ko))">陈</div>
-                  <div>
-                    <div class="oc-name">小陈</div>
-                    <div class="oc-time">今天 11:20 提交 · 午餐 2 人</div>
-                  </div>
+            <div class="sec-row"><h4>最新预约</h4><a data-action="toast" data-msg="查看全部">全部</a></div>
+            <div class="order-card live" id="chefOrderCard">
+              <div class="bk-head">
+                <div>
+                  <div class="bk-when-main">今天 12:00</div>
+                  <div class="bk-when-sub">午餐 · 2 人</div>
                 </div>
-                <span class="pill pill-warn">待确认</span>
+                <span class="bk-status warn" id="orderPill">待确认</span>
               </div>
-              <div class="oc-dishes">红烧肉 ×1 · 清蒸鲈鱼 ×1 · 番茄炒蛋 ×1</div>
-              <div class="oc-foot">
-                <span style="font-size:11px;color:var(--muted)">少辣</span>
-                <div class="oc-actions">
-                  <div class="btn btn-xs btn-ghost">驳回</div>
-                  <div class="btn btn-xs btn-solid-o">确认</div>
-                </div>
+              <div class="bk-who">
+                <span class="bk-who-name">小陈</span>
+                <span class="bk-who-time">刚刚提交</span>
+              </div>
+              <div class="bk-menu">
+                <div class="bk-dish"><span class="bk-dish-dot">·</span><span class="bk-dish-name">红烧肉</span><span class="bk-dish-qty">×1</span></div>
+                <div class="bk-dish"><span class="bk-dish-dot">·</span><span class="bk-dish-name">清蒸鲈鱼</span><span class="bk-dish-qty">×1</span></div>
+                <div class="bk-dish"><span class="bk-dish-dot">·</span><span class="bk-dish-name">番茄炒蛋</span><span class="bk-dish-qty">×1</span></div>
+              </div>
+              <div class="bk-remark">备注 · 少辣</div>
+              <div class="bk-actions">
+                <div class="btn btn-xs btn-ghost" data-action="reject-order">驳回</div>
+                <div class="btn btn-xs btn-solid-o" data-action="confirm-order">确认接单</div>
               </div>
             </div>
           </div>
           <div class="home-ind"></div>
         </div>
-      </div>
-      <div class="caption">
-        <h3><b>K1</b>厨师工作台</h3>
-        <ul>
-          <li class="hl">四格 = pending / preparing / onSale / boundDiners</li>
-          <li class="hl">宫格角标来自 summary，非二次请求</li>
-          <li>确认前可弹 W1 订阅；无底栏</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- ================= 06 Health ================= -->
-<section id="health">
-  <div class="sec-title"><span class="num">06</span><h2>健康 · H1 评分环</h2></div>
-  <p class="sec-desc">服务切换后主题变薄荷。评分环为设计预览；文案保持生活方式参考，禁止诊断 / 用药结论。</p>
-  <div class="screens">
-    <div class="shot">
-      <div class="phone">
-        <div class="screen">
-          <div class="statusbar"><span>9:41</span><span class="sicons">▮▮▮ Wi‑Fi</span></div>
+        <div class="panel theme-mint" data-screen="H1">
+          <div class="statusbar"><span>9:41</span><span class="sicons">Wi-Fi</span></div>
           <div class="wx-nav left" style="padding-right:100px">
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <h1 style="font-size:18px">健康</h1>
-              <div class="svc-switch mint"><i></i>胡闹健康</div>
-            </div>
-            <div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
+              <h1 style="font-size:18px">健康</h1><div class="svc-switch mint" data-action="open-svc"><i></i><span class="svc-label">胡闹健康</span></div>
+            </div><div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
           </div>
           <div class="grow">
             <div class="score-card">
               <div class="ring">
                 <svg width="92" height="92" viewBox="0 0 104 104">
                   <circle cx="52" cy="52" r="44" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="8"/>
-                  <circle cx="52" cy="52" r="44" fill="none" stroke="#fff" stroke-width="8"
-                    stroke-dasharray="276" stroke-dashoffset="38" stroke-linecap="round"/>
+                  <circle cx="52" cy="52" r="44" fill="none" stroke="#fff" stroke-width="8" stroke-dasharray="276" stroke-dashoffset="38" stroke-linecap="round"/>
                 </svg>
                 <div class="ring-val"><b>86</b><span>综合</span></div>
               </div>
@@ -1193,207 +1719,321 @@
             <div class="alert-banner">
               <div class="ab-ico"><i data-lucide="triangle-alert"></i></div>
               <div class="ab-txt"><b>血压偏高</b><br>近 3 天收缩压略高</div>
-              <div class="ab-go">查看</div>
+              <div class="ab-go" data-action="toast" data-msg="指标详情">查看</div>
             </div>
             <div class="metric-grid">
-              <div class="m-card">
-                <div class="m-top"><div class="m-ico" style="background:var(--red-soft)"><i data-lucide="heart"></i></div><div class="m-name">心率</div><span class="pill pill-ok">正常</span></div>
-                <div class="m-val"><b>72</b><span>bpm</span></div>
-                <div class="m-time">今天 08:28</div>
-              </div>
-              <div class="m-card">
-                <div class="m-top"><div class="m-ico" style="background:var(--blue-soft)"><i data-lucide="droplets"></i></div><div class="m-name">血氧</div><span class="pill pill-ok">正常</span></div>
-                <div class="m-val"><b>98</b><span>%</span></div>
-                <div class="m-time">今天 08:28</div>
-              </div>
-              <div class="m-card">
-                <div class="m-top"><div class="m-ico" style="background:var(--hg-soft)"><i data-lucide="moon"></i></div><div class="m-name">睡眠</div><span class="pill pill-ok">正常</span></div>
-                <div class="m-val"><b>7.2</b><span>小时</span></div>
-                <div class="m-time">昨夜</div>
-              </div>
-              <div class="m-card">
-                <div class="m-top"><div class="m-ico" style="background:var(--ko-soft)"><i data-lucide="footprints"></i></div><div class="m-name">步数</div><span class="pill pill-ok">达标</span></div>
-                <div class="m-val"><b>8432</b><span>步</span></div>
-                <div class="m-time">今天</div>
-              </div>
+              <div class="m-card" data-action="toast" data-msg="心率"><div class="m-top"><div class="m-ico" style="background:var(--red-soft)"><i data-lucide="heart"></i></div><div class="m-name">心率</div><span class="pill pill-ok">正常</span></div><div class="m-val"><b>72</b><span>bpm</span></div><div class="m-time">今天 08:28</div></div>
+              <div class="m-card" data-action="toast" data-msg="血氧"><div class="m-top"><div class="m-ico" style="background:var(--blue-soft)"><i data-lucide="droplets"></i></div><div class="m-name">血氧</div><span class="pill pill-ok">正常</span></div><div class="m-val"><b>98</b><span>%</span></div><div class="m-time">今天 08:28</div></div>
+              <div class="m-card" data-action="toast" data-msg="睡眠"><div class="m-top"><div class="m-ico" style="background:var(--hg-soft)"><i data-lucide="moon"></i></div><div class="m-name">睡眠</div><span class="pill pill-ok">正常</span></div><div class="m-val"><b>7.2</b><span>小时</span></div><div class="m-time">昨夜</div></div>
+              <div class="m-card" data-action="toast" data-msg="步数"><div class="m-top"><div class="m-ico" style="background:var(--ko-soft)"><i data-lucide="footprints"></i></div><div class="m-name">步数</div><span class="pill pill-ok">达标</span></div><div class="m-val"><b>8432</b><span>步</span></div><div class="m-time">今天</div></div>
             </div>
           </div>
           <div class="home-ind"></div>
         </div>
-      </div>
-      <div class="caption">
-        <h3><b>H1</b>健康总览</h3>
-        <ul>
-          <li class="hl">评分环 + 需关注琥珀横幅</li>
-          <li>覆盖式进入，不挂食客四栏</li>
-          <li>禁止诊断 / 用药结论文案</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- ================= 07 AI + Subscribe ================= -->
-<section id="ai">
-  <div class="sec-title"><span class="num">07</span><h2>AI 半屏 A2 · 订阅消息 W1</h2></div>
-  <p class="sec-desc">AI 只匹配当前厨房在售菜，unmatched 必展示。订阅在确认 / 提交后轻请求，可跳过，失败不挡主流程。</p>
-  <div class="screens">
+      </div>
 
-    <!-- A2 -->
-    <div class="shot">
-      <div class="phone">
-        <div class="screen" style="background:var(--cream)">
-          <div class="statusbar"><span>9:41</span><span class="sicons">▮▮▮ Wi‑Fi</span></div>
-          <div class="wx-nav left" style="padding-right:100px">
-            <h1>首页</h1>
-            <div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
+      <div class="overlay" id="ovSvc">
+        <div class="ov-mask" data-action="close-ov"></div>
+        <div class="svc-menu">
+          <div class="sm-item on" data-action="svc" data-svc="kitchen"><div>胡闹厨房<span class="sm-sub">推荐 · 菜品 · 预约</span></div></div>
+          <div class="sm-item mint" data-action="svc" data-svc="health"><div>胡闹健康<span class="sm-sub">评分 · 指标 · 数据源</span></div></div>
+          <div class="sm-item" data-action="svc" data-svc="chef"><div>厨房服务<span class="sm-sub">厨师工作台</span></div></div>
+        </div>
+      </div>
+
+      <div class="overlay" id="ovAi">
+        <div class="ov-mask" data-action="close-ov"></div>
+        <div class="sheet-mask">
+          <div class="sheet">
+            <div class="grab"></div>
+            <h3><i data-lucide="sparkles"></i> 说一句话点菜</h3>
+            <p>只匹配本厨房在售菜，确认后进预约草稿。</p>
+            <div class="field" id="aiField" contenteditable="true">想吃点清淡的，再来个汤</div>
+            <div class="examples">
+              <span data-action="ai-ex" data-text="清淡一点">清淡一点</span>
+              <span data-action="ai-ex" data-text="来个汤">来个汤</span>
+              <span data-action="ai-ex" data-text="少油少盐">少油少盐</span>
+            </div>
+            <div class="match">
+              <img class="mk-ph" src="assets/demo/fish.jpg" alt="">
+              <div style="flex:1"><b>清蒸鲈鱼</b><div style="font-size:11px;color:var(--faint);margin-top:2px">已匹配 · 还剩 4</div></div>
+              <span class="pill pill-ok">合适</span>
+            </div>
+            <div class="match">
+              <img class="mk-ph" src="assets/demo/soup.jpg" alt="">
+              <div style="flex:1"><b>紫菜蛋花汤</b><div style="font-size:11px;color:var(--faint);margin-top:2px">已匹配 · 还剩 8</div></div>
+              <span class="pill pill-ok">合适</span>
+            </div>
+            <div class="unmatch">未匹配：麻辣小龙虾 · 厨房今日未上架</div>
+            <div class="btn btn-block" style="margin:14px 0 8px" data-action="ai-to-draft">加入预约草稿</div>
           </div>
-          <div class="pad" style="opacity:.35;pointer-events:none">
-            <div class="kitchen-chip"><i data-lucide="cooking-pot"></i> 老王的灶</div>
-            <p class="d-sub">今天想吃点什么？</p>
-          </div>
-          <div class="sheet-mask">
-            <div class="sheet">
-              <div class="grab"></div>
-              <h3><i data-lucide="sparkles"></i> 说一句话点菜</h3>
-              <p>只匹配本厨房在售菜，确认后进预约草稿。</p>
-              <div class="field">想吃点清淡的，再来个汤</div>
-              <div class="examples">
-                <span>清淡一点</span><span>来个汤</span><span>少油少盐</span>
-              </div>
-              <div class="match">
-                <div class="mk" style="background:#DDF5EC">🐟</div>
-                <div style="flex:1"><b>清蒸鲈鱼</b><div style="font-size:11px;color:var(--faint);margin-top:2px">已匹配 · 还剩 4</div></div>
-                <span class="pill pill-ok">合适</span>
-              </div>
-              <div class="match">
-                <div class="mk" style="background:#E7F7F0">🥣</div>
-                <div style="flex:1"><b>紫菜蛋花汤</b><div style="font-size:11px;color:var(--faint);margin-top:2px">已匹配 · 还剩 8</div></div>
-                <span class="pill pill-ok">合适</span>
-              </div>
-              <div class="unmatch">未匹配：麻辣小龙虾 · 厨房今日未上架</div>
-              <div class="btn btn-block" style="margin:14px 0 0">加入预约草稿</div>
+        </div>
+      </div>
+
+      <div class="overlay" id="ovSub">
+        <div class="ov-mask" data-action="close-ov"></div>
+        <div class="dim-bg">
+          <div class="sub-card">
+            <div class="sub-ico"><i data-lucide="bell"></i></div>
+            <h3>预约有新动态时通知我</h3>
+            <p>开启后，厨师确认 / 可取餐时微信会提醒你。可随时在设置里关闭。</p>
+            <div class="sub-acts">
+              <div class="btn btn-md btn-line" data-action="sub-skip">暂时跳过</div>
+              <div class="btn btn-md btn-solid-o" data-action="sub-ok">允许通知</div>
             </div>
           </div>
         </div>
       </div>
-      <div class="caption">
-        <h3><b>A2</b>AI 点菜半屏</h3>
-        <ul>
-          <li class="hl">顶横条 + 奶油区；示例胶囊可点</li>
-          <li class="hl">unmatched 必展示，不静默吞掉</li>
-          <li>只进草稿，不自动提交</li>
-        </ul>
-      </div>
-    </div>
 
-    <!-- W1 -->
-    <div class="shot">
-      <div class="phone">
-        <div class="screen">
-          <div class="statusbar"><span>9:41</span><span class="sicons">▮▮▮ Wi‑Fi</span></div>
-          <div class="wx-nav">
-            <div class="back"><i data-lucide="chevron-left"></i></div>
-            <h1>厨房工作台</h1>
-            <div class="capsule"><div class="cap-dots"><i></i><i></i><i></i></div><div class="cap-split"></div><div class="cap-ring"><span></span></div></div>
-          </div>
-          <div class="grow" style="opacity:.4;pointer-events:none">
-            <div class="k-hero" style="margin-top:8px">
-              <div class="hello">下午好</div>
-              <div class="kname"><h2>老王的灶</h2></div>
-              <div class="k-stats">
-                <div class="st"><b>5</b><span>待确认</span></div>
-                <div class="st"><b>3</b><span>备餐中</span></div>
-                <div class="st"><b>12</b><span>在售</span></div>
-                <div class="st"><b>28</b><span>食客</span></div>
-              </div>
-            </div>
-          </div>
-          <div class="dim-bg">
-            <div class="sub-card">
-              <div class="sub-ico"><i data-lucide="bell"></i></div>
-              <h3>预约有新动态时通知我</h3>
-              <p>开启后，厨师确认 / 可取餐时微信会提醒你。可随时在设置里关闭。</p>
-              <div class="sub-acts">
-                <div class="btn btn-md btn-line">暂时跳过</div>
-                <div class="btn btn-md btn-solid-o">允许通知</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="caption">
-        <h3><b>W1</b>订阅消息</h3>
-        <ul>
-          <li class="hl">轻提示卡，可跳过；失败不挡确认</li>
-          <li>食客提交后 / 厨师确认前均可触发</li>
-          <li>Backlog：模板 ID 与后端对齐</li>
-        </ul>
-      </div>
+      <div class="proto-toast" id="toast"></div>
     </div>
+    <p class="proto-hint">提示：点 Tab / 主按钮 / 推荐卡 / 服务切换 / AI 入口即可流转</p>
+  </div>
 
-  </div>
-</section>
+  <aside class="side">
+    <h2>交互地图</h2>
+    <p class="lead">从登录走完主路径，或点下方直接跳屏。草稿数量与身份选择会记在本页。</p>
+    <div class="flow-map" id="flowMap">
+      <button type="button" data-go="L1" class="on"><b>L1 登录</b><span>微信授权</span></button>
+      <button type="button" data-go="L2"><b>L2 选身份</b><span>食客 / 厨师</span></button>
+      <button type="button" data-go="L3"><b>L3 加入</b><span>邀请码</span></button>
+      <button type="button" data-go="D1"><b>D1 首页</b><span>推荐 + 草稿条</span></button>
+      <button type="button" data-go="D2"><b>D2 菜品</b><span>列表 + 加购</span></button>
+      <button type="button" data-go="D3"><b>D3 详情</b><span>加入预约</span></button>
+      <button type="button" data-go="D4"><b>D4 预约</b><span>提交 + 订阅</span></button>
+      <button type="button" data-go="D5"><b>D5 我的</b><span>切厨师 / 健康</span></button>
+      <button type="button" data-go="K1"><b>K1 工作台</b><span>确认预约</span></button>
+      <button type="button" data-go="H1"><b>H1 健康</b><span>评分环</span></button>
+    </div>
+    <div class="side-note">
+      <b>主路径：</b>登录 → 吃饭的 → 提交邀请码 → 首页 → AI/加菜 → 去预约 → 提交 → 订阅。<br>
+      <b>厨师：</b>我的 → 工作台 → 确认。<br>
+      <b>健康：</b>服务切换 → 胡闹健康。
+    </div>
+    <div class="side-list">
+      <a href="#docs-tokens">Design Tokens</a>
+      <a href="#docs-sync">前后端同步</a>
+      <a href="#docs-rules">设计决策</a>
+    </div>
+  </aside>
+</div>
 
-<!-- ================= 08 Decisions ================= -->
-<section id="notes">
-  <div class="sec-title"><span class="num">08</span><h2>设计决策</h2></div>
-  <p class="sec-desc">相对 v2：补齐入门与微信壳；首页收敛；图标用 Lucide；明确 FE/BE 同步与 Backlog。</p>
-  <div class="dec-grid">
-    <div class="dec-card">
-      <h4>登录主色</h4>
-      <p>主 CTA 用灶橙品牌渐变，避免冒充微信支付绿造成「要付钱」错觉。</p>
-      <div class="pair"><span class="yes">微信授权登录 · 灶橙</span><span class="no">微信绿一键支付感</span></div>
-    </div>
-    <div class="dec-card">
-      <h4>预约语义</h4>
-      <p>全链路「加入预约 / 提交预约」。产品是家庭厨房，不是外卖商城。</p>
-      <div class="pair"><span class="yes">加入预约</span><span class="no">购买 / 支付 / ¥</span></div>
-    </div>
-    <div class="dec-card">
-      <h4>工作台数据</h4>
-      <p>K1 只消费 workbench/summary，角标与四格同源，避免列表扇出不一致。</p>
-      <div class="pair"><span class="yes">一次 summary</span><span class="no">前端拼多个 list</span></div>
-    </div>
-    <div class="dec-card">
-      <h4>胶囊避让</h4>
-      <p>自定义导航右侧预留 ≥100px；标题居左或居中，不被 •••|○ 遮挡。</p>
-      <div class="pair"><span class="yes">padding-right 避让</span><span class="no">标题顶胶囊</span></div>
-    </div>
-    <div class="dec-card">
-      <h4>TabBar 边界</h4>
-      <p>仅食客挂四栏。厨师工作台 navigateTo 栈，自带返回，不挂底栏。</p>
-      <div class="pair"><span class="yes">食客四栏</span><span class="no">厨师挂 Tab</span></div>
-    </div>
-    <div class="dec-card">
-      <h4>AI 边界</h4>
-      <p>半屏出草稿；unmatched 明示；写库需人点「加入预约草稿」。失败静默降级。</p>
-      <div class="pair"><span class="yes">草稿确认</span><span class="no">自动写库</span></div>
-    </div>
-    <div class="dec-card">
-      <h4>前后端同步</h4>
-      <p>已同步：summary、prepMinutes、推荐、绑定、食客订阅、mealDate、厨房封面、健康评分、<code>/api/chef/stats</code>。</p>
-      <div class="pair"><span class="yes">字段表见 §02</span><span class="no">设计与接口各写一套</span></div>
-    </div>
-    <div class="dec-card">
-      <h4>图标策略</h4>
-      <p>入口与 Tab 用 Lucide 线图标；食物 emoji 仅出现在菜品封面，避免 emoji 墙。</p>
-      <div class="pair"><span class="yes">Lucide 入口</span><span class="no">整页 emoji</span></div>
-    </div>
-  </div>
-  <div class="note-strip" style="margin-top:24px">
-    <b>对照文档：</b>
-    <code style="color:#FFB36B">design/MINIAPP_APP_DESIGN.md</code>（文字基线）·
-    <code style="color:#FFB36B">design/harmony-app-design.html</code>（鸿蒙同源 Token）·
-    <code style="color:#FFB36B">design/miniapp-redesign.html</code>（v2 对照）。
-    工程目录 <code style="color:#FFB36B">miniapp/</code>。
-  </div>
-</section>
+<div class="docs-fold">
+  <details id="docs-tokens"><summary>Design Tokens · 微信壳</summary>
+    <div class="inner">奶油底 #FFFDF8 · 灶橙 · 薄荷 · 胶囊避让 · 食客四栏 · AI 半屏 · 无价格。</div>
+  </details>
+  <details id="docs-sync"><summary>前后端同步要点</summary>
+    <div class="inner">summary · prepMinutes · recommend · W1 订阅 · mealDate · 封面 · health score · chef stats。</div>
+  </details>
+  <details id="docs-rules"><summary>设计决策</summary>
+    <div class="inner">登录 CTA 灶橙非微信绿；加入预约语义；AI 只出草稿；健康禁止诊断文案。</div>
+  </details>
+</div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    if (window.lucide && lucide.createIcons) lucide.createIcons({ attrs: { 'stroke-width': 2 } });
+(function () {
+  const DISHES = {
+    pork: { name: '红烧肉', img: 'assets/demo/pork.jpg', desc: '肥而不腻，酱香浓郁。适合配米饭。', tag: '偏甜', stock: '今日 6 份' },
+    fish: { name: '清蒸鲈鱼', img: 'assets/demo/fish.jpg', desc: '清淡鲜嫩，少油少盐。', tag: '清淡', stock: '今日 4 份' },
+    tomato: { name: '番茄炒蛋', img: 'assets/demo/tomato.jpg', desc: '家常快手菜，酸甜开胃。', tag: '家常', stock: '今日 2 份' },
+    soup: { name: '紫菜蛋花汤', img: 'assets/demo/soup.jpg', desc: '清淡汤羹，暖胃。', tag: '汤', stock: '今日 8 份' }
+  };
+  const state = { screen: 'L1', history: [], role: 'diner', draft: { pork: 1, fish: 1, tomato: 1 }, qty: 1, meal: '午餐', pending: 5, currentDish: 'pork' };
+  const stack = document.getElementById('stack');
+  const toastEl = document.getElementById('toast');
+  const phone = document.getElementById('phone');
+
+  function draftCount() { return Object.values(state.draft).reduce((a, b) => a + b, 0); }
+
+  function syncDraftUI() {
+    const n = draftCount();
+    document.querySelectorAll('.draft-count').forEach((el) => { el.textContent = String(n); });
+    const order = ['pork', 'fish', 'tomato', 'soup'];
+    const keys = order.filter((k) => state.draft[k]);
+    document.querySelectorAll('.draft-bar .dr-thumbs').forEach((box) => {
+      const imgs = keys.slice(0, 3).map((k) => '<img src="' + DISHES[k].img + '" alt="">').join('');
+      const badge = '<span class="dr-badge draft-count">' + n + '</span>';
+      box.innerHTML = (imgs || '<img src="assets/demo/kitchen.jpg" alt="" style="opacity:.4">') + badge;
+    });
+    const lines = document.getElementById('draftLines');
+    if (!lines) return;
+    const html = keys.map((k) => {
+      const d = DISHES[k];
+      return '<div class="dc-line" data-dish="' + k + '">' +
+        '<img class="dc-ph" src="' + d.img + '" alt="">' +
+        '<div class="dc-name">' + d.name + '<small>' + d.tag + '</small></div>' +
+        '<div class="dc-qty">' +
+          '<button type="button" data-action="draft-minus" data-dish="' + k + '">-</button>' +
+          '<b>' + state.draft[k] + '</b>' +
+          '<button type="button" data-action="draft-plus" data-dish="' + k + '">+</button>' +
+        '</div></div>';
+    }).join('');
+    lines.innerHTML = html || '<div class="dc-line" style="color:var(--faint);font-size:13px">草稿为空，去首页或菜品加点菜</div>';
+  }
+
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toastEl.classList.remove('show'), 1600);
+  }
+
+  function closeOverlays() {
+    ['ovSvc', 'ovAi', 'ovSub'].forEach((id) => document.getElementById(id).classList.remove('on'));
+  }
+
+  function icons() { if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 2 } }); }
+
+  function fillDetail(key) {
+    const d = DISHES[key] || DISHES.pork;
+    state.currentDish = key; state.qty = 1;
+    document.getElementById('d3Cover').src = d.img;
+    document.getElementById('d3Name').textContent = d.name;
+    document.getElementById('d3Desc').textContent = d.desc;
+    document.getElementById('d3Tag').textContent = d.tag;
+    document.getElementById('d3Stock').textContent = d.stock;
+    document.getElementById('d3Qty').textContent = '1';
+  }
+
+  function go(screen, opts) {
+    opts = opts || {};
+    if (!screen) return;
+    if (opts.dish) fillDetail(opts.dish);
+    if (opts.push !== false && state.screen !== screen) state.history.push(state.screen);
+    state.screen = screen;
+    closeOverlays();
+    stack.querySelectorAll('.panel').forEach((p) => p.classList.toggle('on', p.dataset.screen === screen));
+    document.querySelectorAll('#flowMap button').forEach((b) => b.classList.toggle('on', b.dataset.go === screen));
+    syncDraftUI();
+    icons();
+  }
+
+  function back() { go(state.history.pop() || 'D1', { push: false }); }
+
+  function addDraft(key, qty) {
+    if (!key || !DISHES[key]) return;
+    state.draft[key] = (state.draft[key] || 0) + (qty || 1);
+    syncDraftUI();
+    showToast('已加入预约 · ' + DISHES[key].name);
+  }
+
+  phone.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-go],[data-action]');
+    if (!t) return;
+    const action = t.dataset.action;
+    const next = t.dataset.go;
+
+    if (action === 'close-ov') { closeOverlays(); return; }
+    if (action === 'open-svc') { document.getElementById('ovSvc').classList.add('on'); return; }
+    if (action === 'open-ai') { document.getElementById('ovAi').classList.add('on'); icons(); return; }
+    if (action === 'back') { back(); return; }
+    if (action === 'toast') { showToast(t.dataset.msg || '演示'); return; }
+    if (action === 'confirm-role') { go(state.role === 'chef' ? 'K1' : 'L3'); return; }
+    if (action === 'join-submit') {
+      document.getElementById('joinStatus').textContent = '已绑定 · 老王的灶';
+      showToast('已加入厨房');
+      setTimeout(() => go('D1'), 350);
+      return;
+    }
+    if (action === 'add-draft') { e.stopPropagation(); addDraft(t.dataset.dish, 1); return; }
+    if (action === 'draft-plus') { e.stopPropagation(); addDraft(t.dataset.dish, 1); return; }
+    if (action === 'draft-minus') {
+      e.stopPropagation();
+      const k = t.dataset.dish;
+      if (!k || !state.draft[k]) return;
+      state.draft[k] -= 1;
+      if (state.draft[k] <= 0) delete state.draft[k];
+      syncDraftUI();
+      return;
+    }
+    if (action === 'add-detail') { addDraft(state.currentDish || 'pork', state.qty); go('D4'); return; }
+    if (action === 'qty-plus') { state.qty += 1; document.getElementById('d3Qty').textContent = String(state.qty); return; }
+    if (action === 'qty-minus') { state.qty = Math.max(1, state.qty - 1); document.getElementById('d3Qty').textContent = String(state.qty); return; }
+    if (action === 'submit-order') {
+      if (draftCount() === 0) { showToast('草稿为空'); return; }
+      document.getElementById('ovSub').classList.add('on'); icons(); return;
+    }
+    if (action === 'sub-skip' || action === 'sub-ok') {
+      closeOverlays(); state.draft = {}; syncDraftUI();
+      showToast(action === 'sub-ok' ? '已开启通知 · 预约已提交' : '已跳过 · 预约已提交');
+      return;
+    }
+    if (action === 'ai-ex') { document.getElementById('aiField').textContent = t.dataset.text || ''; return; }
+    if (action === 'ai-to-draft') { addDraft('fish', 1); addDraft('soup', 1); closeOverlays(); go('D4'); return; }
+    if (action === 'svc') {
+      closeOverlays();
+      if (t.dataset.svc === 'health') go('H1');
+      else if (t.dataset.svc === 'chef') go('K1');
+      else go('D1');
+      return;
+    }
+    if (action === 'confirm-order') {
+      state.pending = Math.max(0, state.pending - 1);
+      document.getElementById('pendingStat').textContent = String(state.pending);
+      document.getElementById('orderBadge').textContent = String(state.pending);
+      document.getElementById('orderPill').textContent = '已确认';
+      document.getElementById('orderPill').className = 'bk-status ok';
+      const card = document.getElementById('chefOrderCard');
+      if (card) {
+        card.classList.remove('live');
+        const actions = card.querySelector('.bk-actions');
+        if (actions) actions.remove();
+      }
+      document.getElementById('ovSub').classList.add('on'); icons(); return;
+    }
+    if (action === 'reject-order') {
+      showToast('已驳回预约');
+      const card = document.getElementById('chefOrderCard');
+      const pill = document.getElementById('orderPill');
+      if (pill) {
+        pill.textContent = '已取消';
+        pill.className = 'bk-status mute';
+      }
+      if (card) {
+        card.classList.remove('live');
+        card.classList.add('mute');
+        const actions = card.querySelector('.bk-actions');
+        if (actions) actions.remove();
+      }
+      return;
+    }
+    if (next) go(next, { dish: t.dataset.dish });
   });
+
+  document.querySelectorAll('.role-card.pick').forEach((card) => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.role-card.pick').forEach((c) => c.classList.remove('on'));
+      card.classList.add('on');
+      state.role = card.dataset.role;
+    });
+  });
+
+  document.getElementById('mealPick').addEventListener('click', (e) => {
+    const s = e.target.closest('[data-meal]');
+    if (!s) return;
+    document.querySelectorAll('#mealPick span').forEach((x) => x.classList.toggle('on', x === s));
+    state.meal = s.dataset.meal;
+    document.getElementById('mealChip').textContent = state.meal + ' · 2 人';
+  });
+
+  document.getElementById('flowMap').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-go]');
+    if (!b) return;
+    go(b.dataset.go, { dish: b.dataset.go === 'D3' ? (state.currentDish || 'pork') : undefined });
+  });
+
+  document.querySelectorAll('.cat-scroll').forEach((row) => {
+    row.addEventListener('click', (e) => {
+      const s = e.target.closest('span');
+      if (!s) return;
+      row.querySelectorAll('span').forEach((x) => x.classList.toggle('on', x === s));
+    });
+  });
+
+  syncDraftUI();
+  icons();
+})();
 </script>
 </body>
 </html>

@@ -1,0 +1,81 @@
+.service-tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  padding: 28px 24px;
+  border: 1px solid $ck-line;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(80, 50, 10, 0.05);
+  min-height: 200px;
+  box-sizing: border-box;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: -40px;
+    bottom: -48px;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    opacity: 0.55;
+    background: rgba(240, 123, 31, 0.08);
+  }
+
+  &--chef {
+    background: linear-gradient(160deg, #fff8ef, #fff1e2);
+    border-color: #f3d9b8;
+
+    &::after {
+      background: rgba(240, 123, 31, 0.12);
+    }
+  }
+
+  &--health {
+    background: linear-gradient(160deg, #f4fbf8, #e7f7f0);
+    border-color: #cbebdd;
+
+    &::after {
+      background: rgba(24, 168, 133, 0.12);
+    }
+  }
+
+  &__ico {
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+    background: $ck-ko-soft;
+  }
+
+  &--chef &__ico {
+    background: $ck-ko-soft;
+  }
+
+  &--health &__ico {
+    background: $ck-hg-soft;
+  }
+
+  &__title {
+    display: block;
+    font-size: 28px;
+    font-weight: 700;
+    color: $ck-ink;
+    position: relative;
+    z-index: 1;
+  }
+
+  &__desc {
+    display: block;
+    margin-top: 8px;
+    font-size: 22px;
+    color: $ck-muted;
+    line-height: 1.45;
+    position: relative;
+    z-index: 1;
+  }
+}

@@ -40,11 +40,11 @@ const METRIC_ICONS: Record<string, { icon: MiniIconName; bg: string }> = {
   BLOOD_PRESSURE_SYS: { icon: 'activity', bg: '#EBF3FB' },
   BLOOD_PRESSURE_DIA: { icon: 'activity', bg: '#EBF3FB' },
   BLOOD_GLUCOSE: { icon: 'droplet', bg: '#FFF1E2' },
-  BODY_FAT: { icon: 'empty', bg: '#F0EBFB' },
+  BODY_FAT: { icon: 'empty', bg: '#FFF1E2' },
   BMI: { icon: 'ruler', bg: '#E7F7F0' },
   HEIGHT: { icon: 'ruler', bg: '#F4F0E9' },
   SPO2: { icon: 'droplet', bg: '#EBF3FB' },
-  SLEEP_MINUTES: { icon: 'moon', bg: '#F0EBFB' },
+  SLEEP_MINUTES: { icon: 'moon', bg: '#E7F7F0' },
   STRESS: { icon: 'wind', bg: '#FBF3E0' },
   CALORIES: { icon: 'flame', bg: '#FFF1E2' }
 }

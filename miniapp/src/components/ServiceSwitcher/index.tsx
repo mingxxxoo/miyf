@@ -1,14 +1,12 @@
-import { View, Text, Image, ScrollView } from '@tarojs/components'
+import {Image, ScrollView, Text, View} from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { useMemo, useState } from 'react'
-import { activateOrSwitchRole } from '@/api/kitchen'
-import { useOrderStore } from '@/stores/orderStore'
-import { useUserStore } from '@/stores/userStore'
+import {useEffect, useMemo, useState} from 'react'
+import {activateOrSwitchRole} from '@/api/kitchen'
+import {useOrderStore} from '@/stores/orderStore'
+import {useUserStore} from '@/stores/userStore'
 import MiniIcon from '@/components/MiniIcon'
-import {
-  useProductStore,
-  type ProductCode
-} from '@/stores/productStore'
+import DraftOrderLine from '@/components/DraftOrderLine'
+import {type ProductCode, useProductStore} from '@/stores/productStore'
 import './ServiceSwitcher.scss'
 
 export type SwitchTarget = ProductCode | 'chef'
@@ -52,24 +50,30 @@ const LABELS: Record<SwitchTarget, { label: string; desc: string }> = {
   chef: { label: '厨房服务', desc: '厨师工作台' }
 }
 
-/** 预约单底部浮条：点击可上展菜品清单 */
+/** 预约单底部浮条 + 上展清单（贴底 sheet） */
 export function DraftOrderBar({ className = '' }: { className?: string }) {
   const draft = useOrderStore((s) => s.draft)
   const updateDraftItemQty = useOrderStore((s) => s.updateDraftItemQty)
   const removeDraftItem = useOrderStore((s) => s.removeDraftItem)
+  const clearDraft = useOrderStore((s) => s.clearDraft)
   const [expanded, setExpanded] = useState(false)
 
   const draftCount = useMemo(
     () => draft.items.reduce((sum, it) => sum + (it.quantity || 0), 0),
     [draft.items]
   )
+  const thumbs = useMemo(() => draft.items.slice(0, 3), [draft.items])
   const hint = useMemo(() => {
     if (!draft.items.length) return ''
     return (
       mealHint(draft.scheduledTime, draft.scheduledTimeOfDay, draft.guestCount) ||
-      `${draft.items.length} 样菜等你确认`
+      '点击展开已选清单'
     )
   }, [draft])
+
+  useEffect(() => {
+    if (draftCount <= 0 && expanded) setExpanded(false)
+  }, [draftCount, expanded])
 
   if (draftCount <= 0) return null
 
@@ -79,77 +83,106 @@ export function DraftOrderBar({ className = '' }: { className?: string }) {
     Taro.switchTab({ url: '/pages/order/index' })
   }
 
+  const onClear = (e?: { stopPropagation?: () => void }) => {
+    e?.stopPropagation?.()
+    Taro.showModal({
+      title: '清空已选',
+      content: '确定清空预约单里的全部菜品？',
+      success: (res) => {
+        if (!res.confirm) return
+        clearDraft()
+        setExpanded(false)
+      }
+    })
+  }
+
   return (
     <View className={`draft-order-bar-wrap ${className}`.trim()}>
       {expanded ? (
         <View className='draft-order-bar__mask' onClick={() => setExpanded(false)} />
       ) : null}
 
-      {expanded ? (
-        <View className='draft-order-panel'>
-          <View className='draft-order-panel__head'>
-            <Text className='draft-order-panel__title'>已选菜品</Text>
-            <Text className='draft-order-panel__close' onClick={() => setExpanded(false)}>
-              收起
-            </Text>
+      <View className='draft-order-sheet'>
+        {expanded ? (
+          <View className='draft-order-panel'>
+            <View className='draft-order-panel__grab' />
+            <View className='draft-order-panel__head'>
+              <View className='draft-order-panel__head-left'>
+                <Text className='draft-order-panel__title'>已选菜品</Text>
+                <Text className='draft-order-panel__count'>{draft.items.length}</Text>
+              </View>
+              <View className='draft-order-panel__head-right'>
+                <Text className='draft-order-panel__clear' onClick={onClear}>
+                  清空
+                </Text>
+                <Text
+                  className='draft-order-panel__close'
+                  onClick={() => setExpanded(false)}
+                >
+                  收起
+                </Text>
+              </View>
+            </View>
+            <ScrollView scrollY className='draft-order-panel__list' enhanced showScrollbar={false}>
+              {draft.items.map((item) => (
+                <DraftOrderLine
+                  key={item.dishId}
+                  dishId={item.dishId}
+                  dishName={item.dishName}
+                  coverUrl={item.coverUrl}
+                  quantity={item.quantity}
+                  compact
+                  showDelete
+                  onInc={() => updateDraftItemQty(item.dishId, item.quantity + 1)}
+                  onDec={() => updateDraftItemQty(item.dishId, item.quantity - 1)}
+                  onRemove={() => removeDraftItem(item.dishId)}
+                />
+              ))}
+            </ScrollView>
           </View>
-          <ScrollView scrollY className='draft-order-panel__list' enhanced showScrollbar={false}>
-            {draft.items.map((item) => (
-              <View key={item.dishId} className='draft-order-panel__row'>
-                {item.coverUrl ? (
+        ) : null}
+
+        <View
+          className={`draft-order-bar${expanded ? ' draft-order-bar--open' : ''}`}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          <View className='draft-order-bar__thumbs'>
+            {thumbs.length > 0 ? (
+              thumbs.map((item) =>
+                item.coverUrl ? (
                   <Image
-                    className='draft-order-panel__cover'
+                    key={item.dishId}
+                    className='draft-order-bar__thumb'
                     src={item.coverUrl}
                     mode='aspectFill'
                     lazyLoad
                   />
                 ) : (
-                  <View className='draft-order-panel__cover draft-order-panel__cover--empty'>
+                  <View
+                    key={item.dishId}
+                    className='draft-order-bar__thumb draft-order-bar__thumb--empty'
+                  >
                     <MiniIcon name='dish' size='sm' tone='muted' />
                   </View>
-                )}
-                <Text className='draft-order-panel__name'>{item.dishName}</Text>
-                <View className='draft-order-panel__qty'>
-                  <View
-                    className='draft-order-panel__qty-btn'
-                    onClick={() => updateDraftItemQty(item.dishId, item.quantity - 1)}
-                  >
-                    <Text>−</Text>
-                  </View>
-                  <Text className='draft-order-panel__qty-num'>{item.quantity}</Text>
-                  <View
-                    className='draft-order-panel__qty-btn'
-                    onClick={() => updateDraftItemQty(item.dishId, item.quantity + 1)}
-                  >
-                    <Text>＋</Text>
-                  </View>
-                </View>
-                <Text
-                  className='draft-order-panel__del'
-                  onClick={() => removeDraftItem(item.dishId)}
-                >
-                  删除
-                </Text>
+                )
+              )
+            ) : (
+              <View className='draft-order-bar__ico'>
+                <MiniIcon name='basket' size='md' tone='primary' />
               </View>
-            ))}
-          </ScrollView>
-        </View>
-      ) : null}
-
-      <View className='draft-order-bar' onClick={() => setExpanded((v) => !v)}>
-        <View className='draft-order-bar__ico'>
-          <MiniIcon name='basket' size='md' tone='primary' />
-          <Text className='draft-order-bar__badge'>{draftCount > 99 ? '99+' : draftCount}</Text>
-        </View>
-        <View className='draft-order-bar__txt'>
-          <Text className='draft-order-bar__title'>预约单 · {draft.items.length} 样菜</Text>
-          <Text className='draft-order-bar__sub'>
-            {expanded ? '点击收起清单' : hint || '点击查看已选菜品'}
+            )}
+            <Text className='draft-order-bar__badge'>{draftCount > 99 ? '99+' : draftCount}</Text>
+          </View>
+          <View className='draft-order-bar__txt'>
+            <Text className='draft-order-bar__title'>已选 {draft.items.length} 样</Text>
+            <Text className='draft-order-bar__sub'>
+              {expanded ? '点击收起清单' : hint}
+            </Text>
+          </View>
+          <Text className='draft-order-bar__go' onClick={goOrder}>
+            去预约
           </Text>
         </View>
-        <Text className='draft-order-bar__go' onClick={goOrder}>
-          去预约
-        </Text>
       </View>
     </View>
   )
@@ -208,7 +241,6 @@ export default function ServiceSwitcher({
 
     setBusy(true)
     try {
-      // 从厨师端切回食客厨房时，先切到 DINER，避免首页再跳回厨师台
       if (current === 'chef' && key === 'kitchen' && user?.diner) {
         await activateOrSwitchRole('DINER', user)
         await refreshProfile()

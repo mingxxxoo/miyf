@@ -1,4 +1,4 @@
-import { defineConfig, type UserConfigExport } from '@tarojs/cli'
+import {defineConfig, type UserConfigExport} from '@tarojs/cli'
 import devConfig from './dev'
 import prodConfig from './prod'
 
@@ -37,7 +37,7 @@ export default defineConfig<'webpack5'>(async (merge) => {
       '@': require('path').resolve(__dirname, '..', 'src')
     },
     sass: {
-      resource: [require('path').resolve(__dirname, '..', 'src/styles/tokens.scss')],
+      resource: [require('path').resolve(__dirname, '..', 'src/styles/variables.scss')],
       projectDirectory: require('path').resolve(__dirname, '..')
     },
     mini: {

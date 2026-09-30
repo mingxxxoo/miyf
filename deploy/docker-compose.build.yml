@@ -1,9 +1,12 @@
 # 本地 / CI 构建覆盖层（打出与 docker-compose.yml 中 image 同名的镜像）
 # 用法：
 #   docker compose -f docker-compose.yml -f docker-compose.build.yml build
+# 仅后端（更快）：
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml build server
 # Apple Silicon 跨架构时可先设：DOCKER_DEFAULT_PLATFORM=linux/amd64
 #
 # 服务器生产环境不要使用本文件。
+# server Dockerfile 使用 BuildKit cache mount（/root/.m2）；请保持 DOCKER_BUILDKIT=1（Desktop 默认开启）。
 
 services:
   server:

@@ -1,4 +1,4 @@
-// miyf · Design Tokens v2（对齐 design/miniapp-redesign.html）
+// miyf · Design Tokens v3（对齐 design/miniapp-app-design.html）
 // 厨房灶橙 + 健康薄荷，共用奶油底与状态色
 
 $ck-primary: #FFB36B;
@@ -47,6 +47,17 @@ $ck-radius-sm: 12px;
 $ck-radius-md: 20px;
 $ck-radius-lg: 24px;
 $ck-radius-pill: 99px;
+
+/*
+ * 微信原生 tab 页：position:fixed 的 bottom 已相对「tabBar 上方」页面区，
+ * 不要再叠一层 tabBar 高度，否则预约条会悬空。
+ */
+$ck-draft-bar-gap: 16px;
+$ck-draft-bar-h: 112px;
+/* 有预约条的 tab 页底留白：条高 + 缝 + 一点余量 */
+$ck-page-pad-draft: calc(#{$ck-draft-bar-h} + #{$ck-draft-bar-gap} + 32px);
+/* 普通 tab 页底留白 */
+$ck-page-pad-tab: 48px;
 
 $ck-shadow-soft: 0 8px 24px rgba(240, 123, 31, 0.12);
 $ck-shadow-card: 0 6px 16px rgba(80, 50, 10, 0.06);

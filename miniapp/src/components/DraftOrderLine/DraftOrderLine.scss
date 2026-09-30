@@ -1,0 +1,89 @@
+.draft-order-line {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 0;
+  border-top: 1px solid $ck-border-l4;
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &--compact {
+    gap: 16px;
+    padding: 18px 0;
+
+    .draft-order-line__cover {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+    }
+
+    .draft-order-line__name {
+      font-size: 26px;
+    }
+  }
+
+  &__cover {
+    width: 96px;
+    height: 96px;
+    border-radius: 18px;
+    flex-shrink: 0;
+    background: $ck-ko-soft;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(80, 50, 10, 0.1);
+
+    &--empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name {
+    display: block;
+    font-size: 28px;
+    font-weight: 600;
+    color: $ck-ink;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__sub {
+    display: block;
+    margin-top: 6px;
+    font-size: 22px;
+    color: $ck-faint;
+  }
+
+  &__qty-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 22px;
+    color: $ck-muted;
+  }
+
+  &__del {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: $ck-ko-softer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__del-x {
+    font-size: 32px;
+    line-height: 1;
+    color: $ck-faint;
+    font-weight: 400;
+  }
+}

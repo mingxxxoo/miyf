@@ -1,0 +1,257 @@
+.chef-book {
+  margin: 0 36px 24px;
+  padding: 32px;
+  background: #fff;
+  border-radius: 24px;
+  border: 1px solid $ck-line;
+  box-sizing: border-box;
+
+  &--live {
+    border-color: #f0d5b0;
+    box-shadow: 0 12px 28px rgba(240, 123, 31, 0.08);
+  }
+
+  &--mute {
+    background: #fbfaf7;
+  }
+
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  &__when {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__when-main {
+    display: block;
+    font-size: 36px;
+    font-weight: 700;
+    color: $ck-ink;
+    letter-spacing: 0.5px;
+    line-height: 1.25;
+  }
+
+  &__when-sub {
+    display: block;
+    margin-top: 8px;
+    font-size: 24px;
+    color: $ck-muted;
+  }
+
+  &__status {
+    flex-shrink: 0;
+    margin-top: 6px;
+    font-size: 22px;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: 99px;
+    line-height: 1.2;
+
+    &--warn {
+      background: #fff3dc;
+      color: #b8740f;
+    }
+
+    &--info {
+      background: $ck-ko-soft;
+      color: $ck-primary-deep;
+    }
+
+    &--ok {
+      background: $ck-hg-soft;
+      color: $ck-hg;
+    }
+
+    &--mute {
+      background: #eeeae3;
+      color: #9a9186;
+    }
+  }
+
+  &__who {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    margin-top: 20px;
+  }
+
+  &__who-name {
+    font-size: 26px;
+    font-weight: 600;
+    color: $ck-ink;
+  }
+
+  &__who-time {
+    font-size: 22px;
+    color: $ck-faint;
+  }
+
+  &__flow {
+    display: flex;
+    align-items: flex-start;
+    margin-top: 24px;
+    padding: 8px 0;
+  }
+
+  &__flow-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+
+  &__flow-dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f0ebe3;
+    color: $ck-faint;
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+
+    &.is-done {
+      background: $ck-hg-soft;
+      color: $ck-hg;
+    }
+
+    &.is-cur {
+      background: linear-gradient(135deg, $ck-primary, $ck-primary-deep);
+      color: #fff;
+    }
+  }
+
+  &__flow-label {
+    margin-top: 8px;
+    font-size: 20px;
+    color: $ck-faint;
+
+    &.is-cur {
+      color: $ck-primary-deep;
+      font-weight: 600;
+    }
+  }
+
+  &__flow-line {
+    position: absolute;
+    top: 20px;
+    left: calc(50% + 24px);
+    right: calc(-50% + 24px);
+    height: 2px;
+    background: #ebe4da;
+    z-index: 0;
+
+    &.is-done {
+      background: rgba($ck-hg, 0.45);
+    }
+  }
+
+  &__menu {
+    margin-top: 24px;
+    padding-top: 8px;
+  }
+
+  &__menu-empty {
+    font-size: 26px;
+    color: $ck-faint;
+  }
+
+  &__dish {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+  }
+
+  &__dish-dot {
+    width: 20px;
+    text-align: center;
+    font-size: 28px;
+    color: $ck-primary;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  &__dish-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 28px;
+    color: $ck-ink;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__dish-qty {
+    flex-shrink: 0;
+    font-size: 26px;
+    color: $ck-primary-deep;
+    font-weight: 700;
+  }
+
+  &__remark {
+    display: block;
+    margin-top: 16px;
+    padding: 16px 20px;
+    border-radius: 14px;
+    background: #faf6ef;
+    font-size: 24px;
+    color: $ck-muted;
+    line-height: 1.5;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid #f3ebe0;
+  }
+
+  &__btn-spacer {
+    flex: 1;
+  }
+
+  &__btn {
+    min-width: 160px;
+    height: 72px;
+    padding: 0 28px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 600;
+    box-sizing: border-box;
+
+    &--ghost {
+      color: $ck-muted;
+      background: #fff;
+      border: 1px solid $ck-line;
+    }
+
+    &--primary {
+      flex: 1;
+      color: #fff;
+      background: linear-gradient(135deg, $ck-primary, $ck-primary-deep);
+      box-shadow: 0 8px 18px rgba(240, 123, 31, 0.28);
+    }
+
+    &.is-off {
+      opacity: 0.45;
+    }
+  }
+}

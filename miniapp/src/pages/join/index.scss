@@ -1,104 +1,149 @@
-@import '../../styles/variables.scss';
-
 .join-page {
   min-height: 100vh;
-  padding: 48px 36px 64px;
+  padding: 24px 0 64px;
   box-sizing: border-box;
-  background:
-    radial-gradient(circle at 12% 0%, rgba($ck-primary, 0.18), transparent 40%),
-    $ck-bg;
+  background: $ck-bg;
+  display: flex;
+  flex-direction: column;
 
-  &__title {
-    display: block;
-    font-size: 40px;
-    font-weight: 700;
-    color: $ck-ink;
-    margin-bottom: 12px;
-  }
-
-  &__sub {
-    display: block;
-    font-size: 26px;
-    color: $ck-muted;
-    line-height: 1.7;
-    margin-bottom: 32px;
-  }
-
-  &__status {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    padding: 24px 28px;
+  &__hero {
+    position: relative;
+    margin: 0 36px;
+    height: 280px;
     border-radius: 28px;
+    overflow: hidden;
+    background:
+      linear-gradient(145deg, #5a4632 0%, #3a322c 48%, #2b2622 100%);
+  }
+
+  &__hero-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(43, 38, 34, 0.15) 0%,
+      rgba(43, 38, 34, 0.72) 100%
+    );
+  }
+
+  &__hero-body {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    padding: 40px 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    box-sizing: border-box;
+  }
+
+  &__hero-title {
+    display: block;
+    font-size: 36px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  &__hero-desc {
+    display: block;
+    margin-top: 12px;
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.88);
+    line-height: 1.65;
+  }
+
+  &__pill {
+    margin: 28px 36px 0;
+    padding: 18px 28px;
+    border-radius: 99px;
+    background: #f4f0e9;
     border: 1px solid $ck-line;
-    background: #fff;
-    margin-bottom: 28px;
+    font-size: 24px;
+    font-weight: 600;
+    color: $ck-muted;
+    text-align: center;
 
     &--warn {
       background: $ck-amber-soft;
-      border-color: #F0DDB4;
-      .join-page__status-dot { color: $ck-amber; }
+      border-color: #f0ddb4;
+      color: $ck-amber;
     }
 
     &--ok {
       background: $ck-hg-soft;
-      border-color: #CBEBDD;
-      .join-page__status-dot { color: $ck-hg; }
+      border-color: #cbebdd;
+      color: $ck-hg;
     }
 
     &--bad {
       background: $ck-red-soft;
-      border-color: #F3D3CE;
-      .join-page__status-dot { color: $ck-red; }
+      border-color: #f3d3ce;
+      color: $ck-red;
     }
   }
 
-  &__status-dot {
-    font-size: 22px;
-    line-height: 1.4;
-    flex: none;
-  }
-
-  &__status-title {
+  &__reject {
     display: block;
-    font-size: 28px;
-    font-weight: 600;
-    color: $ck-ink;
-  }
-
-  &__status-desc {
-    display: block;
+    margin: 16px 36px 0;
     font-size: 24px;
     color: $ck-muted;
-    margin-top: 8px;
     line-height: 1.5;
   }
 
-  &__code-wrap {
-    background: #fff;
-    border: 1px solid $ck-line;
-    border-radius: 24px;
-    padding: 8px 24px;
-    margin-bottom: 28px;
+  &__boxes {
+    position: relative;
+    display: flex;
+    gap: 16px;
+    margin: 36px 36px 0;
   }
 
-  &__code {
+  &__cell {
+    flex: 1;
     height: 88px;
+    border-radius: 16px;
+    border: 1.5px solid $ck-line;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 36px;
     font-weight: 700;
-    letter-spacing: 8px;
     color: $ck-ink;
+    box-sizing: border-box;
+
+    &--filled {
+      border-color: $ck-primary-deep;
+      background: $ck-ko-softer;
+      color: $ck-primary-deep;
+    }
+  }
+
+  &__hidden-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    color: transparent;
+  }
+
+  &__hint {
+    display: block;
+    margin: 24px 36px 0;
+    font-size: 22px;
+    color: $ck-faint;
+    line-height: 1.6;
   }
 
   &__btn {
+    margin: 36px 36px 0;
     height: 96px;
     line-height: 96px;
-    border-radius: 32px;
+    border-radius: 16px;
     background: linear-gradient(135deg, $ck-primary, $ck-primary-deep);
     color: #fff;
     font-size: 30px;
     font-weight: 600;
     border: none;
+    box-shadow: 0 8px 20px rgba(240, 123, 31, 0.28);
 
     &::after {
       border: none;

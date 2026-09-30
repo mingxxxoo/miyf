@@ -1,11 +1,12 @@
-import { View, Text, Button, ScrollView } from '@tarojs/components'
-import Taro, { useDidShow } from '@tarojs/taro'
-import { useMemo, useState } from 'react'
-import { fetchChefOrders, updateChefOrderStatus, type ChefOrder } from '@/api/kitchen'
+import {Button, ScrollView, Text, View} from '@tarojs/components'
+import Taro, {useDidShow} from '@tarojs/taro'
+import {useMemo, useState} from 'react'
+import {type ChefOrder, fetchChefOrders, updateChefOrderStatus} from '@/api/kitchen'
+import ChefRecentOrderCard from '@/components/ChefRecentOrderCard'
 import EmptyState from '@/components/EmptyState'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
-import { useChefWorkbench } from '@/hooks/useChefWorkbench'
-import { prefetchChefWxSubscribeConfig, requestChefOrderSubscribe } from '@/utils/wxSubscribe'
+import {useChefWorkbench} from '@/hooks/useChefWorkbench'
+import {prefetchChefWxSubscribeConfig, requestChefOrderSubscribe} from '@/utils/wxSubscribe'
 import './chef.scss'
 
 const TABS: { key: string; label: string }[] = [
@@ -23,43 +24,6 @@ const NEXT: Record<string, { status: string; label: string }> = {
   CONFIRMED: { status: 'PREPARING', label: '开始备餐' },
   PREPARING: { status: 'READY', label: '可以取餐' },
   READY: { status: 'COMPLETED', label: '完成' }
-}
-
-const FLOW = [
-  { key: 'PENDING', label: '确认' },
-  { key: 'PREPARING', label: '备餐' },
-  { key: 'READY', label: '取餐' },
-  { key: 'COMPLETED', label: '完成' }
-]
-
-const STATUS_CHIP: Record<string, { text: string; cls: string }> = {
-  PENDING: { text: '待确认', cls: 'ck-chip--warn' },
-  CONFIRMED: { text: '已确认', cls: 'ck-chip--info' },
-  PREPARING: { text: '备餐中', cls: 'ck-chip--info' },
-  READY: { text: '待取餐', cls: 'ck-chip--ok' },
-  COMPLETED: { text: '已完成', cls: 'ck-chip--ok' },
-  CANCELLED: { text: '已取消', cls: 'ck-chip--none' }
-}
-
-const AVATAR_COLORS = ['#F07B1F', '#18A885', '#4A90D9', '#D99426', '#E15A4B']
-
-function formatTime(value?: string) {
-  if (!value) return '—'
-  return value.replace('T', ' ').slice(0, 16)
-}
-
-function itemSummary(order: ChefOrder) {
-  const items = order.items || []
-  if (!items.length) return '暂无菜品明细'
-  return items.map((it) => `${it.dishName} ×${it.quantity}`).join(' · ')
-}
-
-function flowIndex(status: string) {
-  if (status === 'PENDING' || status === 'CONFIRMED') return 0
-  if (status === 'PREPARING') return 1
-  if (status === 'READY') return 2
-  if (status === 'COMPLETED') return 3
-  return -1
 }
 
 export default function ChefOrdersPage() {
@@ -161,22 +125,24 @@ export default function ChefOrdersPage() {
       </View>
       <View className='chef-page__hero'>
         <Text className='chef-page__title'>处理预约</Text>
-        <Text className='chef-page__sub'>确认 → 备餐 → 取餐 → 完成</Text>
-        <Button className='chef-page__btn-ghost' size='mini' onClick={enableNotify}>
-          开启新预约提醒
-        </Button>
+        <Text className='chef-page__sub'>确认 → 备餐 → 取餐 → 完成。确认前可先开启订阅提醒。</Text>
+        <View className='chef-page__hero-actions'>
+          <Button className='chef-page__btn-ghost' size='mini' onClick={enableNotify}>
+            开启新预约提醒
+          </Button>
+        </View>
       </View>
 
       <View className='chef-page__sum-strip'>
-        <View className='chef-page__sum-cell' style={{ background: '#FBF3E0', color: '#D99426' }}>
+        <View className='chef-page__sum-cell chef-page__sum-cell--warn'>
           <Text className='chef-page__sum-num'>{sums.pending}</Text>
           <Text className='chef-page__sum-label'>待确认</Text>
         </View>
-        <View className='chef-page__sum-cell' style={{ background: '#EBF3FB', color: '#4A90D9' }}>
+        <View className='chef-page__sum-cell chef-page__sum-cell--cook'>
           <Text className='chef-page__sum-num'>{sums.preparing}</Text>
           <Text className='chef-page__sum-label'>备餐中</Text>
         </View>
-        <View className='chef-page__sum-cell' style={{ background: '#E7F7F0', color: '#18A885' }}>
+        <View className='chef-page__sum-cell chef-page__sum-cell--ok'>
           <Text className='chef-page__sum-num'>{sums.ready}</Text>
           <Text className='chef-page__sum-label'>待取餐</Text>
         </View>
@@ -201,90 +167,18 @@ export default function ChefOrdersPage() {
           <EmptyState title='暂无预约' description='食客下单后会出现在这里' />
         </View>
       ) : (
-        list.map((o, idx) => {
-          const next = NEXT[o.status]
-          const chip = STATUS_CHIP[o.status] || STATUS_CHIP.PENDING
-          const fi = flowIndex(o.status)
-          const nick = o.userNickname || '厨房朋友'
-          return (
-            <View key={o.id} className='chef-page__order-card'>
-              <View className='chef-page__oc-top'>
-                <View className='chef-page__oc-user'>
-                  <View
-                    className='chef-page__avatar'
-                    style={{ background: AVATAR_COLORS[idx % AVATAR_COLORS.length] }}
-                  >
-                    <Text>{nick.slice(0, 1)}</Text>
-                  </View>
-                  <View>
-                    <Text className='chef-page__oc-name'>{nick}</Text>
-                    <Text className='chef-page__oc-time'>#{o.orderNo} · {formatTime(o.createTime)}</Text>
-                  </View>
-                </View>
-                <Text className={`ck-chip ${chip.cls}`}>{chip.text}</Text>
-              </View>
-
-              {fi >= 0 ? (
-                <View className='chef-page__flow' style={{ margin: '20px 0 8px' }}>
-                  {FLOW.flatMap((step, i) => {
-                    const nodes = [
-                      <View
-                        key={step.key}
-                        className={`chef-page__fstep ${i === fi ? 'chef-page__fstep--cur' : ''}`}
-                      >
-                        <View
-                          className={`chef-page__fdot ${
-                            i < fi ? 'chef-page__fdot--done' : i === fi ? 'chef-page__fdot--cur' : ''
-                          }`}
-                        >
-                          <Text>{i < fi ? '✓' : i + 1}</Text>
-                        </View>
-                        <Text className='chef-page__fstep-label'>{step.label}</Text>
-                      </View>
-                    ]
-                    if (i < FLOW.length - 1) {
-                      nodes.push(
-                        <View
-                          key={`${step.key}-line`}
-                          className={`chef-page__fline ${i < fi ? 'chef-page__fline--done' : ''}`}
-                        />
-                      )
-                    }
-                    return nodes
-                  })}
-                </View>
-              ) : null}
-
-              <Text className='chef-page__oc-dishes'>{itemSummary(o)}</Text>
-              {o.remark ? <Text className='chef-page__oc-meta' style={{ marginTop: '12px' }}>备注：{o.remark}</Text> : null}
-              {next ? (
-                <View className='chef-page__oc-foot'>
-                  <Text className='chef-page__oc-meta'>单号 #{o.orderNo}</Text>
-                  <View className='chef-page__oc-actions'>
-                    {o.status === 'PENDING' ? (
-                      <Button
-                        className='chef-page__btn-xs chef-page__btn-xs--ghost'
-                        size='mini'
-                        disabled={actingId === o.id}
-                        onClick={() => rejectOrder(o)}
-                      >
-                        拒绝
-                      </Button>
-                    ) : null}
-                    <Button
-                      className='chef-page__btn-xs chef-page__btn-xs--solid'
-                      size='mini'
-                      loading={actingId === o.id}
-                      onClick={() => void advance(o)}
-                    >
-                      {o.status === 'PENDING' ? '确认接单' : next.label}
-                    </Button>
-                  </View>
-                </View>
-              ) : null}
-            </View>
-          )
-        })
+        <View className='chef-page__book-list'>
+          {list.map((o) => (
+            <ChefRecentOrderCard
+              key={o.id}
+              order={o}
+              showFlow
+              acting={actingId === o.id}
+              onAdvance={(ord) => void advance(ord)}
+              onReject={rejectOrder}
+            />
+          ))}
+        </View>
       )}
     </View>
   )

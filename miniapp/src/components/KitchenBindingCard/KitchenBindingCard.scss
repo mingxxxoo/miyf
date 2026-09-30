@@ -1,0 +1,81 @@
+.kitchen-binding-card {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  min-height: 184px;
+  color: #fff;
+  margin-bottom: 28px;
+  box-shadow: 0 8px 22px rgba(80, 50, 10, 0.08);
+  background: linear-gradient(90deg, #f07b1f, #ff9a3e 55%, #c47a3a);
+
+  &__cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  &__shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(240, 123, 31, 0.88) 0%,
+      rgba(240, 123, 31, 0.55) 55%,
+      rgba(43, 38, 34, 0.35) 100%
+    );
+  }
+
+  &__inner {
+    position: relative;
+    z-index: 1;
+    padding: 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-height: 184px;
+    box-sizing: border-box;
+  }
+
+  &__ico {
+    width: 80px;
+    height: 80px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name {
+    display: block;
+    font-size: 30px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__status {
+    display: block;
+    margin-top: 6px;
+    font-size: 22px;
+    opacity: 0.9;
+  }
+
+  &__go {
+    flex-shrink: 0;
+    font-size: 22px;
+    font-weight: 600;
+    padding: 12px 22px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.95);
+    color: $ck-primary-deep;
+  }
+}

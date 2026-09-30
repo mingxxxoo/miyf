@@ -42,6 +42,11 @@ function mealChip(order: Order): string {
   return parts.join(' · ')
 }
 
+function formatTime(value?: string) {
+  if (!value) return ''
+  return value.replace('T', ' ').slice(0, 16)
+}
+
 export default function OrderCard({ order }: OrderCardProps) {
   const step = flowStep(order.status)
   const active =
@@ -49,6 +54,7 @@ export default function OrderCard({ order }: OrderCardProps) {
     order.status !== 'CANCELLED' &&
     step >= 0
   const meal = mealChip(order)
+  const time = formatTime(order.createTime)
 
   const handleTap = () => {
     Taro.navigateTo({ url: `/pages/order/detail?id=${order.id}` })
@@ -57,20 +63,15 @@ export default function OrderCard({ order }: OrderCardProps) {
   return (
     <View className='order-card ck-pressable' onClick={handleTap}>
       <View className='order-card__header'>
-        <View className='order-card__user'>
-          <View className='order-card__avatar'>
-            <Text>{(order.orderNo || '预').slice(-2, -1) || '预'}</Text>
-          </View>
-          <View>
-            <Text className='order-card__title'>{itemSummary(order)}</Text>
-            <Text className='order-card__no'>单号 #{order.orderNo}</Text>
-          </View>
+        <View className='order-card__main'>
+          <Text className='order-card__title'>{itemSummary(order)}</Text>
+          <Text className='order-card__no'>单号 #{order.orderNo}</Text>
         </View>
         <StatusBadge status={order.status} />
       </View>
 
-      {meal ? <Text className='order-card__note'>{meal}</Text> : null}
-      {order.note ? <Text className='order-card__note'>{order.note}</Text> : null}
+      {meal ? <Text className='order-card__meal'>{meal}</Text> : null}
+      {order.note ? <Text className='order-card__note'>备注 · {order.note}</Text> : null}
 
       {active ? (
         <>
@@ -98,7 +99,7 @@ export default function OrderCard({ order }: OrderCardProps) {
       ) : null}
 
       <View className='order-card__foot'>
-        <Text className='order-card__time'>🕐 {formatTime(order.createTime)}</Text>
+        <Text className='order-card__time'>{time || '时间待定'}</Text>
         {order.status === 'COMPLETED' ? (
           <Text
             className='order-card__action'
@@ -120,9 +121,4 @@ export default function OrderCard({ order }: OrderCardProps) {
       </View>
     </View>
   )
-}
-
-function formatTime(value?: string) {
-  if (!value) return '-'
-  return value.replace('T', ' ').slice(0, 16)
 }

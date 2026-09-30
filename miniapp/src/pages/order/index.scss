@@ -7,6 +7,67 @@
     margin-bottom: 24px;
   }
 
+  &__hero {
+    margin-bottom: 20px;
+    border-radius: 22px;
+    padding: 28px;
+    background:
+      radial-gradient(120% 80% at 100% 0%, rgba(255, 179, 107, 0.28), transparent 55%),
+      linear-gradient(160deg, #fff8ef, #fff1e2 60%, #ffe8c8);
+    border: 1px solid #f3d9b8;
+  }
+
+  &__hero-kicker {
+    display: block;
+    font-size: 22px;
+    color: $ck-primary-deep;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+  }
+
+  &__hero-title {
+    display: block;
+    font-size: 40px;
+    font-weight: 700;
+    margin-top: 8px;
+    color: $ck-ink;
+  }
+
+  &__hero-sub {
+    display: block;
+    font-size: 24px;
+    color: $ck-muted;
+    margin-top: 10px;
+    line-height: 1.55;
+  }
+
+  &__ord-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  &__om {
+    background: rgba(255, 255, 255, 0.72);
+    border-radius: 16px;
+    padding: 16px 20px;
+  }
+
+  &__om-label {
+    display: block;
+    font-size: 20px;
+    color: $ck-faint;
+  }
+
+  &__om-val {
+    display: block;
+    font-size: 26px;
+    margin-top: 6px;
+    color: $ck-ink;
+    font-weight: 600;
+  }
+
   &__cta {
     margin-bottom: 40px;
     text-align: center;
@@ -33,30 +94,35 @@
   &__draft {
     margin-bottom: 32px;
     background: #fff;
-    border: 1px solid $ck-border;
-    border-radius: 20px;
+    border: 1px solid $ck-line;
+    border-radius: 22px;
     overflow: hidden;
+    box-shadow: 0 8px 24px rgba(80, 50, 10, 0.05);
   }
 
   &__draft-head {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 28px 32px 20px;
-  }
-
-  &__draft-emoji {
-    font-size: 32px;
-    line-height: 1;
-    flex-shrink: 0;
+    gap: 12px;
+    padding: 28px 28px 16px;
   }
 
   &__draft-title {
     flex: 1;
     min-width: 0;
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 700;
     color: $ck-ink;
+  }
+
+  &__draft-chip {
+    flex-shrink: 0;
+    font-size: 20px;
+    padding: 6px 14px;
+    border-radius: 99px;
+    background: $ck-ko-soft;
+    color: $ck-primary-deep;
+    font-weight: 600;
   }
 
   &__draft-clear {
@@ -65,91 +131,33 @@
     color: $ck-red;
   }
 
-  &__draft-line {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 20px 32px;
-    border-top: 1px solid $ck-border-l4;
-  }
-
-  &__draft-emoji-box {
-    width: 76px;
-    height: 76px;
-    border-radius: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 38px;
-    flex-shrink: 0;
-  }
-
-  &__draft-name-wrap {
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__draft-name {
-    display: block;
-    font-size: 26px;
-    font-weight: 500;
-    color: $ck-text;
-  }
-
-  &__qty {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px;
-    background: $ck-ko-softer;
-    border: 1px solid $ck-border;
-    border-radius: 24px;
-    flex-shrink: 0;
-  }
-
-  &__qty-btn {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 18px;
-    background: #fff;
-    font-size: 26px;
-    font-weight: 700;
-    color: $ck-primary-deep;
-    box-shadow: 0 2px 8px rgba(60, 45, 20, 0.1);
-  }
-
-  &__qty-num {
-    min-width: 40px;
-    text-align: center;
-    font-size: 24px;
-    font-weight: 600;
-    color: $ck-text;
+  &__draft-lines {
+    padding: 0 28px;
   }
 
   &__meal-pick {
     display: flex;
-    gap: 16px;
-    padding: 24px 32px 12px;
+    gap: 12px;
+    margin-bottom: 20px;
   }
 
   &__meal-chip {
     flex: 1;
     text-align: center;
     font-size: 22px;
-    padding: 18px 0;
-    border-radius: 24px;
-    background: $ck-ko-softer;
-    border: 1px solid $ck-border;
+    padding: 22px 0 18px;
+    border-radius: 16px;
+    background: #fff;
+    border: 2px solid $ck-line;
     color: $ck-muted;
+    font-weight: 500;
 
     &--on {
       background: $ck-ko-soft;
       border-color: $ck-primary;
       color: $ck-primary-deep;
       font-weight: 700;
+      box-shadow: 0 6px 16px rgba(240, 123, 31, 0.12);
     }
   }
 
@@ -260,21 +268,31 @@
   &__ai-entry {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 24px;
-    padding: 18px 24px;
+    gap: 16px;
+    margin: 0 32px 24px;
+    padding: 20px 24px;
     background: #fff;
     border: 1px solid #f3d9b8;
-    border-radius: 14px;
+    border-radius: 18px;
+    box-shadow: $ck-shadow-card;
   }
 
   &__ai-entry-ico {
-    font-size: 28px;
+    flex-shrink: 0;
   }
 
   &__ai-entry-txt {
+    flex: 1;
+    font-size: 26px;
+    font-weight: 500;
+    color: $ck-ink;
+  }
+
+  &__ai-entry-go {
+    flex-shrink: 0;
     font-size: 24px;
-    color: $ck-muted;
+    font-weight: 600;
+    color: $ck-primary-deep;
   }
 
   &__ai-note {

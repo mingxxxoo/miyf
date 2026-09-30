@@ -1,0 +1,57 @@
+.account-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 28px 16px;
+  border-bottom: 1px solid #f7f2e9;
+  border-radius: 14px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &--danger &__title {
+    color: $ck-red;
+  }
+
+  &--danger &__ico {
+    background: rgba($ck-red, 0.12) !important;
+  }
+
+  &__ico {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: $ck-ko-soft;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    display: block;
+    font-size: 28px;
+    font-weight: 600;
+    color: $ck-ink;
+  }
+
+  &__hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 22px;
+    color: $ck-faint;
+  }
+
+  &__arrow {
+    flex-shrink: 0;
+    font-size: 32px;
+    color: $ck-faint;
+    padding: 0 4px;
+  }
+}

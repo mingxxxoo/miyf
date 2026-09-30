@@ -1,11 +1,11 @@
-import { View, Text, Image, Button } from '@tarojs/components'
-import Taro, { useRouter, useDidShow, usePullDownRefresh } from '@tarojs/taro'
-import { useEffect, useState } from 'react'
+import {Button, Image, Text, View} from '@tarojs/components'
+import Taro, {useDidShow, usePullDownRefresh, useRouter} from '@tarojs/taro'
+import {useEffect, useState} from 'react'
 import StatusBadge from '@/components/StatusBadge'
 import Loading from '@/components/Loading'
 import EmptyState from '@/components/EmptyState'
-import { useOrderStore } from '@/stores/orderStore'
-import { isCommented, markCommented } from '@/utils/commented'
+import {useOrderStore} from '@/stores/orderStore'
+import {isCommented, markCommented} from '@/utils/commented'
 import './detail.scss'
 
 function statusTip(status: string): string | null {
@@ -93,7 +93,7 @@ export default function OrderDetailPage() {
   if (detailError && !currentOrder) {
     return (
       <EmptyState
-        emoji='📡'
+        icon='empty'
         title='加载失败'
         description='预约详情暂时拉不下来，请重试'
         actionText='重试'
@@ -105,7 +105,7 @@ export default function OrderDetailPage() {
   if (!currentOrder) {
     return (
       <EmptyState
-        emoji='🔍'
+        icon='order'
         title='找不到这份预约'
         description='可能已被取消，或链接有误'
         actionText='返回预约列表'

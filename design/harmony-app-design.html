@@ -219,9 +219,9 @@
     width:26px; height:26px; border-radius:9px; background:linear-gradient(135deg,var(--ko2),var(--ko));
     color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; flex:none;
   }
-  .rec-scroll { display:flex; gap:12px; padding:14px 16px 0; overflow:hidden; }
+  .rec-scroll { display:flex; gap:12px; margin:14px 16px 0; padding:0; overflow:hidden; }
   .rec-card {
-    width:168px; flex:none; border-radius:20px; padding:14px; color:#fff; position:relative; overflow:hidden;
+    flex:1; min-width:0; border-radius:20px; padding:14px; color:#fff; position:relative; overflow:hidden;
   }
   .rec-card .rc-emoji { font-size:36px; }
   .rec-card .rc-name { font-size:14px; font-weight:700; margin-top:8px; }
@@ -579,6 +579,67 @@
   }
   .sheet .match .mk { width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; }
   .sheet .unmatch { margin-top:8px; font-size:11px; color:var(--amber); background:var(--amber-soft); border-radius:10px; padding:8px 10px; }
+
+  /* ===== Demo real photos ===== */
+  .ph { display:block; width:100%; height:100%; object-fit:cover; background:#EDE7DC; }
+  .rec-main.photo {
+    background:#2B2622; padding:0; min-height:168px;
+  }
+  .rec-main.photo .rm-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .rec-main.photo .rm-shade {
+    position:absolute; inset:0;
+    background:linear-gradient(180deg,rgba(43,38,34,.18) 0%,rgba(43,38,34,.78) 100%);
+  }
+  .rec-main.photo .rm-body { position:relative; z-index:1; padding:18px; }
+  .rec-main.photo .rm-tag { z-index:2; }
+  .rec-card.photo { padding:0; height:118px; background:#2B2622 !important; }
+  .rec-card.photo .rc-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .rec-card.photo .rc-shade {
+    position:absolute; inset:0;
+    background:linear-gradient(180deg,rgba(0,0,0,.05) 15%,rgba(0,0,0,.72) 100%);
+  }
+  .rec-card.photo .rc-body {
+    position:relative; z-index:1; padding:12px; height:100%;
+    display:flex; flex-direction:column; justify-content:flex-end;
+  }
+  .rec-card.photo .rc-tag { position:absolute; top:8px; right:8px; z-index:2;
+    font-size:10px; background:rgba(255,255,255,.25); padding:2px 8px; border-radius:99px; font-weight:600; }
+  .dc-ph, .mk-ph {
+    width:36px; height:36px; border-radius:11px; object-fit:cover; flex:none; background:#EDE7DC;
+  }
+  .mk-ph { width:32px; height:32px; border-radius:10px; }
+  .dish-img { overflow:hidden; padding:0 !important; font-size:0 !important; }
+  .dish-img .ph { border-radius:inherit; }
+  .d3-hero { position:relative; overflow:hidden; font-size:0 !important; }
+  .d3-hero .d3-cover { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .d3-hero .d3-back { z-index:2; }
+  .me-avatar, .avatar, .wx-avatar {
+    overflow:hidden; padding:0 !important; font-size:0 !important;
+    flex:none;
+  }
+  .me-avatar .ph, .avatar .ph, .wx-avatar .ph { border-radius:50%; }
+  .wx-avatar { border:1.5px solid #EFCB9C !important; background:#fff !important; }
+  .join-hero.photo {
+    position:relative; overflow:hidden; color:#fff; border:none;
+    background:#2B2622; min-height:110px;
+  }
+  .join-hero.photo .jh-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .join-hero.photo .jh-shade {
+    position:absolute; inset:0;
+    background:linear-gradient(135deg,rgba(43,38,34,.45),rgba(43,38,34,.72));
+  }
+  .join-hero.photo .jh-body { position:relative; z-index:1; }
+  .join-hero.photo h3 { color:#fff; }
+  .join-hero.photo p { color:rgba(255,255,255,.88); }
+  .k-hero.photo { background:#2B2622; }
+  .k-hero.photo .kh-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .k-hero.photo .kh-shade {
+    position:absolute; inset:0;
+    background:linear-gradient(135deg,rgba(240,123,31,.78) 0%,rgba(229,106,18,.88) 100%);
+  }
+  .k-hero.photo > *:not(.kh-bg):not(.kh-shade) { position:relative; z-index:1; }
+  .k-hero.photo::after { display:none; }
+
 </style>
 <link rel="preconnect" href="https://unpkg.com">
 <script src="https://unpkg.com/lucide@0.469.0"></script>
@@ -645,7 +706,7 @@
     <code style="color:#FFB36B">design/HARMONY_APP_DESIGN.md</code>。
   </p>
   <div class="doc-meta">
-    <span>v1.1 · Lucide 图标 · 2026-09-29</span>
+    <span>v1.4 · 真实照片演示 · 2026-09-30</span>
     <span>画布 360×780 vp</span>
     <span>HarmonyOS NEXT · ArkUI</span>
     <span>一期已落地 · 二～五期设计预览</span>
@@ -778,9 +839,13 @@
           <div class="statusbar"><span>9:41</span><span class="sicons">5G ▮▮▮</span></div>
           <div class="titlebar center"><div class="back"><i data-lucide="chevron-left"></i></div><h1>加入厨房</h1></div>
           <div class="grow">
-            <div class="join-hero">
-              <h3>输入 6 位邀请码</h3>
-              <p>向厨师要邀请码。提交后需厨师确认，通过后即可预约。</p>
+            <div class="join-hero photo">
+              <img class="jh-bg" src="assets/demo/kitchen.jpg" alt="厨房">
+              <div class="jh-shade"></div>
+              <div class="jh-body">
+                <h3>输入 6 位邀请码</h3>
+                <p>向厨师要邀请码。提交后需厨师确认，通过后即可预约。</p>
+              </div>
             </div>
             <div class="code-boxes">
               <span class="filled">K</span><span class="filled">8</span><span class="filled">3</span>
@@ -830,17 +895,23 @@
             <div class="ai-ask"><div class="spark"><i data-lucide="sparkles"></i></div>说一句话点菜<span style="margin-left:auto;color:var(--ko);font-weight:600">去试试</span></div>
             <div class="sec-row"><h4>今日推荐</h4><a>全部 ›</a></div>
             <div class="rec-scroll">
-              <div class="rec-card" style="background:linear-gradient(135deg,#FF9A3E,#F07B1F)">
+              <div class="rec-card photo">
+                <img class="rc-bg" src="assets/demo/pork.jpg" alt="红烧肉">
+                <div class="rc-shade"></div>
                 <div class="rc-tag">荐</div>
-                <div class="rc-emoji">🥩</div>
-                <div class="rc-name">红烧肉</div>
-                <div class="rc-meta">还剩 6 份 · 偏甜</div>
+                <div class="rc-body">
+                  <div class="rc-name">红烧肉</div>
+                  <div class="rc-meta">还剩 6 份 · 偏甜</div>
+                </div>
               </div>
-              <div class="rec-card" style="background:linear-gradient(135deg,#5FCFAE,#18A885)">
+              <div class="rec-card photo">
+                <img class="rc-bg" src="assets/demo/fish.jpg" alt="清蒸鲈鱼">
+                <div class="rc-shade"></div>
                 <div class="rc-tag">鲜</div>
-                <div class="rc-emoji">🐟</div>
-                <div class="rc-name">清蒸鲈鱼</div>
-                <div class="rc-meta">还剩 4 份 · 清淡</div>
+                <div class="rc-body">
+                  <div class="rc-name">清蒸鲈鱼</div>
+                  <div class="rc-meta">还剩 4 份 · 清淡</div>
+                </div>
               </div>
             </div>
             <div class="warn-stock"><i data-lucide="triangle-alert"></i> 番茄炒蛋今日还剩 2 份，想吃抓紧预约</div>
@@ -879,7 +950,7 @@
           </div>
           <div class="grow">
             <div class="dish-row">
-              <div class="dish-img" style="background:#FFE8C8">🥩</div>
+              <div class="dish-img"><img class="ph" src="assets/demo/pork.jpg" alt="红烧肉"></div>
               <div class="dish-body">
                 <div class="d-name">红烧肉</div>
                 <div class="d-meta">肥而不腻 · 评分 4.8</div>
@@ -890,7 +961,7 @@
               </div>
             </div>
             <div class="dish-row">
-              <div class="dish-img" style="background:#DDF5EC">🐟</div>
+              <div class="dish-img"><img class="ph" src="assets/demo/fish.jpg" alt="清蒸鲈鱼"></div>
               <div class="dish-body">
                 <div class="d-name">清蒸鲈鱼</div>
                 <div class="d-meta">清淡鲜嫩 · 评分 4.9</div>
@@ -901,7 +972,7 @@
               </div>
             </div>
             <div class="dish-row">
-              <div class="dish-img" style="background:#F5E6D8">🍅</div>
+              <div class="dish-img"><img class="ph" src="assets/demo/tomato.jpg" alt="番茄炒蛋"></div>
               <div class="dish-body">
                 <div class="d-name">番茄炒蛋</div>
                 <div class="d-meta">家常 · 评分 4.6</div>
@@ -912,7 +983,7 @@
               </div>
             </div>
             <div class="dish-row" style="opacity:.55">
-              <div class="dish-img" style="background:#EDE7DC;filter:grayscale(.5)">🥬</div>
+              <div class="dish-img" style="filter:grayscale(.45)"><img class="ph" src="assets/demo/greens.jpg" alt="蒜蓉生菜"></div>
               <div class="dish-body">
                 <div class="d-name">蒜蓉生菜</div>
                 <div class="d-meta">售罄</div>
@@ -944,7 +1015,7 @@
     <div class="shot">
       <div class="phone">
         <div class="screen">
-          <div class="d3-hero"><div class="d3-back">‹</div>🥩</div>
+          <div class="d3-hero"><img class="d3-cover" src="assets/demo/pork.jpg" alt="红烧肉"><div class="d3-back">‹</div></div>
           <div class="grow">
             <div class="d3-panel">
               <div class="d3-title">红烧肉 <span class="chip" style="background:var(--ko-soft);color:var(--ko)">荐</span></div>
@@ -985,17 +1056,17 @@
                 <span class="chip" style="background:var(--ko-soft);color:var(--ko)">明天 12:00 · 2 人</span>
               </div>
               <div class="dc-line">
-                <div class="dc-emoji" style="background:#FFE8C8">🥩</div>
+                <img class="dc-ph" src="assets/demo/pork.jpg" alt="红烧肉">
                 <div class="dc-name">红烧肉<small>少辣</small></div>
                 <b>×1</b>
               </div>
               <div class="dc-line">
-                <div class="dc-emoji" style="background:#DDF5EC">🐟</div>
+                <img class="dc-ph" src="assets/demo/fish.jpg" alt="清蒸鲈鱼">
                 <div class="dc-name">清蒸鲈鱼<small>清淡</small></div>
                 <b>×1</b>
               </div>
               <div class="dc-line">
-                <div class="dc-emoji" style="background:#F5E6D8">🍅</div>
+                <img class="dc-ph" src="assets/demo/tomato.jpg" alt="番茄炒蛋">
                 <div class="dc-name">番茄炒蛋</div>
                 <b>×1</b>
               </div>
@@ -1052,7 +1123,7 @@
           <div class="titlebar left"><h1>我的</h1></div>
           <div class="grow">
             <div class="me-card">
-              <div class="me-avatar">小</div>
+              <div class="me-avatar"><img class="ph" src="assets/demo/avatar-chen.jpg" alt="小陈"></div>
               <div>
                 <div class="me-name">小陈 <span class="me-role">食客</span></div>
                 <div class="me-sub">华为账号已绑定</div>
@@ -1100,7 +1171,9 @@
           <div class="statusbar"><span>9:41</span><span class="sicons">5G ▮▮▮</span></div>
           <div class="titlebar center"><div class="back"><i data-lucide="chevron-left"></i></div><h1>厨房工作台</h1></div>
           <div class="grow">
-            <div class="k-hero">
+            <div class="k-hero photo">
+              <img class="kh-bg" src="assets/demo/kitchen.jpg" alt="厨房">
+              <div class="kh-shade"></div>
               <div class="hello">下午好，老王</div>
               <div class="kname"><h2>老王的灶</h2><span class="verify">营业中</span></div>
               <div class="k-stats">
@@ -1125,7 +1198,7 @@
             <div class="order-card">
               <div class="oc-top">
                 <div class="oc-user">
-                  <div class="avatar" style="background:linear-gradient(135deg,var(--ko2),var(--ko))">陈</div>
+                  <div class="avatar"><img class="ph" src="assets/demo/avatar-chen.jpg" alt="小陈"></div>
                   <div>
                     <div class="oc-name">小陈</div>
                     <div class="oc-time">今天 11:20 提交 · 午餐 2 人</div>
@@ -1305,9 +1378,12 @@
           <div class="grow" style="opacity:.35;pointer-events:none">
             <div class="pad"><div class="kitchen-chip">老王的灶</div></div>
             <div class="rec-scroll" style="margin-top:20px">
-              <div class="rec-card" style="background:linear-gradient(135deg,#FF9A3E,#F07B1F)">
-                <div class="rc-emoji">🥩</div>
-                <div class="rc-name">红烧肉</div>
+              <div class="rec-card photo">
+                <img class="rc-bg" src="assets/demo/pork.jpg" alt="红烧肉">
+                <div class="rc-shade"></div>
+                <div class="rc-body">
+                  <div class="rc-name">红烧肉</div>
+                </div>
               </div>
             </div>
           </div>
@@ -1318,12 +1394,12 @@
               <p>只匹配当前厨房在售菜，对不上的会放进「没找到」。</p>
               <div class="field">中午想吃红烧肉和一条鱼，再来个素菜</div>
               <div class="match">
-                <div class="mk" style="background:#FFE8C8">🥩</div>
+                <img class="mk-ph" src="assets/demo/pork.jpg" alt="红烧肉">
                 <div style="flex:1"><b>红烧肉</b> · 已匹配</div>
                 <span>×1</span>
               </div>
               <div class="match">
-                <div class="mk" style="background:#DDF5EC">🐟</div>
+                <img class="mk-ph" src="assets/demo/fish.jpg" alt="清蒸鲈鱼">
                 <div style="flex:1"><b>清蒸鲈鱼</b> · 已匹配</div>
                 <span>×1</span>
               </div>

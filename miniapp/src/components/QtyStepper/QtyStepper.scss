@@ -1,0 +1,80 @@
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+
+  &--disabled {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  &--sm {
+    .qty-stepper__btn,
+    .qty-stepper__add {
+      width: 44px;
+      height: 44px;
+      font-size: 26px;
+    }
+
+    .qty-stepper__num {
+      min-width: 32px;
+      font-size: 24px;
+    }
+  }
+
+  &__add {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, $ck-primary, $ck-primary-deep);
+    color: #fff;
+    font-size: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 400;
+    box-shadow: 0 4px 12px rgba(240, 123, 31, 0.35);
+
+    &.is-disabled {
+      background: #e8e2d8;
+      box-shadow: none;
+    }
+  }
+
+  &__btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid $ck-line;
+    color: $ck-primary-deep;
+    font-size: 28px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(60, 45, 20, 0.08);
+
+    &--plus {
+      background: linear-gradient(135deg, $ck-primary, $ck-primary-deep);
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 12px rgba(240, 123, 31, 0.35);
+    }
+
+    &.is-disabled {
+      background: #e8e2d8;
+      box-shadow: none;
+      color: #fff;
+    }
+  }
+
+  &__num {
+    min-width: 36px;
+    text-align: center;
+    font-size: 26px;
+    font-weight: 700;
+    color: $ck-ink;
+  }
+}

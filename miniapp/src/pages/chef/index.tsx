@@ -1,43 +1,36 @@
-import {Button, Text, View} from '@tarojs/components'
+import {Text, View} from '@tarojs/components'
 import Taro, {useDidShow} from '@tarojs/taro'
 import {useMemo, useState} from 'react'
-import {type ChefOrder, fetchChefWorkbenchSummary, updateChefOrderStatus} from '@/api/kitchen'
+import {type ChefOrder, fetchChefWorkbenchSummary, fetchMyKitchen, updateChefOrderStatus} from '@/api/kitchen'
+import ChefRecentOrderCard from '@/components/ChefRecentOrderCard'
+import ChefWorkbenchHero from '@/components/ChefWorkbenchHero'
 import EmptyState from '@/components/EmptyState'
 import MiniIcon, {type MiniIconName} from '@/components/MiniIcon'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
 import {useChefWorkbench} from '@/hooks/useChefWorkbench'
 import {useUserStore} from '@/stores/userStore'
+import {toAbsoluteResourceUrl} from '@/utils/resourceUrl'
 import {prefetchChefWxSubscribeConfig, requestChefOrderSubscribe} from '@/utils/wxSubscribe'
 import './chef.scss'
 
-const MENUS = [
-  { label: '菜品', url: '/pages/chef/dishes', icon: 'dish' as MiniIconName, bg: '#FFF1E2' },
-  { label: '菜谱', url: '/pages/chef/recipes', icon: 'recipe' as MiniIconName, bg: '#E7F7F0' },
-  { label: '分类', url: '/pages/chef/categories', icon: 'category' as MiniIconName, bg: '#FBF3E0' },
-  { label: '预约', url: '/pages/chef/orders', icon: 'order' as MiniIconName, bg: '#EBF3FB', badgeKey: 'pending' as const },
-  { label: '食客申请', url: '/pages/chef/bindings', icon: 'people' as MiniIconName, bg: '#FCEEEA', badgeKey: 'apply' as const },
-  { label: '邀请码', url: '/pages/chef/invite', icon: 'ticket' as MiniIconName, bg: '#FFF1E2' },
-  { label: '厨房资料', url: '/pages/chef/kitchen', icon: 'home' as MiniIconName, bg: '#E7F7F0' },
-  { label: '经营统计', url: '/pages/chef/stats', icon: 'trend' as MiniIconName, bg: '#F4F0E9' }
+const MENUS: {
+  label: string
+  url: string
+  icon: MiniIconName
+  bg: string
+  badgeKey?: 'pending' | 'apply'
+}[] = [
+  { label: '菜品', url: '/pages/chef/dishes', icon: 'dish', bg: '#FFF1E2' },
+  { label: '菜谱', url: '/pages/chef/recipes', icon: 'recipe', bg: '#FFF1E2' },
+  { label: '分类', url: '/pages/chef/categories', icon: 'category', bg: '#F5E6D8' },
+  { label: '预约', url: '/pages/chef/orders', icon: 'order', bg: '#FBF3E0', badgeKey: 'pending' },
+  { label: '申请', url: '/pages/chef/bindings', icon: 'people', bg: '#EBF3FB', badgeKey: 'apply' },
+  { label: '邀请码', url: '/pages/chef/invite', icon: 'ticket', bg: '#E7F7F0' },
+  { label: '资料', url: '/pages/chef/kitchen', icon: 'home', bg: '#F4F0E9' },
+  { label: '统计', url: '/pages/chef/stats', icon: 'trend', bg: '#FFE8C8' }
 ]
 
-const NEXT: Record<string, { status: string; label: string }> = {
-  PENDING: { status: 'CONFIRMED', label: '确认' },
-  CONFIRMED: { status: 'PREPARING', label: '开始备餐' },
-  PREPARING: { status: 'READY', label: '可以取餐' },
-  READY: { status: 'COMPLETED', label: '完成' }
-}
-
-const STATUS_CHIP: Record<string, { text: string; cls: string }> = {
-  PENDING: { text: '待确认', cls: 'ck-chip--warn' },
-  CONFIRMED: { text: '已确认', cls: 'ck-chip--info' },
-  PREPARING: { text: '备餐中', cls: 'ck-chip--info' },
-  READY: { text: '待取餐', cls: 'ck-chip--ok' },
-  COMPLETED: { text: '已完成', cls: 'ck-chip--ok' },
-  CANCELLED: { text: '已取消', cls: 'ck-chip--none' }
-}
-
-const AVATAR_COLORS = ['#F07B1F', '#18A885', '#4A90D9', '#D99426', '#E15A4B']
+const ACTIONABLE = new Set(['PENDING', 'CONFIRMED', 'PREPARING', 'READY'])
 
 function greetByHour() {
   const h = new Date().getHours()
@@ -47,36 +40,15 @@ function greetByHour() {
   return '晚上好'
 }
 
-function relativeTime(value?: string) {
-  if (!value) return ''
-  const t = new Date(value).getTime()
-  if (Number.isNaN(t)) return value.replace('T', ' ').slice(0, 16)
-  const diff = Date.now() - t
-  const m = Math.floor(diff / 60000)
-  if (m < 1) return '刚刚提交'
-  if (m < 60) return `${m} 分钟前提交`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h} 小时前提交`
-  return value.replace('T', ' ').slice(0, 16)
-}
-
-function itemSummary(order: ChefOrder) {
-  const items = order.items || []
-  if (!items.length) return '暂无菜品明细'
-  return items.map((it) => `${it.dishName} ×${it.quantity}`).join(' · ')
-}
-
-function mealLine(order: ChefOrder): string {
-  const parts: string[] = []
-  if (order.mealDate) parts.push(order.mealDate)
-  if (order.mealTime) parts.push(order.mealTime)
-  if (order.guestCount) parts.push(`${order.guestCount} 人`)
-  return parts.join(' · ')
-}
-
-function nickInitial(name?: string) {
-  const n = (name || '客').trim()
-  return n.slice(0, 1)
+function sortRecent(list: ChefOrder[]) {
+  return [...list].sort((a, b) => {
+    const aa = ACTIONABLE.has(a.status) ? 0 : 1
+    const bb = ACTIONABLE.has(b.status) ? 0 : 1
+    if (aa !== bb) return aa - bb
+    const ta = a.createTime ? new Date(a.createTime).getTime() : 0
+    const tb = b.createTime ? new Date(b.createTime).getTime() : 0
+    return tb - ta
+  })
 }
 
 export default function ChefHomePage() {
@@ -84,6 +56,7 @@ export default function ChefHomePage() {
   const user = useUserStore((s) => s.user)
   const [kitchenName, setKitchenName] = useState('我的厨房')
   const [kitchenStatus, setKitchenStatus] = useState<string | undefined>()
+  const [coverUrl, setCoverUrl] = useState<string | undefined>()
   const [pending, setPending] = useState(0)
   const [preparing, setPreparing] = useState(0)
   const [onSale, setOnSale] = useState(0)
@@ -98,7 +71,10 @@ export default function ChefHomePage() {
   )
 
   const load = async () => {
-    const summary = await fetchChefWorkbenchSummary()
+    const [summary, kitchen] = await Promise.all([
+      fetchChefWorkbenchSummary(),
+      fetchMyKitchen().catch(() => null)
+    ])
     if (summary.kitchenName) setKitchenName(summary.kitchenName)
     setKitchenStatus(summary.kitchenStatus)
     setPending(summary.pendingOrders)
@@ -106,7 +82,9 @@ export default function ChefHomePage() {
     setOnSale(summary.onSaleDishes)
     setDiners(summary.boundDiners)
     setApplyCount(summary.pendingBindings)
-    setRecent(summary.recentOrders.slice(0, 5))
+    setRecent(sortRecent(summary.recentOrders).slice(0, 5))
+    const cover = kitchen?.coverUrl || toAbsoluteResourceUrl(kitchen?.coverImage)
+    setCoverUrl(cover || undefined)
   }
 
   useDidShow(() => {
@@ -126,7 +104,13 @@ export default function ChefHomePage() {
   }
 
   const advance = async (order: ChefOrder) => {
-    const next = NEXT[order.status]
+    const map: Record<string, { status: string; label: string }> = {
+      PENDING: { status: 'CONFIRMED', label: '确认' },
+      CONFIRMED: { status: 'PREPARING', label: '开始备餐' },
+      PREPARING: { status: 'READY', label: '可以取餐' },
+      READY: { status: 'COMPLETED', label: '完成' }
+    }
+    const next = map[order.status]
     if (!next || actingId) return
     setActingId(order.id)
     try {
@@ -146,14 +130,14 @@ export default function ChefHomePage() {
   const rejectOrder = (order: ChefOrder) => {
     if (actingId) return
     Taro.showModal({
-      title: '拒绝预约',
-      content: `确认拒绝「${order.userNickname || '食客'}」的预约？`,
+      title: '驳回预约',
+      content: `确认驳回「${order.userNickname || '食客'}」的预约？`,
       success: async (res) => {
         if (!res.confirm) return
         setActingId(order.id)
         try {
           await updateChefOrderStatus(order.id, 'CANCELLED')
-          Taro.showToast({ title: '已拒绝', icon: 'success' })
+          Taro.showToast({ title: '已驳回', icon: 'success' })
           await load()
         } catch (err) {
           Taro.showToast({
@@ -167,62 +151,64 @@ export default function ChefHomePage() {
     })
   }
 
+  const statusText =
+    kitchenStatus === 'OPEN' ? '营业中' : kitchenStatus === 'CLOSED' ? '暂停营业' : '我的厨房'
+
+  const nick = user?.nickname || '厨师'
+
   return (
     <View className='chef-page'>
       <View className='chef-page__svc-switch'>
         <ServiceSwitcher compact activeKey='chef' />
       </View>
-      <View className='chef-page__hero-card'>
-        <Text className='chef-page__hello'>
-          {greetByHour()}，{user?.nickname || '厨师'} 👋
-        </Text>
-        <View className='chef-page__kname'>
-          <Text className='chef-page__kname-text'>{kitchenName}</Text>
-          <Text className='chef-page__verify'>
-            {kitchenStatus === 'OPEN' ? '营业中' : kitchenStatus === 'CLOSED' ? '暂停营业' : '我的厨房'}
-          </Text>
-        </View>
-        <View className='chef-page__stats'>
-          <View className='chef-page__stat'>
-            <Text className='chef-page__stat-num'>{pending}</Text>
-            <Text className='chef-page__stat-label'>待确认</Text>
-          </View>
-          <View className='chef-page__stat'>
-            <Text className='chef-page__stat-num'>{preparing}</Text>
-            <Text className='chef-page__stat-label'>备餐中</Text>
-          </View>
-          <View className='chef-page__stat'>
-            <Text className='chef-page__stat-num'>{onSale}</Text>
-            <Text className='chef-page__stat-label'>在售菜品</Text>
-          </View>
-          <View className='chef-page__stat'>
-            <Text className='chef-page__stat-num'>{diners}</Text>
-            <Text className='chef-page__stat-label'>食客</Text>
-          </View>
-        </View>
-      </View>
+
+      <ChefWorkbenchHero
+        greet={`${greetByHour()}，${nick}`}
+        kitchenName={kitchenName}
+        statusText={statusText}
+        coverUrl={coverUrl}
+        stats={[
+          {
+            value: pending,
+            label: '待确认',
+            onClick: () => go('/pages/chef/orders', true)
+          },
+          {
+            value: preparing,
+            label: '备餐中',
+            onClick: () => go('/pages/chef/orders', true)
+          },
+          {
+            value: onSale,
+            label: '在售',
+            onClick: () => go('/pages/chef/dishes')
+          },
+          {
+            value: diners,
+            label: '食客',
+            onClick: () => go('/pages/chef/bindings')
+          }
+        ]}
+      />
 
       <View className='chef-page__sec-row'>
-        <Text className='chef-page__sec-title'>厨房管理</Text>
+        <Text className='chef-page__sec-title'>快捷入口</Text>
       </View>
       <View className='chef-page__grid'>
         {MENUS.map((m) => {
-          const badge =
-            m.badgeKey && badges[m.badgeKey] > 0 ? badges[m.badgeKey] : 0
+          const badge = m.badgeKey && badges[m.badgeKey] > 0 ? badges[m.badgeKey] : 0
           return (
             <View
               key={m.label}
               className='chef-page__g8 ck-pressable'
-              onClick={() => {
-                if (!m.url) {
-                  Taro.showToast({ title: '即将开放', icon: 'none' })
-                  return
-                }
-                go(m.url, m.url.includes('/chef/orders'))
-              }}
+              onClick={() => go(m.url, m.url.includes('/chef/orders'))}
             >
               <View className='chef-page__g8-ico' style={{ background: m.bg }}>
-                <MiniIcon name={m.icon} size='md' tone={m.label === '菜谱' || m.label === '厨房资料' ? 'mint' : 'default'} />
+                <MiniIcon
+                  name={m.icon}
+                  size='md'
+                  tone={m.label === '邀请码' ? 'mint' : 'default'}
+                />
               </View>
               <Text className='chef-page__g8-label'>{m.label}</Text>
               {badge > 0 ? (
@@ -235,10 +221,7 @@ export default function ChefHomePage() {
 
       <View className='chef-page__sec-row'>
         <Text className='chef-page__sec-title'>最新预约</Text>
-        <Text
-          className='chef-page__sec-more'
-          onClick={() => go('/pages/chef/orders', true)}
-        >
+        <Text className='chef-page__sec-more' onClick={() => go('/pages/chef/orders', true)}>
           全部 ›
         </Text>
       </View>
@@ -248,66 +231,18 @@ export default function ChefHomePage() {
           <EmptyState title='暂无预约' description='食客下单后会出现在这里' />
         </View>
       ) : (
-        recent.map((o, idx) => {
-          const next = NEXT[o.status]
-          const chip = STATUS_CHIP[o.status] || STATUS_CHIP.PENDING
-          const nick = o.userNickname || '厨房朋友'
-          return (
-            <View key={o.id} className='chef-page__order-card'>
-              <View className='chef-page__oc-top'>
-                <View className='chef-page__oc-user'>
-                  <View
-                    className='chef-page__avatar'
-                    style={{ background: AVATAR_COLORS[idx % AVATAR_COLORS.length] }}
-                  >
-                    <Text>{nickInitial(nick)}</Text>
-                  </View>
-                  <View>
-                    <Text className='chef-page__oc-name'>{nick}</Text>
-                    <Text className='chef-page__oc-time'>{relativeTime(o.createTime)}</Text>
-                  </View>
-                </View>
-                <Text className={`ck-chip ${chip.cls}`}>{chip.text}</Text>
-              </View>
-              <Text className='chef-page__oc-dishes'>{itemSummary(o)}</Text>
-              {mealLine(o) ? (
-                <Text className='chef-page__oc-meta' style={{ marginTop: '8px' }}>
-                  用餐 {mealLine(o)}
-                </Text>
-              ) : null}
-              {o.remark ? (
-                <Text className='chef-page__oc-meta' style={{ marginTop: '8px' }}>
-                  备注：{o.remark}
-                </Text>
-              ) : null}
-              <View className='chef-page__oc-foot'>
-                <Text className='chef-page__oc-meta'>单号 #{o.orderNo}</Text>
-                {next ? (
-                  <View className='chef-page__oc-actions'>
-                    {o.status === 'PENDING' ? (
-                      <Button
-                        className='chef-page__btn-xs chef-page__btn-xs--ghost'
-                        size='mini'
-                        disabled={actingId === o.id}
-                        onClick={() => rejectOrder(o)}
-                      >
-                        拒绝
-                      </Button>
-                    ) : null}
-                    <Button
-                      className='chef-page__btn-xs chef-page__btn-xs--solid'
-                      size='mini'
-                      loading={actingId === o.id}
-                      onClick={() => void advance(o)}
-                    >
-                      {o.status === 'PENDING' ? '确认' : next.label}
-                    </Button>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-          )
-        })
+        <View className='chef-page__book-list'>
+          {recent.map((o) => (
+            <ChefRecentOrderCard
+              key={o.id}
+              order={o}
+              acting={actingId === o.id}
+              onAdvance={(ord) => void advance(ord)}
+              onReject={rejectOrder}
+              onOpen={() => go('/pages/chef/orders', true)}
+            />
+          ))}
+        </View>
       )}
     </View>
   )

@@ -1,31 +1,19 @@
-import { View, Text, ScrollView, Input } from '@tarojs/components'
-import Taro, { useDidShow, usePullDownRefresh, useReachBottom } from '@tarojs/taro'
-import { useEffect, useRef, useState } from 'react'
+import {Input, ScrollView, Text, View} from '@tarojs/components'
+import Taro, {useDidShow, usePullDownRefresh, useReachBottom} from '@tarojs/taro'
+import {useEffect, useRef, useState} from 'react'
 import DishCard from '@/components/DishCard'
 import EmptyState from '@/components/EmptyState'
 import Loading from '@/components/Loading'
-import ServiceSwitcher, { DraftOrderBar } from '@/components/ServiceSwitcher'
-import { fetchCategories } from '@/api/category'
-import { fetchDishes } from '@/api/dish'
-import { fetchMyBinding } from '@/api/kitchen'
-import { useAuthGuard } from '@/hooks/useAuthGuard'
-import { useOrderStore } from '@/stores/orderStore'
-import { PRODUCT_META, useProductStore } from '@/stores/productStore'
-import { useUserStore } from '@/stores/userStore'
-import type { Category, Dish } from '@/types'
+import ServiceSwitcher, {DraftOrderBar} from '@/components/ServiceSwitcher'
+import {fetchCategories} from '@/api/category'
+import {fetchDishes} from '@/api/dish'
+import {fetchMyBinding} from '@/api/kitchen'
+import {useAuthGuard} from '@/hooks/useAuthGuard'
+import {useDraftDishActions} from '@/hooks/useDraftDishActions'
+import {PRODUCT_META, useProductStore} from '@/stores/productStore'
+import {useUserStore} from '@/stores/userStore'
+import type {Category, Dish} from '@/types'
 import './index.scss'
-
-const CAT_EMOJI = ['🥩', '🥬', '🍲', '🍚', '🍰', '🥗', '🍜', '🍵']
-
-function catLabel(name: string, index: number) {
-  if (name === '全部') return '全部'
-  if (/荤/.test(name)) return `🥩 ${name}`
-  if (/素/.test(name)) return `🥬 ${name}`
-  if (/汤/.test(name)) return `🍲 ${name}`
-  if (/主食|饭/.test(name)) return `🍚 ${name}`
-  if (/甜|点心/.test(name)) return `🍰 ${name}`
-  return `${CAT_EMOJI[index % CAT_EMOJI.length]} ${name}`
-}
 
 const CATEGORY_KEY = 'miyf_kitchen_category_id'
 const ALL = 'all'
@@ -37,6 +25,7 @@ export default function CategoryPage() {
   const setProduct = useProductStore((s) => s.setProduct)
   const isLoggedIn = useUserStore((s) => s.isLoggedIn)
   const user = useUserStore((s) => s.user)
+  const { draftQtyMap, addToDraft, decDraft } = useDraftDishActions()
   const [activeId, setActiveId] = useState(ALL)
   const [categories, setCategories] = useState<Category[]>([])
   const [dishes, setDishes] = useState<Dish[]>([])
@@ -52,9 +41,6 @@ export default function CategoryPage() {
   const [kitchenName, setKitchenName] = useState('')
   const [keyword, setKeyword] = useState('')
   const [searchInput, setSearchInput] = useState('')
-  const draft = useOrderStore((s) => s.draft)
-  const setDraftItem = useOrderStore((s) => s.setDraftItem)
-  const updateDraftItemQty = useOrderStore((s) => s.updateDraftItemQty)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const activeIdRef = useRef(activeId)
   const keywordRef = useRef(keyword)
@@ -207,40 +193,6 @@ export default function CategoryPage() {
   const tabs: Category[] = [{ id: ALL, name: '全部' }, ...categories]
   const hasMore = dishes.length < total
 
-  const addToDraft = (dish: Dish) => {
-    const soldOut = dish.stockType === 'LIMITED' && (dish.stock == null || dish.stock <= 0)
-    if (soldOut) {
-      Taro.showToast({ title: '今日已约满', icon: 'none' })
-      return
-    }
-    const existing = draft.items.find((i) => i.dishId === dish.id)
-    const nextQty = (existing?.quantity || 0) + 1
-    if (dish.stockType === 'LIMITED' && dish.stock != null && nextQty > dish.stock) {
-      Taro.showToast({ title: `最多预约 ${dish.stock} 份`, icon: 'none' })
-      return
-    }
-    setDraftItem({
-      dishId: dish.id,
-      dishName: dish.name,
-      coverUrl: dish.coverUrl,
-      quantity: nextQty
-    })
-  }
-
-  const decDraft = (dish: Dish) => {
-    const existing = draft.items.find((i) => i.dishId === dish.id)
-    if (!existing) return
-    updateDraftItemQty(dish.id, existing.quantity - 1)
-  }
-
-  const draftQtyMap = (() => {
-    const map: Record<string, number> = {}
-    draft.items.forEach((it) => {
-      map[it.dishId] = it.quantity
-    })
-    return map
-  })()
-
   if (bootstrapping) {
     return <Loading fullscreen text='整理菜品柜…' />
   }
@@ -253,7 +205,7 @@ export default function CategoryPage() {
     return (
       <View className='category-page'>
         <EmptyState
-          emoji='🔑'
+          icon='ticket'
           title='登录后看专属菜单'
           description='胡闹厨房没有公开菜，加入厨师厨房后才能浏览。'
           actionText='去登录'
@@ -267,7 +219,7 @@ export default function CategoryPage() {
     return (
       <View className='category-page'>
         <EmptyState
-          emoji='🔑'
+          icon='ticket'
           title={
             pending
               ? `等待「${kitchenName || '厨房'}」确认`
@@ -297,17 +249,8 @@ export default function CategoryPage() {
 
   return (
     <View className='category-page'>
-      <View className='category-page__top'>
+      <View className='category-page__nav'>
         <ServiceSwitcher compact className='category-page__switch' />
-        <Input
-          className='category-page__search'
-          type='text'
-          confirmType='search'
-          placeholder='想吃什么？搜搜看'
-          value={searchInput}
-          onInput={(e) => onSearchInput(e.detail.value)}
-          onConfirm={onSearchConfirm}
-        />
       </View>
 
       <ScrollView scrollX className='category-page__tabs' enhanced showScrollbar={false}>
@@ -319,64 +262,71 @@ export default function CategoryPage() {
             }`}
             onClick={() => handleSelect(cat.id)}
           >
-            <Text>{catLabel(cat.name, tabs.indexOf(cat))}</Text>
+            <Text>{cat.name}</Text>
           </View>
         ))}
       </ScrollView>
 
+      <View className='category-page__toolbar'>
+        <Input
+          className='category-page__search'
+          type='text'
+          confirmType='search'
+          placeholder='搜菜名 / 口味'
+          value={searchInput}
+          onInput={(e) => onSearchInput(e.detail.value)}
+          onConfirm={onSearchConfirm}
+        />
+        <View className='category-page__count-chip'>
+          <Text>
+            在售 <Text className='category-page__count-n'>{total}</Text>
+          </Text>
+        </View>
+      </View>
+
       <View className='category-page__content'>
         {loading && dishes.length > 0 && (
-          <Text className='category-page__count'>刷新中…</Text>
+          <Text className='category-page__hint'>刷新中…</Text>
         )}
         {loadError ? (
           <EmptyState
-            emoji='🥗'
+            icon='dish'
             title='加载失败'
             description='菜品列表暂时拉不下来，请重试'
             actionText='重试'
             onAction={() => void loadData(activeId, keyword, 1, false)}
           />
+        ) : dishes.length === 0 ? (
+          <EmptyState
+            icon='dish'
+            title='这一栏还没摆满'
+            description={
+              keyword.trim()
+                ? '换个关键词试试，或者看看其他分类'
+                : '换个分类看看，或者告诉厨房你想吃什么'
+            }
+          />
         ) : (
-          <>
-            {!loading && dishes.length > 0 && (
-              <Text className='category-page__count'>
-                共 {total} 道{hasMore ? ` · 已显示 ${dishes.length}` : ''}
-              </Text>
-            )}
-            {dishes.length === 0 ? (
-              <EmptyState
-                emoji='🥗'
-                title='这一栏还没摆满'
-                description={
-                  keyword.trim()
-                    ? '换个关键词试试，或者看看其他分类'
-                    : '换个分类看看，或者告诉厨房你想吃什么'
-                }
+          <View className='category-page__list'>
+            {dishes.map((dish) => (
+              <DishCard
+                key={dish.id}
+                dish={dish}
+                variant='cover'
+                quantity={draftQtyMap[dish.id] || 0}
+                onAdd={addToDraft}
+                onDec={decDraft}
               />
-            ) : (
-              <View className='category-page__grid'>
-                {dishes.map((dish) => (
-                  <View key={dish.id} className='category-page__item'>
-                    <DishCard
-                      dish={dish}
-                      compact
-                      quantity={draftQtyMap[dish.id] || 0}
-                      onAdd={addToDraft}
-                      onDec={decDraft}
-                    />
-                  </View>
-                ))}
-              </View>
-            )}
-            {hasMore && (
-              <View
-                className='category-page__more ck-pressable'
-                onClick={() => void loadMore()}
-              >
-                <Text>{loadingMore ? '加载中…' : '加载更多'}</Text>
-              </View>
-            )}
-          </>
+            ))}
+          </View>
+        )}
+        {hasMore && (
+          <View
+            className='category-page__more ck-pressable'
+            onClick={() => void loadMore()}
+          >
+            <Text>{loadingMore ? '加载中…' : '加载更多'}</Text>
+          </View>
         )}
       </View>
       <DraftOrderBar />

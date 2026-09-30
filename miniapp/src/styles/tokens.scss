@@ -1,1 +1,3 @@
-@import './variables.scss';
+// 设计 token 入口：全局已通过 sass.resource 注入 variables.scss
+// 若某处需显式引用，使用：@use '@/styles/variables.scss' as *;
+@forward './variables.scss';

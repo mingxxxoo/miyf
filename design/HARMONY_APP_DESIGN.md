@@ -1,7 +1,7 @@
 # miyf 鸿蒙 NEXT · 完整应用设计
 
-> 版本：v1.0 · 2026-09-29  
-> 状态：设计基线（对齐一期～五期已落地工程）  
+> 版本：v1.4 · 2026-09-30  
+> 状态：设计基线（对齐一期～五期已落地工程）· **演示图改用真实照片**（`design/assets/demo/`）  
 > 演示稿：[`design/harmony-app-design.html`](./harmony-app-design.html)  
 > 视觉 Token 同源：[`design/MINIAPP_APP_DESIGN.md`](./MINIAPP_APP_DESIGN.md) · [`design/miniapp-app-design.html`](./miniapp-app-design.html)（v2 对照 [`miniapp-redesign.html`](./miniapp-redesign.html)）  
 > 工程：[`harmony/`](../harmony/) · 提示词：[`NATIVE_CLIENT_PROMPTS.md`](./NATIVE_CLIENT_PROMPTS.md)
@@ -255,6 +255,8 @@ PENDING → CANCELLED   （仅食客、仅待确认）
 
 画布按 **360×780** 手机壳 + 底部手势条渲染，区别于小程序稿的 iPhone 刘海壳。
 
+菜品封面、头像、厨房背景与小程序稿同源，使用 [`assets/demo/`](./assets/demo/) 真实照片，不再用食物 emoji 占位。
+
 ---
 
 ## 10. 相关文档
@@ -281,3 +283,4 @@ PENDING → CANCELLED   （仅食客、仅待确认）
 | v1.1 | 2026-09-29 | 工程落地一期视觉对齐 + 二期厨师工作台（见 `harmony/`） |
 | v1.2 | 2026-09-29 | 三期健康总览 / 详情 / 华为运动健康授权与同步 |
 | v1.3 | 2026-09-29 | 四期 AI：点菜半模态、饮食参考卡、厨师文字建菜 |
+| v1.4 | 2026-09-30 | 演示稿菜品/头像/厨房改用 `assets/demo/` 真实照片 |

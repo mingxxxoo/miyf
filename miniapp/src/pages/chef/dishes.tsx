@@ -1,33 +1,29 @@
-import { View, Text, Input, Textarea, Button, Image, Switch, Picker, ScrollView } from '@tarojs/components'
-import Taro, { useDidShow } from '@tarojs/taro'
-import { useMemo, useState } from 'react'
+import {Button, Image, Input, Picker, ScrollView, Switch, Text, Textarea, View} from '@tarojs/components'
+import Taro, {useDidShow} from '@tarojs/taro'
+import {useMemo, useState} from 'react'
+import {type ChefDishAiDraft, type ChefDishAiRecipeDraft, extractChefDishes} from '@/api/ai'
+import {fetchCategories} from '@/api/category'
 import {
-  extractChefDishes,
-  type ChefDishAiDraft,
-  type ChefDishAiRecipeDraft
-} from '@/api/ai'
-import { fetchCategories } from '@/api/category'
-import {
-  createChefCategory,
-  createChefDish,
-  deleteChefDish,
-  fetchChefDishes,
-  publishChefDish,
-  saveChefRecipe,
-  submitChefDish,
-  unpublishChefDish,
-  updateChefDish,
-  uploadChefDishImage,
-  withdrawChefDish,
-  type ChefDish,
-  type ChefDishSavePayload
+    type ChefDish,
+    type ChefDishSavePayload,
+    createChefCategory,
+    createChefDish,
+    deleteChefDish,
+    fetchChefDishes,
+    publishChefDish,
+    saveChefRecipe,
+    submitChefDish,
+    unpublishChefDish,
+    updateChefDish,
+    uploadChefDishImage,
+    withdrawChefDish
 } from '@/api/kitchen'
 import AiPromptSheet from '@/components/AiPromptSheet'
 import EmptyState from '@/components/EmptyState'
 import ServiceSwitcher from '@/components/ServiceSwitcher'
-import { useChefWorkbench } from '@/hooks/useChefWorkbench'
-import type { Category } from '@/types'
-import { toAbsoluteResourceUrl, toResourceUrl } from '@/utils/resourceUrl'
+import {useChefWorkbench} from '@/hooks/useChefWorkbench'
+import type {Category} from '@/types'
+import {toAbsoluteResourceUrl, toResourceUrl} from '@/utils/resourceUrl'
 import './chef.scss'
 
 const MAX_IMAGES = 6
@@ -419,7 +415,7 @@ export default function ChefDishesPage() {
             setAiUrl('')
           }}
         >
-          ✨ AI
+          AI 建菜
         </Text>
         <Text
           className='chef-page__search-add'
@@ -746,7 +742,7 @@ export default function ChefDishesPage() {
 
       <AiPromptSheet
         visible={aiOpen}
-        title='✨ AI 建菜'
+        title='AI 建菜'
         hint='粘贴菜谱文字或网页链接，识别后填入表单，确认再保存。'
         placeholder='例如：红烧肉，五花肉五花肉慢炖，少油微甜，限量 10 份…'
         showUrl

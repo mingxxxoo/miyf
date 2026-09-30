@@ -11,6 +11,8 @@ export interface KitchenVo {
   name: string
   intro?: string
   coverImage?: string
+  /** 绝对封面 URL，便于 Image 展示 */
+  coverUrl?: string
   status?: string
 }
 
@@ -102,7 +104,17 @@ export async function activateOrSwitchRole(
 }
 
 export async function fetchMyKitchen(): Promise<KitchenVo | null> {
-  return get<KitchenVo | null>('/api/my-kitchen', undefined, { showError: false }).catch(() => null)
+  const raw = await get<KitchenVo | null>('/api/my-kitchen', undefined, { showError: false }).catch(
+    () => null
+  )
+  if (!raw) return null
+  const cover = raw.coverImage || raw.coverUrl
+  return {
+    ...raw,
+    id: asId(raw.id),
+    coverImage: toResourceUrl(cover) || undefined,
+    coverUrl: toAbsoluteResourceUrl(cover) || undefined
+  }
 }
 
 export async function saveMyKitchen(payload: {
