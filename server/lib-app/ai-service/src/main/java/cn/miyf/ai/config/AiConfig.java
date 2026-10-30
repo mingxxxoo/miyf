@@ -1,10 +1,5 @@
 package cn.miyf.ai.config;
 
-import cn.miyf.ai.prompt.AiPromptTemplates;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,7 +7,7 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 /**
- * AI 模块 Bean 注册：ChatClient、网页抓取客户端。
+ * AI 模块 Bean 注册：provider 客户端注册表、网页抓取客户端。
  *
  * @author XieMingJie
  * @since 2026-09-17
@@ -38,23 +33,17 @@ public class AiConfig {
     }
 
     /**
-     * 默认 ChatClient；仅在 app.ai.enabled=true 且 Spring AI ChatClient.Builder 可用时创建。
+     * AI provider 注册表；按 app.ai.providers 逐个构建客户端，调用顺序为主用 → 兜底。
      *
-     * @param builder    Spring AI 自动配置的 Builder（OpenAI 协议 / DashScope 兼容模式）
+     * <p>不再依赖 Spring AI 自动配置的 ChatClient.Builder，因此切换 provider 只需改配置，
+     * 且总开关关闭时不会创建任何模型客户端。</p>
+     *
      * @param properties AI 配置
-     * @return ChatClient
+     * @return 注册表
      * @history 1.00 2026-09-17 XieMingJie Created.
      */
     @Bean
-    @ConditionalOnProperty(prefix = "app.ai", name = "enabled", havingValue = "true")
-    @ConditionalOnBean(ChatClient.Builder.class)
-    public ChatClient aiChatClient(ChatClient.Builder builder, AiProperties properties) {
-        return builder
-                .defaultSystem(AiPromptTemplates.COMMON_SYSTEM_HEAD)
-                .defaultOptions(ChatOptions.builder()
-                        .model(properties.getModel())
-                        .temperature(0.2d)
-                        .maxTokens(properties.getMaxTokens()))
-                .build();
+    public AiChatClientRegistry aiChatClientRegistry(AiProperties properties) {
+        return AiChatClientRegistry.create(properties);
     }
 }

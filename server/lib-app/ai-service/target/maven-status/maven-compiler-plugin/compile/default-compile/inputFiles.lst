@@ -9,6 +9,7 @@ F:\tool\miyf\server\lib-app\ai-service\src\main\java\cn\miyf\ai\bean\vo\ChefDish
 F:\tool\miyf\server\lib-app\ai-service\src\main\java\cn\miyf\ai\bean\vo\OrderDraftAiVo.java
 F:\tool\miyf\server\lib-app\ai-service\src\main\java\cn\miyf\ai\bean\vo\OrderInsightAiVo.java
 F:\tool\miyf\server\lib-app\ai-service\src\main\java\cn\miyf\ai\chef\ChefDishAiService.java
+F:\tool\miyf\server\lib-app\ai-service\src\main\java\cn\miyf\ai\config\AiChatClientRegistry.java
 F:\tool\miyf\server\lib-app\ai-service\src\main\java\cn\miyf\ai\config\AiConfig.java
 F:\tool\miyf\server\lib-app\ai-service\src\main\java\cn\miyf\ai\config\AiProperties.java
 F:\tool\miyf\server\lib-app\ai-service\src\main\java\cn\miyf\ai\controller\personal\ChefAiController.java

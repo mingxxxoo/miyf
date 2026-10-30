@@ -4,7 +4,7 @@
 > 范围：① 系统引入 spring-ai；② 厨师端「文本/网页链接 → 菜品与菜单」；③ 食客端「文本 → 预约单草稿（不提交）+ 健康指标满足度分析」
 >
 > 后端入口：`POST /api/chef/ai/dishes/extract`、`POST /api/ai/orders/draft`、`POST /api/ai/orders/insight`  
-> 启用：`APP_AI_ENABLED=true` + `SPRING_AI_MODEL_CHAT=openai` + `DASHSCOPE_API_KEY`（OpenAI Starter + DashScope compatible-mode）
+> 启用：`APP_AI_ENABLED=true` + provider 密钥（默认主用 `OPENCODE_API_KEY`，兜底 `DASHSCOPE_API_KEY`）；端点与模型见 `app.ai.providers`，调用顺序为主用 → 兜底
 >
 > 原生三端 UI / 鸿蒙工程提示词见 [`design/NATIVE_CLIENT_PROMPTS.md`](../design/NATIVE_CLIENT_PROMPTS.md)。
 
@@ -40,18 +40,7 @@ server/ai-service（新增模块，或并入各业务 service 的 ai 包）
 
 ### 1.2 通用配置
 
-```java
-@Bean
-ChatClient aiChatClient(ChatClient.Builder builder) {
-    return builder
-        .defaultOptions(ChatOptionsBuilder.builder()
-            .withModel("qwen-plus")        // 默认；结构化任务用稳定版模型，不用 latest
-            .withTemperature(0.2)          // 抽取类任务低温度；文案润色类可调 0.7
-            .withMaxTokens(4096)
-            .build())
-        .build();
-}
-```
+实际实现见 `AiChatClientRegistry`：按 `app.ai.providers` 为每个 provider 各建一个 `ChatClient`，模型、端点、密钥、超时全部来自配置，代码里不写死；调用顺序为主用 → 兜底，参数由场景传入（见下表）。
 
 | 参数 | 场景一（建菜） | 场景二（预约单） | 指标分析 |
 |------|------|------|------|
@@ -59,6 +48,21 @@ ChatClient aiChatClient(ChatClient.Builder builder) {
 | 超时 | 30s（网页抓取 +15s） | 10s | 15s |
 | 重试 | 1 次（仅超时/5xx） | 不重试 | 1 次 |
 | 降级产物 | 空白菜品表单 | 空草稿 + 手动选菜 | 「分析暂不可用」占位卡 |
+
+**模型 provider（多 provider + 兜底）**
+
+| 配置项 | 说明 | 默认 |
+|------|------|------|
+| `app.ai.provider` | 主用 provider（`app.ai.providers` 的 key） | `opencode` |
+| `app.ai.fallback` | 兜底 provider；留空表示不兜底 | `dashscope` |
+| `app.ai.providers.<key>.base-url` | OpenAI 兼容端点，**必须含版本段**（SDK 只在其后追加 `/chat/completions`） | OpenCode：`https://opencode.ai/inference/openai/v1`；DashScope：`https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `app.ai.providers.<key>.api-key` | 密钥；为空表示未配置，该 provider 直接跳过 | — |
+| `app.ai.providers.<key>.model` | 模型编码；留空回落到 `app.ai.model` | `deepseek-v4.1-flash` / `qwen-plus` |
+| `app.ai.providers.<key>.timeout-ms` | 单次请求超时 | `30000` |
+
+调用行为：主用未配置密钥 → 不发起请求直接跳过；主用在瞬时重试后仍失败 → 自动切兜底，并在 `ai_call_log` 落一条失败记录；主用与兜底都失败才向业务抛错，业务侧按上表降级。
+
+> 每个 provider 各自持有独立客户端（`AiChatClientRegistry`），切换只改配置不改代码；`spring.ai.model.chat` 保持 `none` 即可，无需再设为 `openai`。
 
 ### 1.3 通用系统前置（所有场景共享的一段 System Prompt 头部）
 

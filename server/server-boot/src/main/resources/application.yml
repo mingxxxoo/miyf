@@ -7,7 +7,7 @@ spring:
     # Boot 4 默认 tools.jackson；业务 ObjectMapper 见 JacksonConfig（com.fasterxml）
     default-property-inclusion: non_null
   ai:
-    # none：不加载 Chat 模型（默认免 API Key 即可启动）；启用时设 chat=openai，走 DashScope 兼容模式
+    # none：不加载自动配置的 Chat 模型；业务 AI 调用由 app.ai.providers 驱动，无需改为 openai
     model:
       chat: ${SPRING_AI_MODEL_CHAT:none}
       embedding: none
@@ -18,8 +18,8 @@ spring:
       moderation: none
     openai:
       api-key: ${DASHSCOPE_API_KEY:}
-      # Spring AI 会追加 /v1；国内地域用 aliyuncs，国际用 dashscope-intl
-      base-url: ${SPRING_AI_OPENAI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+      # 需带版本段（SDK 只追加 /chat/completions）；国内地域用 aliyuncs，国际用 dashscope-intl
+      base-url: ${SPRING_AI_OPENAI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
       chat:
         options:
           model: ${APP_AI_MODEL:qwen-plus}
@@ -198,10 +198,27 @@ app:
     connect-timeout-ms: ${APP_SEARCH_CONNECT_TIMEOUT_MS:3000}
     socket-timeout-ms: ${APP_SEARCH_SOCKET_TIMEOUT_MS:10000}
   ai:
-    # 关闭时接口返回降级产物；开启需 DASHSCOPE_API_KEY，并将 spring.ai.model.chat=openai
+    # 关闭时接口返回降级产物；开启后按 provider → fallback 顺序调用，未配置 api-key 的 provider 自动跳过
     enabled: ${APP_AI_ENABLED:false}
+    # 主用 provider：opencode（OpenCode Console）/ dashscope
+    provider: ${APP_AI_PROVIDER:opencode}
+    # 兜底 provider；主用不可用或调用失败时降级，留空表示不兜底
+    fallback: ${APP_AI_FALLBACK_PROVIDER:dashscope}
     model: ${APP_AI_MODEL:qwen-plus}
     max-tokens: ${APP_AI_MAX_TOKENS:4096}
+    providers:
+      # OpenCode Console（OpenAI 兼容网关）；base-url 必须含版本段，SDK 只在其后追加 /chat/completions
+      opencode:
+        base-url: ${OPENCODE_BASE_URL:https://opencode.ai/inference/openai/v1}
+        api-key: ${OPENCODE_API_KEY:}
+        model: ${OPENCODE_MODEL:deepseek-v4.1-flash}
+        timeout-ms: ${OPENCODE_TIMEOUT_MS:30000}
+      # 阿里云 DashScope 兼容模式
+      dashscope:
+        base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+        api-key: ${DASHSCOPE_API_KEY:}
+        model: ${APP_AI_MODEL:qwen-plus}
+        timeout-ms: ${DASHSCOPE_TIMEOUT_MS:30000}
     chef-dish:
       temperature: 0.2
       timeout-ms: 30000
