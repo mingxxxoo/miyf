@@ -107,6 +107,9 @@ services:
       APP_AI_FALLBACK_PROVIDER: ${APP_AI_FALLBACK_PROVIDER:-dashscope}
       OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
       OPENCODE_MODEL: ${OPENCODE_MODEL:-deepseek-v4.1-flash}
+      # Go 订阅用 /inference/go/openai/v1；按量付费用 /inference/openai/v1
+      OPENCODE_BASE_URL: ${OPENCODE_BASE_URL:-https://opencode.ai/inference/go/openai/v1}
+      OPENCODE_SESSION_ID: ${OPENCODE_SESSION_ID:-miyf-server}
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
       APP_HEALTH_PROVIDER_HUAWEI_ENABLED: ${APP_HEALTH_PROVIDER_HUAWEI_ENABLED:-false}
       APP_HEALTH_HUAWEI_MOCK: ${APP_HEALTH_HUAWEI_MOCK:-false}

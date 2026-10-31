@@ -232,6 +232,11 @@ public class AiProperties {
          */
         private int maxRetries = 0;
 
+        /**
+         * 额外请求头：部分网关要求固定头（如 OpenCode Go 必带 {@code x-opencode-session}）。
+         */
+        private Map<String, String> headers = new LinkedHashMap<>();
+
         public String getBaseUrl() {
             return baseUrl;
         }
@@ -270,6 +275,14 @@ public class AiProperties {
 
         public void setMaxRetries(int maxRetries) {
             this.maxRetries = maxRetries;
+        }
+
+        public Map<String, String> getHeaders() {
+            return headers;
+        }
+
+        public void setHeaders(Map<String, String> headers) {
+            this.headers = headers == null ? new LinkedHashMap<>() : headers;
         }
     }
 }

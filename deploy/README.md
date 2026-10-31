@@ -499,16 +499,18 @@ nano .env              # 或 vim
 
 服务器 `.env` **必核**：
 
-| 变量 | 要求 |
-|------|------|
-| `MIYF_IMAGE_SERVER` / `MIYF_IMAGE_NGINX` | 与本机 push 的业务镜像 tag **完全一致** |
-| `MIYF_IMAGE_POSTGRES` / `REDIS` / `MINIO` | 均指向 ACR，**不要**再用 `docker.io/...` |
-| `POSTGRES_PASSWORD` | 强密码；与首次初始化后勿随意改（改则库连不上） |
-| `JWT_SECRET` | ≥32 位随机串 |
-| `FILE_STORAGE_ACCESS_KEY` / `SECRET_KEY` | MinIO 账号；与 compose 注入一致 |
-| `FILE_STORAGE_ACCESS_SIGN_SECRET` | 文件签名 URL HMAC 密钥（≥32 位，勿与 JWT 相同） |
-| `FILE_STORAGE_BASE_URL` | 公网站点前缀（不含 `/r`），如 `https://www.miyf.cn`；实际读文件为 `/r/{fileId}?exp=&sig=` |
-| `MIYF_DATA_*` / `MIYF_LOG_*` / `LOG_PATH` | 与 **1.4** 目录一致（默认即可） |
+| 变量                                          | 要求                                                                          |
+|---------------------------------------------|-----------------------------------------------------------------------------|
+| `MIYF_IMAGE_SERVER` / `MIYF_IMAGE_NGINX`    | 与本机 push 的业务镜像 tag **完全一致**                                                 |
+| `MIYF_IMAGE_POSTGRES` / `REDIS` / `MINIO`   | 均指向 ACR，**不要**再用 `docker.io/...`                                            |
+| `POSTGRES_PASSWORD`                         | 强密码；与首次初始化后勿随意改（改则库连不上）                                                     |
+| `JWT_SECRET`                                | ≥32 位随机串                                                                    |
+| `FILE_STORAGE_ACCESS_KEY` / `SECRET_KEY`    | MinIO 账号；与 compose 注入一致                                                     |
+| `FILE_STORAGE_ACCESS_SIGN_SECRET`           | 文件签名 URL HMAC 密钥（≥32 位，勿与 JWT 相同）                                           |
+| `FILE_STORAGE_BASE_URL`                     | 公网站点前缀（不含 `/r`），如 `https://www.miyf.cn`；实际读文件为 `/r/{fileId}?exp=&sig=`      |
+| `APP_AI_ENABLED` / `OPENCODE_API_KEY`       | 用 AI 才必填；关闭或缺密钥时接口静默返回降级产物（小程序提示「AI 暂不可用」）                                  |
+| `OPENCODE_BASE_URL` / `OPENCODE_SESSION_ID` | Go 订阅必须用 `/inference/go/openai/v1`；该端点要求 `x-opencode-session` 头，缺失会被 400 拒绝 |
+| `MIYF_DATA_*` / `MIYF_LOG_*` / `LOG_PATH`   | 与 **1.4** 目录一致（默认即可）                                                        |
 
 > `BASE_*_IMAGE` 仅本机构建用，服务器可不改，不影响 `up`。
 

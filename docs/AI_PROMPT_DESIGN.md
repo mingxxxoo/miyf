@@ -51,14 +51,15 @@ server/ai-service（新增模块，或并入各业务 service 的 ai 包）
 
 **模型 provider（多 provider + 兜底）**
 
-| 配置项 | 说明 | 默认 |
-|------|------|------|
-| `app.ai.provider` | 主用 provider（`app.ai.providers` 的 key） | `opencode` |
-| `app.ai.fallback` | 兜底 provider；留空表示不兜底 | `dashscope` |
-| `app.ai.providers.<key>.base-url` | OpenAI 兼容端点，**必须含版本段**（SDK 只在其后追加 `/chat/completions`） | OpenCode：`https://opencode.ai/inference/openai/v1`；DashScope：`https://dashscope.aliyuncs.com/compatible-mode/v1` |
-| `app.ai.providers.<key>.api-key` | 密钥；为空表示未配置，该 provider 直接跳过 | — |
-| `app.ai.providers.<key>.model` | 模型编码；留空回落到 `app.ai.model` | `deepseek-v4.1-flash` / `qwen-plus` |
-| `app.ai.providers.<key>.timeout-ms` | 单次请求超时 | `30000` |
+| 配置项                                 | 说明                                                               | 默认                                                                                                                                                                             |
+|-------------------------------------|------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `app.ai.provider`                   | 主用 provider（`app.ai.providers` 的 key）                            | `opencode`                                                                                                                                                                     |
+| `app.ai.fallback`                   | 兜底 provider；留空表示不兜底                                              | `dashscope`                                                                                                                                                                    |
+| `app.ai.providers.<key>.base-url`   | OpenAI 兼容端点，**必须含版本段**（SDK 只在其后追加 `/chat/completions`）           | OpenCode Go：`https://opencode.ai/inference/go/openai/v1`；OpenCode 按量付费：`https://opencode.ai/inference/openai/v1`；DashScope：`https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `app.ai.providers.<key>.api-key`    | 密钥；为空表示未配置，该 provider 直接跳过                                       | —                                                                                                                                                                              |
+| `app.ai.providers.<key>.model`      | 模型编码；留空回落到 `app.ai.model`                                        | `deepseek-v4.1-flash` / `qwen-plus`                                                                                                                                            |
+| `app.ai.providers.<key>.timeout-ms` | 单次请求超时                                                           | `30000`                                                                                                                                                                        |
+| `app.ai.providers.<key>.headers`    | 额外请求头；Go 端点必带 `x-opencode-session`，缺失被 400 `MissingSessionID` 拒绝 | `x-opencode-session: miyf-server`                                                                                                                                              |
 
 调用行为：主用未配置密钥 → 不发起请求直接跳过；主用在瞬时重试后仍失败 → 自动切兜底，并在 `ai_call_log` 落一条失败记录；主用与兜底都失败才向业务抛错，业务侧按上表降级。
 

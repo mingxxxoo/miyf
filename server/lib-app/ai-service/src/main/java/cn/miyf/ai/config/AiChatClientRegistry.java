@@ -125,15 +125,21 @@ public final class AiChatClientRegistry {
 
     private static AiChatClient build(String code, AiProperties.Provider provider, String model, int maxTokens) {
         String baseUrl = trimTrailingSlash(provider.getBaseUrl().trim());
-        OpenAiChatOptions options = OpenAiChatOptions.builder()
+        OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder()
                 .baseUrl(baseUrl)
                 .apiKey(provider.getApiKey().trim())
                 .model(model)
                 .temperature(DEFAULT_TEMPERATURE)
                 .maxTokens(maxTokens)
                 .timeout(Duration.ofMillis(Math.max(1_000, provider.getTimeoutMs())))
-                .maxRetries(Math.max(0, provider.getMaxRetries()))
-                .build();
+                .maxRetries(Math.max(0, provider.getMaxRetries()));
+        Map<String, String> headers = provider.getHeaders();
+        if (headers != null && !headers.isEmpty()) {
+            // 部分网关（如 OpenCode Go）要求固定请求头，否则直接 400 拒绝
+            builder.customHeaders(headers);
+            log.info("AI provider 附加请求头 provider={} headers={}", code, headers.keySet());
+        }
+        OpenAiChatOptions options = builder.build();
         ChatClient chatClient = ChatClient.builder(OpenAiChatModel.builder().options(options).build())
                 .defaultSystem(AiPromptTemplates.COMMON_SYSTEM_HEAD)
                 .build();
