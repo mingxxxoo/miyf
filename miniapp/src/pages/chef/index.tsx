@@ -191,6 +191,25 @@ export default function ChefHomePage() {
         ]}
       />
 
+      <View className='chef-page__library' onClick={() => go('/pages/dish/library')}>
+        <View className='chef-page__library-copy'>
+          <Text className='chef-page__library-title'>组织菜品库</Text>
+          <Text className='chef-page__library-desc'>全员共建 · 选菜开做</Text>
+        </View>
+        <Text className='chef-page__library-go'>进入 ›</Text>
+      </View>
+
+      <View
+        className='chef-page__library chef-page__library--mint'
+        onClick={() => go('/pages/cook/pool')}
+      >
+        <View className='chef-page__library-copy'>
+          <Text className='chef-page__library-title'>做菜任务池</Text>
+          <Text className='chef-page__library-desc'>领取任务 · 按顺序开做</Text>
+        </View>
+        <Text className='chef-page__library-go'>接单 ›</Text>
+      </View>
+
       <View className='chef-page__sec-row'>
         <Text className='chef-page__sec-title'>快捷入口</Text>
       </View>

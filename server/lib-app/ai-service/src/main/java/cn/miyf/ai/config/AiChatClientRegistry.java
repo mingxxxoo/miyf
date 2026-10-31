@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * AI provider 注册表：按配置为每个 provider 构建独立的 ChatClient，并给出「主用 → 兜底」的调用顺序。
  *
- * <p>每个 provider 单独持有一个 OpenAI 兼容客户端，因此可以同时存在 DashScope、OpenCode 等不同端点；
+ * <p>每个 provider 单独持有一个 OpenAI 兼容客户端，可对接任意 OpenAI 兼容端点；
  * 未配置 api-key 的 provider 视为不可用，直接跳过，不会发起请求。</p>
  *
  * @author XieMingJie

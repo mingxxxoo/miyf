@@ -131,4 +131,58 @@ public interface DishRepository extends BaseMapper<DishEntity> {
      * @history 1.00 2026-09-04 XieMingJie Created.
      */
     long countByCategoryId(@Param("categoryId") Long categoryId);
+
+    /**
+     * 菜品模板分页：仅 is_template = TRUE，按最近使用或更新时间排序。
+     * <p>
+     * recentUserId 非空时按该用户最近一次做菜任务时间倒序（未使用过排后），
+     * 用于「最近使用」筛选；为空时按更新时间倒序。
+     *
+     * @param orgUnitId    组织单元 ID
+     * @param status       模板状态，可空
+     * @param creatorId    创建人 ID，可空
+     * @param recentUserId 最近使用参考用户 ID，可空
+     * @param keyword      关键字，可空
+     * @param offset       偏移
+     * @param limit        条数
+     * @return 模板实体列表
+     * @history 1.00 2026-10-31 12:00 XieMingJie Created.
+     */
+    List<DishEntity> selectTemplatePage(@Param("orgUnitId") Long orgUnitId,
+                                        @Param("status") String status,
+                                        @Param("creatorId") Long creatorId,
+                                        @Param("recentUserId") Long recentUserId,
+                                        @Param("made") Boolean made,
+                                        @Param("keyword") String keyword,
+                                        @Param("offset") long offset,
+                                        @Param("limit") long limit);
+
+    long countTemplatePage(@Param("orgUnitId") Long orgUnitId,
+                           @Param("status") String status,
+                           @Param("creatorId") Long creatorId,
+                           @Param("recentUserId") Long recentUserId,
+                           @Param("made") Boolean made,
+                           @Param("keyword") String keyword);
+
+    /**
+     * 原子更新模板状态：仅当当前状态与期望状态一致时生效，防止并发发布/归档互相覆盖。
+     *
+     * @param id   菜品 ID
+     * @param from 期望的当前状态
+     * @param to   目标状态
+     * @return 影响行数，0 表示状态已变化
+     * @history 1.00 2026-10-31 12:00 XieMingJie Created.
+     */
+    int updateTemplateStatus(@Param("id") Long id,
+                             @Param("from") String from,
+                             @Param("to") String to);
+
+    /**
+     * 统计菜品关联的做菜任务数，删除模板前用于阻止破坏历史任务。
+     *
+     * @param dishId 菜品 ID
+     * @return 任务数
+     * @history 1.00 2026-10-31 12:00 XieMingJie Created.
+     */
+    long countCookingTasks(@Param("dishId") Long dishId);
 }

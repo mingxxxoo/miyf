@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  做菜任务 SQL。
+  领取/状态流转一律使用带状态条件的原子 UPDATE，禁止先查后改，避免并发双领。
+  @author XieMingJie
+  @since 2026-10-31 15:00
+-->
+<mapper namespace="cn.miyf.kitchen.repository.CookingTaskRepository">
+
+    <!-- dish_snapshot 为 JSONB，需显式 JacksonTypeHandler；MP autoResultMap 不作用于自定义 XML -->
+    <resultMap id="TaskResultMap" type="cn.miyf.kitchen.bean.entity.CookingTaskEntity" autoMapping="true">
+        <result column="dish_snapshot" property="dishSnapshot"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+    </resultMap>
+
+    <sql id="TaskColumns">
+        id, kitchen_id, org_unit_id, dish_id, dish_snapshot, submitter_id, chef_id,
+        servings, note, priority, claim_mode, scheduled_start_time, status, current_step,
+        started_time, paused_time, completed_time, total_paused_seconds,
+        actual_duration_seconds, submit_token, create_time, last_modify_time
+    </sql>
+
+    <update id="claim">
+        UPDATE cooking_task
+        SET chef_id = #{chefId},
+            status = 'CLAIMED',
+            last_modify_time = NOW()
+        WHERE id = #{id}
+          AND status = 'PENDING'
+          AND chef_id IS NULL
+    </update>
+
+    <update id="release">
+        UPDATE cooking_task
+        SET chef_id = NULL,
+            status = 'PENDING',
+            last_modify_time = NOW()
+        WHERE id = #{id}
+          AND chef_id = #{chefId}
+          AND status IN ('CLAIMED', 'PREPARING')
+    </update>
+
+    <update id="start">
+        UPDATE cooking_task
+        SET status = 'COOKING',
+            started_time = COALESCE(started_time, NOW()),
+            paused_time = NULL,
+            last_modify_time = NOW()
+        WHERE id = #{id}
+          AND chef_id = #{chefId}
+          AND status IN ('CLAIMED', 'PREPARING')
+    </update>
+
+    <update id="pause">
+        UPDATE cooking_task
+        SET status = 'PAUSED',
+            paused_time = NOW(),
+            last_modify_time = NOW()
+        WHERE id = #{id}
+          AND chef_id = #{chefId}
+          AND status = 'COOKING'
+    </update>
+
+    <update id="resume">
+        UPDATE cooking_task
+        SET status = 'COOKING',
+            total_paused_seconds = total_paused_seconds
+                + CASE WHEN paused_time IS NULL THEN 0
+                       ELSE GREATEST(0, EXTRACT(EPOCH FROM (NOW() - paused_time))::int) END,
+            paused_time = NULL,
+            last_modify_time = NOW()
+        WHERE id = #{id}
+          AND chef_id = #{chefId}
+          AND status = 'PAUSED'
+    </update>
+
+    <update id="complete">
+        UPDATE cooking_task
+        SET status = 'COMPLETED',
+            completed_time = NOW(),
+            actual_duration_seconds = CASE WHEN started_time IS NULL THEN NULL ELSE
+                GREATEST(0,
+                    EXTRACT(EPOCH FROM (NOW() - started_time))::int
+                    - total_paused_seconds
+                    - CASE WHEN paused_time IS NULL THEN 0
+                           ELSE EXTRACT(EPOCH FROM (NOW() - paused_time))::int END)
+            END,
+            paused_time = NULL,
+            last_modify_time = NOW()
+        WHERE id = #{id}
+          AND chef_id = #{chefId}
+          AND status IN ('COOKING', 'PAUSED')
+    </update>
+
+    <update id="cancel">
+        UPDATE cooking_task
+        SET status = 'CANCELLED',
+            last_modify_time = NOW()
+        WHERE id = #{id}
+          AND status IN ('PENDING', 'CLAIMED', 'PREPARING')
+          AND (submitter_id = #{userId} OR chef_id = #{userId})
+    </update>
+
+    <update id="updateCurrentStep">
+        UPDATE cooking_task
+        SET current_step = #{currentStep},
+            last_modify_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectBySubmitToken" resultMap="TaskResultMap">
+        SELECT <include refid="TaskColumns"/>
+        FROM cooking_task
+        WHERE submit_token = #{submitToken}
+        LIMIT 1
+    </select>
+
+    <select id="selectPool" resultMap="TaskResultMap">
+        SELECT <include refid="TaskColumns"/>
+        FROM cooking_task
+        WHERE org_unit_id = #{orgUnitId}
+          AND status IN ('PENDING', 'CLAIMED', 'PREPARING', 'COOKING', 'PAUSED')
+          AND (chef_id IS NULL OR chef_id = #{userId} OR submitter_id = #{userId})
+        ORDER BY create_time ASC
+        LIMIT #{limit}
+    </select>
+
+    <sql id="TaskConditions">
+        AND org_unit_id = #{orgUnitId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        <if test="submitterId != null">
+            AND submitter_id = #{submitterId}
+        </if>
+        <if test="chefId != null">
+            AND chef_id = #{chefId}
+        </if>
+    </sql>
+
+    <select id="selectTaskPage" resultMap="TaskResultMap">
+        SELECT <include refid="TaskColumns"/>
+        FROM cooking_task
+        WHERE 1 = 1
+        <include refid="TaskConditions"/>
+        ORDER BY create_time DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countTaskPage" resultType="long">
+        SELECT COUNT(1)
+        FROM cooking_task
+        WHERE 1 = 1
+        <include refid="TaskConditions"/>
+    </select>
+</mapper>

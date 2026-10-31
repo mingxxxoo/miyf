@@ -297,6 +297,20 @@ export default function UserPage() {
           </View>
           <View className='user-page__list'>
             <AccountMenuItem
+              icon='recipe'
+              title='做菜任务'
+              hint='领取任务 · 按步骤开做'
+              iconBg='#E7F7F0'
+              onClick={() => Taro.navigateTo({ url: '/pages/cook/pool' })}
+            />
+            <AccountMenuItem
+              icon='dish'
+              title='组织菜品库'
+              hint='共建菜品 · 选菜开做'
+              iconBg='#FFF1E2'
+              onClick={() => Taro.navigateTo({ url: '/pages/dish/library' })}
+            />
+            <AccountMenuItem
               icon='switch'
               title='切换身份'
               hint='吃饭的 / 干活的'

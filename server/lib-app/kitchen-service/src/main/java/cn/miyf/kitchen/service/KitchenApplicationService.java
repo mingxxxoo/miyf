@@ -3,17 +3,21 @@ package cn.miyf.kitchen.service;
 import cn.miyf.common.BusinessException;
 import cn.miyf.common.ErrorCode;
 import cn.miyf.common.PageResult;
+import cn.miyf.common.id.SnowflakeIdGenerator;
 import cn.miyf.kitchen.bean.dto.KitchenSaveDto;
 import cn.miyf.kitchen.bean.entity.KitchenEntity;
 import cn.miyf.kitchen.bean.entity.UserEntity;
 import cn.miyf.kitchen.bean.qo.KitchenPageQo;
 import cn.miyf.kitchen.bean.vo.KitchenVo;
 import cn.miyf.kitchen.repository.KitchenRepository;
+import cn.miyf.organization.bean.entity.SysOrgUnitEntity;
+import cn.miyf.organization.repository.mapper.SysOrgUnitMapper;
 import cn.miyf.oss.bean.dto.FileUploadCommand;
 import cn.miyf.oss.bean.vo.UploadedFileVo;
 import cn.miyf.oss.enums.FileAccessPermission;
 import cn.miyf.oss.service.FileResourceApplicationService;
 import cn.miyf.service.BaseApplicationService;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Set;
 
 /**
@@ -43,6 +48,8 @@ public class KitchenApplicationService extends BaseApplicationService {
     private final KitchenAccessService kitchenAccessService;
     private final BindingApplicationService bindingApplicationService;
     private final FileResourceApplicationService fileResourceApplicationService;
+    private final SysOrgUnitMapper orgUnitMapper;
+    private final SnowflakeIdGenerator snowflakeIdGenerator;
 
     /**
      * 当前厨师的厨房；尚未创建时返回 null。
@@ -81,6 +88,7 @@ public class KitchenApplicationService extends BaseApplicationService {
                     .setCoverImage(dto.getCoverImage())
                     .setStatus("OPEN");
             kitchenRepository.insert(created);
+            ensureOrgUnit(created);
             bindingApplicationService.ensureOwnerSelfBinding(created);
             return kitchenAccessService.toKitchenVo(created);
         }
@@ -98,8 +106,41 @@ public class KitchenApplicationService extends BaseApplicationService {
             existing.setStatus(status);
         }
         kitchenRepository.updateById(existing);
+        ensureOrgUnit(existing);
         bindingApplicationService.ensureOwnerSelfBinding(existing);
         return kitchenAccessService.toKitchenVo(existing);
+    }
+
+    /**
+     * 确保厨房归属组织单元：未归属时自动创建一个与厨房同名的组织，供存量厨房平滑升级。
+     * <p>
+     * 管理员后续可在组织管理中将多个厨房调整到同一组织单元，实现组织级共享。
+     *
+     * @param kitchen 厨房实体
+     * @history 1.00 2026-10-31 14:00 XieMingJie Created.
+     */
+    private void ensureOrgUnit(KitchenEntity kitchen) {
+        if (kitchen == null || kitchen.getOrgUnitId() != null) {
+            return;
+        }
+        String code = "KITCHEN_" + kitchen.getId();
+        SysOrgUnitEntity org = orgUnitMapper.selectOne(Wrappers.<SysOrgUnitEntity>lambdaQuery()
+                .eq(SysOrgUnitEntity::getCode, code));
+        if (org == null) {
+            Instant now = Instant.now();
+            org = new SysOrgUnitEntity()
+                    .setParentId(null)
+                    .setCode(code)
+                    .setName(kitchen.getName())
+                    .setSortOrder(0)
+                    .setStatus("ENABLED");
+            org.setId(snowflakeIdGenerator.nextId());
+            org.setCreateTime(now);
+            org.setLastModifyTime(now);
+            orgUnitMapper.insert(org);
+        }
+        kitchen.setOrgUnitId(org.getId());
+        kitchenRepository.updateById(kitchen);
     }
 
     /**

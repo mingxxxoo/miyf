@@ -25,27 +25,22 @@ class AiPropertiesBindingTest {
         Map<String, Object> source = new LinkedHashMap<>();
         source.put("app.ai.enabled", "true");
         source.put("app.ai.provider", "opencode");
-        source.put("app.ai.fallback", "dashscope");
         source.put("app.ai.providers.opencode.base-url", "https://opencode.ai/inference/openai/v1");
         source.put("app.ai.providers.opencode.api-key", "oc_sk_test");
         source.put("app.ai.providers.opencode.model", "deepseek-v4.1-flash");
         source.put("app.ai.providers.opencode.timeout-ms", "30000");
-        source.put("app.ai.providers.dashscope.base-url", "https://dashscope.aliyuncs.com/compatible-mode/v1");
-        source.put("app.ai.providers.dashscope.api-key", "sk-dashscope");
-        source.put("app.ai.providers.dashscope.model", "qwen-plus");
 
         Binder binder = new Binder(new MapConfigurationPropertySource(source));
         AiProperties properties = binder.bind("app.ai", Bindable.of(AiProperties.class)).get();
 
         assertTrue(properties.isEnabled());
         assertEquals("opencode", properties.getProvider());
-        assertEquals("dashscope", properties.getFallback());
-        assertEquals(2, properties.getProviders().size());
+        assertEquals("", properties.getFallback());
+        assertEquals(1, properties.getProviders().size());
         AiProperties.Provider opencode = properties.getProviders().get("opencode");
         assertNotNull(opencode);
         assertEquals("https://opencode.ai/inference/openai/v1", opencode.getBaseUrl());
         assertEquals("deepseek-v4.1-flash", opencode.getModel());
         assertEquals(30_000, opencode.getTimeoutMs());
-        assertEquals("qwen-plus", properties.getProviders().get("dashscope").getModel());
     }
 }

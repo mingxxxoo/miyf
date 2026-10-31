@@ -9,9 +9,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -73,6 +75,40 @@ public class AiStructuredCaller {
                             Long userId,
                             Long kitchenId,
                             String inputSummary) {
+        return callEntity(scene, systemPrompt, userPrompt, temperature, retry, type,
+                userId, kitchenId, inputSummary, List.of());
+    }
+
+    /**
+     * 带图片/多模态素材的结构化调用。
+     * <p>
+     * 文本与图片同时提交时，文本作为指令与补充说明，图片作为视觉输入；
+     * 其余行为（provider 顺序、重试、审计）与纯文本调用一致。
+     *
+     * @param scene        场景编码
+     * @param systemPrompt 系统提示
+     * @param userPrompt   用户提示
+     * @param temperature  温度
+     * @param retry        瞬时失败重试次数
+     * @param type         输出类型
+     * @param userId       用户
+     * @param kitchenId    厨房
+     * @param inputSummary 输入摘要
+     * @param media        图片等媒体素材
+     * @param <T>          结果类型
+     * @return 结构化结果
+     * @history 1.00 2026-10-31 18:00 XieMingJie Created.
+     */
+    public <T> T callEntity(String scene,
+                            String systemPrompt,
+                            String userPrompt,
+                            double temperature,
+                            int retry,
+                            Class<T> type,
+                            Long userId,
+                            Long kitchenId,
+                            String inputSummary,
+                            List<Media> media) {
         if (!isAvailable()) {
             throw new IllegalStateException("AI ChatClient 不可用");
         }
@@ -81,7 +117,7 @@ public class AiStructuredCaller {
         for (AiChatClientRegistry.AiChatClient provider : chatClientRegistry.clients()) {
             try {
                 return callWithProvider(provider, scene, systemPrompt, userPrompt, temperature, retry, type,
-                        userId, kitchenId, inputSummary, start);
+                        userId, kitchenId, inputSummary, media, start);
             } catch (RuntimeException ex) {
                 last = ex;
                 log.warn("AI 调用失败，尝试下一个 provider provider={} scene={} reason={}",
@@ -107,14 +143,20 @@ public class AiStructuredCaller {
                                    Long userId,
                                    Long kitchenId,
                                    String inputSummary,
+                                   List<Media> media,
                                    long start) {
         int attempts = Math.max(0, retry) + 1;
         RuntimeException last = null;
         for (int i = 0; i < attempts; i++) {
             try {
-                var responseEntity = provider.client().prompt()
-                        .system(systemPrompt)
-                        .user(userPrompt)
+                var promptSpec = provider.client().prompt().system(systemPrompt);
+                if (media == null || media.isEmpty()) {
+                    promptSpec = promptSpec.user(userPrompt);
+                } else {
+                    Media[] mediaArray = media.toArray(Media[]::new);
+                    promptSpec = promptSpec.user(spec -> spec.text(userPrompt).media(mediaArray));
+                }
+                var responseEntity = promptSpec
                         .options(OpenAiChatOptions.builder()
                                 .model(provider.model())
                                 .temperature(temperature)

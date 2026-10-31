@@ -144,6 +144,83 @@ public class KitchenAccessService extends BaseApplicationService {
     }
 
     /**
+     * 组织协作做菜：当前用户所属厨房，厨房主人与已绑定成员均可使用。
+     * <p>
+     * 一用户至多一个厨房：优先取本人作为主人的厨房，否则取已绑定厨房；
+     * 两者都没有时提示加入厨房。厨房必须处于 OPEN，封禁/停业不可做菜。
+     *
+     * @return 当前成员厨房
+     * @history 1.00 2026-10-31 12:00 XieMingJie Created.
+     */
+    public KitchenEntity requireMemberKitchen() {
+        UserEntity user = requireUser();
+        KitchenEntity kitchen = kitchenRepository.selectByOwnerUserId(user.getId());
+        if (kitchen == null) {
+            KitchenBindingEntity bound = bindingRepository.selectBoundByDiner(user.getId());
+            if (bound == null) {
+                throw new BusinessException(ErrorCode.BINDING_REQUIRED, "请先加入厨房");
+            }
+            kitchen = requireKitchen(bound.getKitchenId());
+        }
+        requireKitchenOpen(kitchen);
+        return kitchen;
+    }
+
+    /**
+     * 组织协作做菜：当前成员所属组织单元 ID。
+     * <p>
+     * 组织归属来自厨房的 {@code org_unit_id}；未归属组织的厨房不可使用组织级菜品库/任务池。
+     *
+     * @return 组织单元 ID
+     * @history 1.00 2026-10-31 14:00 XieMingJie Created.
+     */
+    public Long requireMemberOrgUnitId() {
+        return requireOrgUnitId(requireMemberKitchen());
+    }
+
+    /**
+     * 取厨房所属组织单元 ID，未归属时抛出业务异常。
+     *
+     * @param kitchen 厨房实体
+     * @return 组织单元 ID
+     * @history 1.00 2026-10-31 14:00 XieMingJie Created.
+     */
+    public Long requireOrgUnitId(KitchenEntity kitchen) {
+        if (kitchen == null || kitchen.getOrgUnitId() == null) {
+            throw new BusinessException(ErrorCode.INVALID_STATUS,
+                    "当前厨房未归属组织，请先由管理员配置组织");
+        }
+        return kitchen.getOrgUnitId();
+    }
+
+    /**
+     * 校验当前用户属于指定厨房（主人或已绑定成员）。
+     *
+     * @param kitchenId 厨房 ID
+     * @return 所属厨房
+     * @history 1.00 2026-10-31 12:00 XieMingJie Created.
+     */
+    public KitchenEntity requireMemberOfKitchen(Long kitchenId) {
+        KitchenEntity kitchen = requireMemberKitchen();
+        if (kitchenId == null || !kitchenId.equals(kitchen.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权访问该厨房的数据");
+        }
+        return kitchen;
+    }
+
+    /**
+     * 当前用户是否为指定厨房主人。
+     *
+     * @param kitchen 厨房实体
+     * @return true 表示厨房主人
+     * @history 1.00 2026-10-31 12:00 XieMingJie Created.
+     */
+    public boolean isOwner(KitchenEntity kitchen) {
+        return kitchen != null && SecurityUtils.currentUserId() != null
+                && SecurityUtils.currentUserId().equals(kitchen.getOwnerUserId());
+    }
+
+    /**
      * 校验食客已绑定指定厨房且该厨 OPEN。
      *
      * @param kitchenId 厨房 ID
@@ -228,6 +305,7 @@ public class KitchenAccessService extends BaseApplicationService {
         return new KitchenVo()
                 .setId(entity.getId())
                 .setOwnerUserId(entity.getOwnerUserId())
+                .setOrgUnitId(entity.getOrgUnitId())
                 .setName(entity.getName())
                 .setIntro(entity.getIntro())
                 .setCoverImage(entity.getCoverImage())

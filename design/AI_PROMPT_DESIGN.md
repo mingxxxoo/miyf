@@ -44,7 +44,7 @@ server/ai-service（新增模块，或并入各业务 service 的 ai 包）
 ChatClient aiChatClient(ChatClient.Builder builder) {
     return builder
         .defaultOptions(ChatOptionsBuilder.builder()
-            .withModel("qwen-plus")        // 默认；结构化任务用稳定版模型，不用 latest
+            .withModel("deepseek-v4.1-flash") // 默认；结构化任务用稳定版模型，不用 latest
             .withTemperature(0.2)          // 抽取类任务低温度；文案润色类可调 0.7
             .withMaxTokens(4096)
             .build())

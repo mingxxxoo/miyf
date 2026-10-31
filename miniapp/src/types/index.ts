@@ -107,6 +107,164 @@ export interface Comment {
   userAvatar?: string
 }
 
+/** 菜品模板状态：草稿 / 预创建 / 已发布 / 已归档 */
+export type DishTemplateStatus = 'draft' | 'pre_created' | 'published' | 'archived'
+
+/** 步骤计时方式：倒计时 / 正计时 / 不计时 */
+export type DishTimerType = 'countdown' | 'countup' | 'none'
+
+export interface DishTemplateIngredient {
+  name: string
+  amount?: string
+  unit?: string
+  processing?: string
+  required?: boolean
+  substitute?: string
+  note?: string
+}
+
+export interface DishTemplateStep {
+  step?: number
+  order?: number
+  title?: string
+  description: string
+  image?: string
+  video?: string
+  durationSeconds?: number
+  timerType?: DishTimerType
+  parallelGroup?: string
+  completionHint?: string
+  warning?: string
+  required?: boolean
+  canUndo?: boolean
+}
+
+/** 菜品库中的菜品模板（候选菜），与点菜菜品 Dish 严格分离 */
+export interface DishTemplate {
+  id: string
+  kitchenId?: string
+  orgUnitId?: string
+  name: string
+  subtitle?: string
+  coverUrl: string
+  description?: string
+  servings?: number
+  difficulty?: string
+  tags: string[]
+  status: DishTemplateStatus
+  sourceType?: string
+  sourceUrl?: string
+  estimatedTotalSeconds?: number
+  creatorId?: string
+  creatorName?: string
+  createTime?: string
+  lastModifyTime?: string
+  editable?: boolean
+  publishable?: boolean
+  archivable?: boolean
+  usageCount: number
+  made: boolean
+  ingredients: DishTemplateIngredient[]
+  steps: DishTemplateStep[]
+}
+
+/** 做菜任务状态 */
+export type CookingTaskStatus =
+  | 'PENDING'
+  | 'CLAIMED'
+  | 'PREPARING'
+  | 'COOKING'
+  | 'PAUSED'
+  | 'COMPLETED'
+  | 'CANCELLED'
+
+/** 任务创建时固化的菜品快照 */
+export interface CookingDishSnapshot {
+  dishId?: string
+  name?: string
+  coverImage?: string
+  description?: string
+  servings?: number
+  difficulty?: string
+  tags?: string[]
+  estimatedTotalSeconds?: number
+  sourceType?: string
+  sourceUrl?: string
+  ingredients?: DishTemplateIngredient[]
+  seasonings?: DishTemplateIngredient[]
+  steps?: DishTemplateStep[]
+  capturedAt?: string
+}
+
+/** 任务步骤计时状态（内容来自快照） */
+export interface CookingTaskStepState {
+  id?: string
+  stepOrder: number
+  status: 'PENDING' | 'RUNNING' | 'PAUSED' | 'DONE'
+  timerType?: DishTimerType
+  durationSeconds?: number
+  remainingSeconds?: number
+  elapsedSeconds?: number
+  startedTime?: string
+  pausedTime?: string
+  totalPausedSeconds?: number
+  completedTime?: string
+  title?: string
+  description?: string
+  image?: string
+  video?: string
+  parallelGroup?: string
+  completionHint?: string
+  warning?: string
+  required?: boolean
+  canUndo?: boolean
+  current?: boolean
+  canStart?: boolean
+  canPause?: boolean
+  canResume?: boolean
+  canComplete?: boolean
+  canUndoNow?: boolean
+}
+
+/** 组织协作做菜任务 */
+export interface CookingTask {
+  id: string
+  kitchenId?: string
+  orgUnitId?: string
+  dishId: string
+  dishSnapshot: CookingDishSnapshot
+  submitterId?: string
+  submitterName?: string
+  chefId?: string
+  chefName?: string
+  servings?: number
+  note?: string
+  priority?: number
+  claimMode?: string
+  scheduledStartTime?: string
+  status: CookingTaskStatus
+  currentStep?: number
+  startedTime?: string
+  pausedTime?: string
+  completedTime?: string
+  totalPausedSeconds?: number
+  actualDurationSeconds?: number
+  createTime?: string
+  lastModifyTime?: string
+  steps?: CookingTaskStepState[]
+  /** 服务端当前时间，用于校准本地倒计时 */
+  serverTime?: string
+  canClaim?: boolean
+  canStart?: boolean
+  canPause?: boolean
+  canResume?: boolean
+  canComplete?: boolean
+  canRelease?: boolean
+  canCancel?: boolean
+  claimedByMe?: boolean
+  canOpenFlow?: boolean
+}
+
 export interface User {
   id: string
   username?: string

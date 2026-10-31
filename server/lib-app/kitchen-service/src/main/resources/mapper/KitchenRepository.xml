@@ -4,14 +4,14 @@
 <mapper namespace="cn.miyf.kitchen.repository.KitchenRepository">
 
     <select id="selectByOwnerUserId" resultType="cn.miyf.kitchen.bean.entity.KitchenEntity">
-        SELECT id, owner_user_id, name, intro, cover_image, status, create_time, last_modify_time
+        SELECT id, owner_user_id, org_unit_id, name, intro, cover_image, status, create_time, last_modify_time
         FROM kitchen
         WHERE owner_user_id = #{ownerUserId}
         LIMIT 1
     </select>
 
     <select id="selectAdminPage" resultType="cn.miyf.kitchen.bean.entity.KitchenEntity">
-        SELECT id, owner_user_id, name, intro, cover_image, status, create_time, last_modify_time
+        SELECT id, owner_user_id, org_unit_id, name, intro, cover_image, status, create_time, last_modify_time
         FROM kitchen
         WHERE 1 = 1
           <if test="keyword != null and keyword != ''">

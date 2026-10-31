@@ -1,0 +1,369 @@
+.dai-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 24px 28px calc(60px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 90% 0%, rgba($ck-primary, 0.16), transparent 40%),
+    $ck-bg;
+}
+
+.dai-hero {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 30px 28px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #ffa34c 0%, #f07b1f 62%, #d95f0c 100%);
+  box-shadow: 0 18px 40px rgba(240, 123, 31, 0.26);
+  color: #fff;
+
+  &__icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 96px;
+    height: 96px;
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  &__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  &__desc {
+    font-size: 25px;
+    color: rgba(255, 255, 255, 0.88);
+  }
+}
+
+.dai-modes {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+
+  &__item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 76px;
+    border-radius: 20px;
+    background: #fff;
+    border: 2px solid $ck-border;
+    color: $ck-muted;
+    font-size: 28px;
+    font-weight: 600;
+
+    &--on {
+      background: $ck-ink;
+      border-color: $ck-ink;
+      color: #fff;
+    }
+  }
+}
+
+.dai-panel {
+  margin-top: 20px;
+  padding: 24px;
+  border-radius: 26px;
+  background: #fff;
+  border: 2px solid $ck-border-l4;
+  box-shadow: $ck-shadow-card;
+}
+
+.dai-upload {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 380px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(150deg, #fff6ea, #ffe6cc);
+  border: 2px dashed rgba($ck-primary-deep, 0.42);
+
+  &--filled {
+    border-style: solid;
+    border-color: $ck-border;
+  }
+
+  &__img {
+    width: 100%;
+    height: 100%;
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__title {
+    color: $ck-primary-d18;
+    font-size: 30px;
+    font-weight: 700;
+  }
+
+  &__tip {
+    color: $ck-muted;
+    font-size: 24px;
+  }
+
+  &__change {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    padding: 10px 22px;
+    border-radius: 999px;
+    background: rgba(43, 38, 34, 0.66);
+    color: #fff;
+    font-size: 24px;
+  }
+}
+
+.dai-label {
+  display: block;
+  margin: 24px 0 12px;
+  color: $ck-ink;
+  font-size: 27px;
+  font-weight: 700;
+}
+
+.dai-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  height: 300px;
+  padding: 22px;
+  border-radius: 20px;
+  background: $ck-ko-softer;
+  border: 2px solid $ck-border;
+  color: $ck-text;
+  font-size: 28px;
+  line-height: 1.6;
+
+  &--short {
+    height: 140px;
+  }
+}
+
+.dai-hint {
+  display: block;
+  margin-top: 14px;
+  color: $ck-muted;
+  font-size: 24px;
+}
+
+.dai-link {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 96px;
+  padding: 0 24px;
+  border-radius: 20px;
+  background: $ck-ko-softer;
+  border: 2px solid $ck-border;
+
+  &__input {
+    flex: 1;
+    font-size: 28px;
+    color: $ck-text;
+  }
+}
+
+.dai-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 104px;
+  margin-top: 24px;
+  border-radius: 26px;
+  background: linear-gradient(140deg, #ffa34c, #f07b1f);
+  box-shadow: 0 12px 26px rgba(240, 123, 31, 0.32);
+
+  &--loading {
+    opacity: 0.7;
+  }
+
+  &__text {
+    color: #fff;
+    font-size: 32px;
+    font-weight: 800;
+  }
+}
+
+.dai-result {
+  margin-top: 26px;
+  padding: 28px 26px;
+  border-radius: 28px;
+  background: #fff;
+  border: 2px solid $ck-border-l4;
+  box-shadow: $ck-shadow-card;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  &__title {
+    flex: 1;
+    color: $ck-ink;
+    font-size: 38px;
+    font-weight: 800;
+    line-height: 1.3;
+  }
+
+  &__badge {
+    flex-shrink: 0;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 23px;
+    font-weight: 700;
+
+    &--high {
+      background: $ck-hg-soft;
+      color: $ck-hg;
+    }
+
+    &--medium {
+      background: $ck-amber-soft;
+      color: $ck-amber;
+    }
+
+    &--low {
+      background: $ck-red-soft;
+      color: $ck-red;
+    }
+  }
+
+  &__reject {
+    display: block;
+    margin-top: 16px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    background: $ck-red-soft;
+    color: $ck-red;
+    font-size: 26px;
+    line-height: 1.5;
+  }
+
+  &__desc {
+    display: block;
+    margin-top: 16px;
+    color: $ck-muted;
+    font-size: 27px;
+    line-height: 1.6;
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  &__meta-item {
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: $ck-ko-soft;
+    color: $ck-primary-d18;
+    font-size: 23px;
+    font-weight: 600;
+  }
+
+  &__block {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid $ck-border-l4;
+  }
+
+  &__block-title {
+    display: block;
+    margin-bottom: 12px;
+    color: $ck-ink;
+    font-size: 27px;
+    font-weight: 700;
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  &__chip {
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: $ck-amber-soft;
+    color: $ck-amber;
+    font-size: 23px;
+  }
+
+  &__hint {
+    display: block;
+    margin-top: 8px;
+    color: $ck-muted;
+    font-size: 25px;
+    line-height: 1.55;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 28px;
+  }
+
+  &__note {
+    display: block;
+    margin-top: 18px;
+    color: $ck-faint;
+    font-size: 22px;
+    text-align: center;
+  }
+}
+
+.dai-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 96px;
+  border-radius: 22px;
+  font-size: 30px;
+  font-weight: 800;
+
+  &--main {
+    background: linear-gradient(140deg, #ffa34c, #f07b1f);
+    color: #fff;
+    box-shadow: 0 10px 22px rgba(240, 123, 31, 0.3);
+  }
+
+  &--ghost {
+    background: #fff;
+    border: 2px solid $ck-border;
+    color: $ck-ink;
+  }
+}
+
+.dai-manual {
+  display: block;
+  margin-top: 28px;
+  text-align: center;
+  color: $ck-primary-d18;
+  font-size: 26px;
+  font-weight: 600;
+  text-decoration: underline;
+}

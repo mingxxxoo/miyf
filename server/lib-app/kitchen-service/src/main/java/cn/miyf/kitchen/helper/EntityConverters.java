@@ -108,6 +108,7 @@ public final class EntityConverters {
         Dish d = new Dish();
         d.setId(e.getId());
         d.setKitchenId(e.getKitchenId());
+        d.setOrgUnitId(e.getOrgUnitId());
         d.setCategoryId(e.getCategoryId());
         d.setName(e.getName());
         d.setSubtitle(e.getSubtitle());
@@ -126,6 +127,12 @@ public final class EntityConverters {
         d.setRatingCount(e.getRatingCount() == null ? 0 : e.getRatingCount());
         d.setCreatedBy(e.getCreatedBy());
         d.setUpdatedBy(e.getUpdatedBy());
+        d.setTemplate(Boolean.TRUE.equals(e.getIsTemplate()));
+        d.setTemplateStatus(e.getTemplateStatus());
+        d.setTags(e.getTags() == null ? new ArrayList<>() : new ArrayList<>(e.getTags()));
+        d.setSourceType(e.getSourceType());
+        d.setSourceUrl(e.getSourceUrl());
+        d.setEstimatedTotalSeconds(e.getEstimatedTotalSeconds());
         d.setCreateTime(e.getCreateTime());
         d.setLastModifyTime(e.getLastModifyTime());
         return d;
@@ -135,6 +142,7 @@ public final class EntityConverters {
         DishEntity e = new DishEntity();
         e.setId(d.getId());
         e.setKitchenId(d.getKitchenId());
+        e.setOrgUnitId(d.getOrgUnitId());
         e.setCategoryId(d.getCategoryId());
         e.setName(d.getName());
         e.setSubtitle(d.getSubtitle());
@@ -153,6 +161,12 @@ public final class EntityConverters {
         e.setRatingCount(d.getRatingCount());
         e.setCreatedBy(d.getCreatedBy());
         e.setUpdatedBy(d.getUpdatedBy());
+        e.setIsTemplate(d.isTemplate());
+        e.setTemplateStatus(d.getTemplateStatus());
+        e.setTags(d.getTags());
+        e.setSourceType(d.getSourceType());
+        e.setSourceUrl(d.getSourceUrl());
+        e.setEstimatedTotalSeconds(d.getEstimatedTotalSeconds());
         e.setCreateTime(d.getCreateTime());
         e.setLastModifyTime(d.getLastModifyTime());
         return e;

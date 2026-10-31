@@ -48,6 +48,10 @@ public class DishVo extends BaseVo {
     @Schema(description = "厨房 ID", type = "string")
     private Long kitchenId;
 
+    @JsonSerialize(using = ToStringSerializer.class)
+    @Schema(description = "组织单位 ID", type = "string")
+    private Long orgUnitId;
+
     @Schema(description = "分类名称")
     private String categoryName;
 

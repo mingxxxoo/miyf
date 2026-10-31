@@ -4,7 +4,7 @@
 > 范围：① 系统引入 spring-ai；② 厨师端「文本/网页链接 → 菜品与菜单」；③ 食客端「文本 → 预约单草稿（不提交）+ 健康指标满足度分析」
 >
 > 后端入口：`POST /api/chef/ai/dishes/extract`、`POST /api/ai/orders/draft`、`POST /api/ai/orders/insight`  
-> 启用：`APP_AI_ENABLED=true` + provider 密钥（默认主用 `OPENCODE_API_KEY`，兜底 `DASHSCOPE_API_KEY`）；端点与模型见 `app.ai.providers`，调用顺序为主用 → 兜底
+> 启用：`APP_AI_ENABLED=true` + `OPENCODE_API_KEY`（默认主用 OpenCode）；端点与模型见 `app.ai.providers`，默认不启用兜底
 >
 > 原生三端 UI / 鸿蒙工程提示词见 [`design/NATIVE_CLIENT_PROMPTS.md`](../design/NATIVE_CLIENT_PROMPTS.md)。
 
@@ -54,14 +54,14 @@ server/ai-service（新增模块，或并入各业务 service 的 ai 包）
 | 配置项                                 | 说明                                                               | 默认                                                                                                                                                                             |
 |-------------------------------------|------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `app.ai.provider`                   | 主用 provider（`app.ai.providers` 的 key）                            | `opencode`                                                                                                                                                                     |
-| `app.ai.fallback`                   | 兜底 provider；留空表示不兜底                                              | `dashscope`                                                                                                                                                                    |
-| `app.ai.providers.<key>.base-url`   | OpenAI 兼容端点，**必须含版本段**（SDK 只在其后追加 `/chat/completions`）           | OpenCode Go：`https://opencode.ai/inference/go/openai/v1`；OpenCode 按量付费：`https://opencode.ai/inference/openai/v1`；DashScope：`https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `app.ai.fallback`                   | 兜底 provider；留空表示不兜底                                              | 空（默认不兜底）                                                                                                                                                                      |
+| `app.ai.providers.<key>.base-url`   | OpenAI 兼容端点，**必须含版本段**（SDK 只在其后追加 `/chat/completions`）           | OpenCode Go：`https://opencode.ai/inference/go/openai/v1`；OpenCode 按量付费：`https://opencode.ai/inference/openai/v1`                                                              |
 | `app.ai.providers.<key>.api-key`    | 密钥；为空表示未配置，该 provider 直接跳过                                       | —                                                                                                                                                                              |
-| `app.ai.providers.<key>.model`      | 模型编码；留空回落到 `app.ai.model`                                        | `deepseek-v4.1-flash` / `qwen-plus`                                                                                                                                            |
+| `app.ai.providers.<key>.model`      | 模型编码；留空回落到 `app.ai.model`                                        | `deepseek-v4.1-flash`                                                                                                                                                          |
 | `app.ai.providers.<key>.timeout-ms` | 单次请求超时                                                           | `30000`                                                                                                                                                                        |
 | `app.ai.providers.<key>.headers`    | 额外请求头；Go 端点必带 `x-opencode-session`，缺失被 400 `MissingSessionID` 拒绝 | `x-opencode-session: miyf-server`                                                                                                                                              |
 
-调用行为：主用未配置密钥 → 不发起请求直接跳过；主用在瞬时重试后仍失败 → 自动切兜底，并在 `ai_call_log` 落一条失败记录；主用与兜底都失败才向业务抛错，业务侧按上表降级。
+调用行为：主用未配置密钥 → 不发起请求直接跳过；主用在瞬时重试后仍失败 → 若配置了兜底则自动切换，并在 `ai_call_log` 落一条失败记录；主用（及兜底）都失败才向业务抛错，业务侧按上表降级。默认 `app.ai.fallback` 为空，即不启用兜底。
 
 > 每个 provider 各自持有独立客户端（`AiChatClientRegistry`），切换只改配置不改代码；`spring.ai.model.chat` 保持 `none` 即可，无需再设为 `openai`。
 

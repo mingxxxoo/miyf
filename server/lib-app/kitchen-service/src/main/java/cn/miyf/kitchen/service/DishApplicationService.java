@@ -227,6 +227,7 @@ public class DishApplicationService extends BaseApplicationService {
         applyDto(dish, dto, true);
         KitchenEntity kitchen = kitchenAccessService.requireAssignableKitchen(dto.getKitchenId());
         dish.setKitchenId(kitchen.getId());
+        dish.setOrgUnitId(kitchen.getOrgUnitId());
         dish.setStatus("DRAFT");
         dish.setAuditStatus("DRAFT");
         dish.setRating(BigDecimal.ZERO);
@@ -422,13 +423,15 @@ public class DishApplicationService extends BaseApplicationService {
      */
     @Transactional
     public DishVo createChef(DishSaveDto dto) {
-        Long kitchenId = kitchenAccessService.requireOwnedKitchen().getId();
+        KitchenEntity kitchen = kitchenAccessService.requireOwnedKitchen();
+        Long kitchenId = kitchen.getId();
         Long userId = SecurityUtils.currentUserId();
         validateCategory(dto.getCategoryId(), kitchenId);
         validateStock(dto.getStockType(), dto.getStock());
         Dish dish = new Dish();
         applyDto(dish, dto, true);
         dish.setKitchenId(kitchenId);
+        dish.setOrgUnitId(kitchen.getOrgUnitId());
         dish.setStatus("DRAFT");
         dish.setAuditStatus("DRAFT");
         dish.setRating(BigDecimal.ZERO);
@@ -921,6 +924,7 @@ public class DishApplicationService extends BaseApplicationService {
                 .setId(dish.getId())
                 .setCategoryId(dish.getCategoryId())
                 .setKitchenId(dish.getKitchenId())
+                .setOrgUnitId(dish.getOrgUnitId())
                 .setCategoryName(dish.getCategoryName())
                 .setName(dish.getName())
                 .setSubtitle(dish.getSubtitle())

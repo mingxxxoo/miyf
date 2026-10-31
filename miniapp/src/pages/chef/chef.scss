@@ -44,6 +44,65 @@
     }
   }
 
+  &__library {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 32px 32px 0;
+    padding: 26px 30px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #fff4e6 0%, #ffe6cb 100%);
+    border: 2px solid rgba($ck-primary, 0.35);
+    box-shadow: 0 10px 24px rgba(240, 123, 31, 0.14);
+
+    &--mint {
+      margin-top: 18px;
+      background: linear-gradient(135deg, #e7f7f0 0%, #c8eee1 100%);
+      border-color: rgba($ck-secondary, 0.4);
+      box-shadow: 0 10px 24px rgba(24, 168, 133, 0.14);
+
+      .chef-page__library-title {
+        color: $ck-secondary-d22;
+      }
+
+      .chef-page__library-desc {
+        color: #3f7a67;
+      }
+
+      .chef-page__library-go {
+        color: $ck-secondary-d22;
+      }
+    }
+  }
+
+  &__library-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__library-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: $ck-primary-d18;
+  }
+
+  &__library-desc {
+    font-size: 24px;
+    color: #9a6a3c;
+  }
+
+  &__library-go {
+    flex-shrink: 0;
+    padding: 10px 22px;
+    border-radius: 999px;
+    background: #fff;
+    color: $ck-primary-d18;
+    font-size: 25px;
+    font-weight: 700;
+  }
+
   &__sec-row {
     display: flex;
     justify-content: space-between;

@@ -32,6 +32,8 @@ public class KitchenVo extends BaseVo {
     private Long id;
     @JsonSerialize(using = ToStringSerializer.class)
     private Long ownerUserId;
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long orgUnitId;
     private String name;
     private String intro;
     @FileAccess

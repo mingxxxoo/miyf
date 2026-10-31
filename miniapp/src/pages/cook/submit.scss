@@ -1,0 +1,311 @@
+.cook-submit {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 24px 28px calc(180px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 8% 0%, rgba($ck-secondary, 0.14), transparent 42%),
+    $ck-bg;
+
+  &--loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__loading-text {
+    color: $ck-muted;
+    font-size: 28px;
+  }
+
+  &__head {
+    padding: 12px 6px 22px;
+  }
+
+  &__title {
+    display: block;
+    font-size: 40px;
+    font-weight: 800;
+    color: $ck-ink;
+  }
+
+  &__sub {
+    display: block;
+    margin-top: 8px;
+    color: $ck-muted;
+    font-size: 26px;
+  }
+
+  &__picks {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  &__pick {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    border-radius: 24px;
+    background: #fff;
+    border: 2px solid $ck-border-l4;
+    box-shadow: $ck-shadow-card;
+  }
+
+  &__pick-img {
+    width: 120px;
+    height: 120px;
+    border-radius: 18px;
+  }
+
+  &__pick-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 120px;
+    height: 120px;
+    border-radius: 18px;
+    background: $ck-ko-soft;
+  }
+
+  &__pick-copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__pick-name {
+    font-size: 32px;
+    font-weight: 800;
+    color: $ck-ink;
+  }
+
+  &__pick-meta {
+    color: $ck-muted;
+    font-size: 24px;
+  }
+
+  &__pick-go {
+    flex-shrink: 0;
+    padding: 14px 26px;
+    border-radius: 999px;
+    background: $ck-ko-soft;
+    color: $ck-primary-d18;
+    font-size: 26px;
+    font-weight: 700;
+  }
+
+  &__dish {
+    display: flex;
+    gap: 20px;
+    padding: 22px;
+    border-radius: 26px;
+    background: #fff;
+    border: 2px solid $ck-border-l4;
+    box-shadow: $ck-shadow-card;
+  }
+
+  &__dish-img {
+    flex-shrink: 0;
+    width: 160px;
+    height: 160px;
+    border-radius: 20px;
+  }
+
+  &__dish-empty {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 160px;
+    height: 160px;
+    border-radius: 20px;
+    background: $ck-ko-soft;
+  }
+
+  &__dish-copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__dish-name {
+    font-size: 36px;
+    font-weight: 800;
+    color: $ck-ink;
+  }
+
+  &__dish-meta {
+    color: $ck-amber;
+    font-size: 25px;
+    font-weight: 600;
+  }
+
+  &__dish-desc {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    color: $ck-muted;
+    font-size: 24px;
+    line-height: 1.45;
+  }
+
+  &__dish-change {
+    align-self: flex-start;
+    flex-shrink: 0;
+    color: $ck-primary-d18;
+    font-size: 25px;
+    font-weight: 700;
+  }
+
+  &__card {
+    margin-top: 22px;
+    padding: 26px 24px;
+    border-radius: 26px;
+    background: #fff;
+    border: 2px solid $ck-border-l4;
+    box-shadow: $ck-shadow-card;
+  }
+
+  &__label {
+    display: block;
+    margin: 24px 0 12px;
+    color: $ck-ink;
+    font-size: 27px;
+    font-weight: 700;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  &__stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 92px;
+    padding: 0 14px;
+    border-radius: 18px;
+    background: #faf7f1;
+  }
+
+  &__step-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 76px;
+    height: 76px;
+    border-radius: 16px;
+    background: #fff;
+    color: $ck-primary-d18;
+    font-size: 38px;
+    font-weight: 700;
+  }
+
+  &__step-num {
+    font-size: 36px;
+    font-weight: 800;
+    color: $ck-ink;
+  }
+
+  &__chips {
+    display: flex;
+    gap: 14px;
+  }
+
+  &__chip {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 84px;
+    border-radius: 18px;
+    background: #faf7f1;
+    color: $ck-muted;
+    font-size: 28px;
+    font-weight: 600;
+
+    &--on {
+      background: $ck-ko-soft;
+      border: 2px solid $ck-primary;
+      color: $ck-primary-d18;
+      font-weight: 800;
+    }
+  }
+
+  &__plan {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__plan-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 88px;
+    border-radius: 16px;
+    background: #faf7f1;
+    color: $ck-ink;
+    font-size: 27px;
+  }
+
+  &__plan-clear {
+    flex-shrink: 0;
+    color: $ck-red;
+    font-size: 24px;
+  }
+
+  &__textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 160px;
+    padding: 20px 24px;
+    border-radius: 18px;
+    background: #faf7f1;
+    font-size: 28px;
+    line-height: 1.55;
+    color: $ck-ink;
+  }
+
+  &__tip {
+    display: block;
+    margin-top: 22px;
+    padding: 16px 20px;
+    border-radius: 14px;
+    background: $ck-hg-soft;
+    color: $ck-secondary-d22;
+    font-size: 24px;
+    line-height: 1.45;
+  }
+
+  &__actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: 18px 28px calc(18px + env(safe-area-inset-bottom));
+    background: rgba(255, 253, 248, 0.97);
+    border-top: 2px solid $ck-border;
+  }
+
+  &__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 104px;
+    border-radius: 24px;
+    background: linear-gradient(140deg, #5fcfae, #18a885);
+    color: #fff;
+    font-size: 32px;
+    font-weight: 800;
+    box-shadow: 0 12px 26px rgba(24, 168, 133, 0.32);
+  }
+}

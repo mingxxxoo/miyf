@@ -24,8 +24,12 @@ import java.util.Set;
 public final class RecipeStructureValidator {
 
     private static final Set<String> DIFFICULTIES = Set.of("EASY", "MEDIUM", "HARD");
+    private static final Set<String> TIMER_TYPES = Set.of("countdown", "countup", "none");
     private static final Set<String> FORBIDDEN_KEYS = Set.of(
             "price", "amount_money", "money", "fee", "cost", "payment", "pay");
+    private static final int MAX_MATERIAL_TEXT = 200;
+    private static final int MAX_STEP_HINT = 500;
+    private static final int MAX_STEP_SECONDS = 86_400;
 
     private RecipeStructureValidator() {
     }
@@ -75,16 +79,33 @@ public final class RecipeStructureValidator {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, label + "第 " + (i + 1) + " 项无效");
             }
             String name = trimRequired(item.getName(), label + "第 " + (i + 1) + " 项名称");
-            String amount = trimRequired(item.getAmount(), label + "第 " + (i + 1) + " 项用量");
+            // 用量允许为空：AI 无法确认时按设计文档置空，由用户确认页补充，不做猜测
+            String amount = trimOptional(item.getAmount(), MAX_MATERIAL_TEXT,
+                    label + "第 " + (i + 1) + " 项用量");
+            String unit = trimOptional(item.getUnit(), 32, label + "第 " + (i + 1) + " 项单位");
+            String processing = trimOptional(item.getProcessing(), MAX_MATERIAL_TEXT,
+                    label + "第 " + (i + 1) + " 项处理方式");
+            String substitute = trimOptional(item.getSubstitute(), MAX_MATERIAL_TEXT,
+                    label + "第 " + (i + 1) + " 项替代方案");
+            String note = trimOptional(item.getNote(), MAX_MATERIAL_TEXT,
+                    label + "第 " + (i + 1) + " 项备注");
             assertNoMoneyText(name, label + "名称");
             assertNoMoneyText(amount, label + "用量");
-            normalized.add(new RecipeMaterialDto().setName(name).setAmount(amount));
+            assertNoMoneyText(processing, label + "处理方式");
+            normalized.add(new RecipeMaterialDto()
+                    .setName(name)
+                    .setAmount(amount)
+                    .setUnit(unit)
+                    .setProcessing(processing)
+                    .setRequired(item.getRequired() == null || item.getRequired())
+                    .setSubstitute(substitute)
+                    .setNote(note));
         }
         return normalized;
     }
 
     /**
-     * 规范化步骤：按列表顺序重排 step，校验说明与可选图片 URL。
+     * 规范化步骤：按列表顺序重排 order/step，校验说明、媒体地址、时长与计时方式。
      *
      * @param steps 原始步骤
      * @return 规范化步骤
@@ -100,27 +121,56 @@ public final class RecipeStructureValidator {
             if (step == null) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "步骤第 " + (i + 1) + " 项无效");
             }
-            String description = trimRequired(step.getDescription(), "步骤第 " + (i + 1) + " 项说明");
+            int order = i + 1;
+            String description = trimRequired(step.getDescription(), "步骤第 " + order + " 项说明");
             assertNoMoneyText(description, "步骤说明");
-            String title = step.getTitle() == null ? null : step.getTitle().trim();
-            if (title != null && title.isEmpty()) {
-                title = null;
-            }
+            String title = trimOptional(step.getTitle(), 64, "步骤第 " + order + " 项标题");
             if (title != null) {
                 assertNoMoneyText(title, "步骤标题");
             }
-            String image = step.getImage() == null ? null : step.getImage().trim();
-            if (image != null && image.isEmpty()) {
-                image = null;
-            }
+            String image = trimOptional(step.getImage(), 1024, "步骤第 " + order + " 项图片");
             if (image != null) {
-                assertImageUrl(image, i + 1);
+                assertMediaUrl(image, "步骤第 " + order + " 项图片");
             }
+            String video = trimOptional(step.getVideo(), 1024, "步骤第 " + order + " 项视频");
+            if (video != null) {
+                assertMediaUrl(video, "步骤第 " + order + " 项视频");
+            }
+            Integer durationSeconds = step.getDurationSeconds();
+            if (durationSeconds != null && (durationSeconds < 0 || durationSeconds > MAX_STEP_SECONDS)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST,
+                        "步骤第 " + order + " 项时长需在 0-" + MAX_STEP_SECONDS + " 秒之间");
+            }
+            String timerType = step.getTimerType();
+            if (timerType == null || timerType.isBlank()) {
+                timerType = durationSeconds != null && durationSeconds > 0 ? "countdown" : "none";
+            } else {
+                timerType = timerType.trim().toLowerCase(Locale.ROOT);
+                if (!TIMER_TYPES.contains(timerType)) {
+                    throw new BusinessException(ErrorCode.BAD_REQUEST,
+                            "步骤第 " + order + " 项计时方式仅支持 countdown/countup/none");
+                }
+            }
+            String parallelGroup = trimOptional(step.getParallelGroup(), 32,
+                    "步骤第 " + order + " 项并行分组");
+            String completionHint = trimOptional(step.getCompletionHint(), MAX_STEP_HINT,
+                    "步骤第 " + order + " 项完成提示");
+            String warning = trimOptional(step.getWarning(), MAX_STEP_HINT,
+                    "步骤第 " + order + " 项风险提示");
             normalized.add(new RecipeStepDto()
-                    .setStep(i + 1)
+                    .setStep(order)
+                    .setOrder(order)
                     .setTitle(title)
                     .setDescription(description)
-                    .setImage(image));
+                    .setImage(image)
+                    .setVideo(video)
+                    .setDurationSeconds(durationSeconds)
+                    .setTimerType(timerType)
+                    .setParallelGroup(parallelGroup)
+                    .setCompletionHint(completionHint)
+                    .setWarning(warning)
+                    .setRequired(step.getRequired() == null || step.getRequired())
+                    .setCanUndo(step.getCanUndo() == null || step.getCanUndo()));
         }
         return normalized;
     }
@@ -171,10 +221,32 @@ public final class RecipeStructureValidator {
         return value.trim();
     }
 
-    private static void assertImageUrl(String image, int index) {
-        String lower = image.toLowerCase(Locale.ROOT);
+    /**
+     * 可选文本：空串转 null，并限制长度。
+     *
+     * @param value 原始值
+     * @param max   最大长度
+     * @param label 文案前缀
+     * @return 去空白后的值或 null
+     */
+    private static String trimOptional(String value, int max, String label) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (max > 0 && trimmed.length() > max) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, label + "长度不能超过 " + max);
+        }
+        return trimmed;
+    }
+
+    private static void assertMediaUrl(String url, String label) {
+        String lower = url.toLowerCase(Locale.ROOT);
         if (!(lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("/"))) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "步骤第 " + index + " 项图片地址无效");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, label + "地址无效");
         }
     }
 
@@ -186,6 +258,9 @@ public final class RecipeStructureValidator {
     }
 
     private static void assertNoMoneyText(String text, String label) {
+        if (text == null || text.isBlank()) {
+            return;
+        }
         String lower = text.toLowerCase(Locale.ROOT);
         if (lower.contains("price") || lower.contains("payment") || lower.contains("￥") || lower.contains("¥")) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, label + "不允许包含金额信息");

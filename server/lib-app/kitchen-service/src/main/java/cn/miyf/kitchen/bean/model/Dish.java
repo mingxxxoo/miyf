@@ -16,6 +16,7 @@ import java.util.List;
 public class Dish {
     private Long id;
     private Long kitchenId;
+    private Long orgUnitId;
     private Long categoryId;
     private String categoryName;
     private String name;
@@ -38,6 +39,12 @@ public class Dish {
     private Instant createTime;
     private Instant lastModifyTime;
     private List<String> images = new ArrayList<>();
+    private boolean template;
+    private String templateStatus;
+    private List<String> tags = new ArrayList<>();
+    private String sourceType;
+    private String sourceUrl;
+    private Integer estimatedTotalSeconds;
     private Recipe recipe;
 
     public Long getId() {
@@ -54,6 +61,14 @@ public class Dish {
 
     public void setKitchenId(Long kitchenId) {
         this.kitchenId = kitchenId;
+    }
+
+    public Long getOrgUnitId() {
+        return orgUnitId;
+    }
+
+    public void setOrgUnitId(Long orgUnitId) {
+        this.orgUnitId = orgUnitId;
     }
 
     public Long getCategoryId() {
@@ -230,6 +245,54 @@ public class Dish {
 
     public void setImages(List<String> images) {
         this.images = images;
+    }
+
+    public boolean isTemplate() {
+        return template;
+    }
+
+    public void setTemplate(boolean template) {
+        this.template = template;
+    }
+
+    public String getTemplateStatus() {
+        return templateStatus;
+    }
+
+    public void setTemplateStatus(String templateStatus) {
+        this.templateStatus = templateStatus;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
+    }
+
+    public String getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(String sourceType) {
+        this.sourceType = sourceType;
+    }
+
+    public String getSourceUrl() {
+        return sourceUrl;
+    }
+
+    public void setSourceUrl(String sourceUrl) {
+        this.sourceUrl = sourceUrl;
+    }
+
+    public Integer getEstimatedTotalSeconds() {
+        return estimatedTotalSeconds;
+    }
+
+    public void setEstimatedTotalSeconds(Integer estimatedTotalSeconds) {
+        this.estimatedTotalSeconds = estimatedTotalSeconds;
     }
 
     public Recipe getRecipe() {

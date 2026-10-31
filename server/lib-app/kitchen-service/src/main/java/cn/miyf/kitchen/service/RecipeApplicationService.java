@@ -249,6 +249,11 @@ public class RecipeApplicationService extends BaseApplicationService {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("name", item.getName());
             map.put("amount", item.getAmount());
+            map.put("unit", item.getUnit());
+            map.put("processing", item.getProcessing());
+            map.put("required", item.getRequired() == null || item.getRequired());
+            map.put("substitute", item.getSubstitute());
+            map.put("note", item.getNote());
             list.add(map);
         }
         return list;
@@ -261,6 +266,7 @@ public class RecipeApplicationService extends BaseApplicationService {
         List<Map<String, Object>> list = new ArrayList<>(steps.size());
         for (RecipeStepDto step : steps) {
             Map<String, Object> map = new LinkedHashMap<>();
+            map.put("order", step.getOrder());
             map.put("step", step.getStep());
             if (step.getTitle() != null) {
                 map.put("title", step.getTitle());
@@ -269,6 +275,14 @@ public class RecipeApplicationService extends BaseApplicationService {
             if (step.getImage() != null) {
                 map.put("image", step.getImage());
             }
+            map.put("video", step.getVideo());
+            map.put("durationSeconds", step.getDurationSeconds());
+            map.put("timerType", step.getTimerType());
+            map.put("parallelGroup", step.getParallelGroup());
+            map.put("completionHint", step.getCompletionHint());
+            map.put("warning", step.getWarning());
+            map.put("required", step.getRequired() == null || step.getRequired());
+            map.put("canUndo", step.getCanUndo() == null || step.getCanUndo());
             list.add(map);
         }
         return list;

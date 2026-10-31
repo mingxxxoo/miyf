@@ -2,3 +2,4 @@ cn\miyf\ai\support\ChatOptionsPassThroughTest.class
 cn\miyf\ai\config\AiPropertiesBindingTest.class
 cn\miyf\ai\support\ChatOptionsPassThroughTest$CapturingChatModel.class
 cn\miyf\ai\config\AiChatClientRegistryTest.class
+cn\miyf\ai\support\DishTemplateExtractNormalizerTest.class

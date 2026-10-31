@@ -39,6 +39,10 @@ public class KitchenEntity extends BaseEntity {
     @Schema(description = "厨师用户 ID")
     private Long ownerUserId;
 
+    @TableField("org_unit_id")
+    @Schema(description = "所属组织单位（sys_org_unit）")
+    private Long orgUnitId;
+
     @TableField("name")
     @Schema(description = "厨房名称")
     private String name;

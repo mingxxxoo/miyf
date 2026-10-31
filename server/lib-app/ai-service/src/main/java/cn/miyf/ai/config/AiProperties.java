@@ -31,7 +31,7 @@ public class AiProperties {
     /**
      * 兜底 provider 编码；主用未配置密钥或调用失败时使用，留空表示不兜底。
      */
-    private String fallback = "dashscope";
+    private String fallback = "";
 
     /**
      * provider 配置表：编码 → 端点与模型。
@@ -39,13 +39,14 @@ public class AiProperties {
     private Map<String, Provider> providers = new LinkedHashMap<>();
 
     /**
-     * 默认模型；仅在 provider 未单独配置模型时兜底使用。
+     * 默认模型；仅在 provider 未单独配置模型时使用，留空表示 provider 必须自行配置模型。
      */
-    private String model = "qwen-plus";
+    private String model = "";
 
     private int maxTokens = 4096;
 
     private final Scene chefDish = new Scene(0.2d, 30_000, 1);
+    private final Scene dishTemplate = new Scene(0.2d, 60_000, 1);
     private final Scene orderDraft = new Scene(0.1d, 10_000, 0);
     private final Scene orderInsight = new Scene(0.3d, 15_000, 1);
 
@@ -101,6 +102,10 @@ public class AiProperties {
 
     public Scene getChefDish() {
         return chefDish;
+    }
+
+    public Scene getDishTemplate() {
+        return dishTemplate;
     }
 
     public Scene getOrderDraft() {
@@ -228,14 +233,14 @@ public class AiProperties {
         private int timeoutMs = 30_000;
 
         /**
+         * 附加请求头；例如 OpenCode Go 订阅必需的 x-opencode-session。
+         */
+        private Map<String, String> headers = new LinkedHashMap<>();
+
+        /**
          * SDK 层重试次数；瞬时重试由 AiStructuredCaller 统一控制，这里默认不重试。
          */
         private int maxRetries = 0;
-
-        /**
-         * 额外请求头：部分网关要求固定头（如 OpenCode Go 必带 {@code x-opencode-session}）。
-         */
-        private Map<String, String> headers = new LinkedHashMap<>();
 
         public String getBaseUrl() {
             return baseUrl;

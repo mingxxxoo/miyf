@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!--
@@ -10,12 +10,24 @@
 <mapper namespace="cn.miyf.kitchen.repository.DishRepository">
 
     <sql id="DishColumns">
-        d.id, d.kitchen_id, d.category_id, d.name, d.subtitle, d.description, d.cover_image,
+        d.id, d.kitchen_id, d.org_unit_id, d.category_id, d.name, d.subtitle, d.description, d.cover_image,
         d.status, d.audit_status, d.process_instance_id, d.reject_reason,
         d.sort_order, d.is_recommend AS recommend, d.stock, d.stock_type, d.unit,
         d.rating, d.rating_count, d.created_by, d.updated_by,
+        d.is_template, d.template_status, d.source_type, d.source_url, d.estimated_total_seconds,
         d.create_time, d.last_modify_time
     </sql>
+
+    <!-- 菜品模板：额外带 JSONB tags；tags 需由 resultMap 的 JacksonTypeHandler 解析 -->
+    <sql id="TemplateColumns">
+        <include refid="DishColumns"/>,
+        d.tags
+    </sql>
+
+    <resultMap id="TemplateResultMap" type="cn.miyf.kitchen.bean.entity.DishEntity" autoMapping="true">
+        <result column="tags" property="tags"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+    </resultMap>
 
     <select id="selectUserPage" resultType="cn.miyf.kitchen.bean.entity.DishEntity">
         SELECT
@@ -23,6 +35,7 @@
         FROM dish d
         WHERE d.status = 'ON_SALE'
           AND d.audit_status = 'APPROVED'
+          AND d.is_template = FALSE
           AND d.kitchen_id = #{kitchenId}
           <if test="categoryId != null">
               AND d.category_id = #{categoryId}
@@ -43,6 +56,7 @@
         FROM dish d
         WHERE d.status = 'ON_SALE'
           AND d.audit_status = 'APPROVED'
+          AND d.is_template = FALSE
           AND d.kitchen_id = #{kitchenId}
           <if test="categoryId != null">
               AND d.category_id = #{categoryId}
@@ -61,6 +75,7 @@
         <include refid="DishColumns"/>
         FROM dish d
         WHERE 1 = 1
+          AND d.is_template = FALSE
           <if test="kitchenId != null">
               AND d.kitchen_id = #{kitchenId}
           </if>
@@ -84,6 +99,7 @@
         SELECT COUNT(1)
         FROM dish d
         WHERE 1 = 1
+          AND d.is_template = FALSE
           <if test="kitchenId != null">
               AND d.kitchen_id = #{kitchenId}
           </if>
@@ -107,6 +123,7 @@
         FROM dish d
         WHERE d.status = 'ON_SALE'
           AND d.audit_status = 'APPROVED'
+          AND d.is_template = FALSE
           AND d.kitchen_id = #{kitchenId}
         ORDER BY d.rating DESC, d.rating_count DESC, d.last_modify_time DESC
         LIMIT #{limit}
@@ -118,6 +135,7 @@
         FROM dish d
         WHERE d.status = 'ON_SALE'
           AND d.audit_status = 'APPROVED'
+          AND d.is_template = FALSE
           AND d.is_recommend = TRUE
           AND d.kitchen_id = #{kitchenId}
         ORDER BY d.sort_order ASC, d.create_time DESC
@@ -129,6 +147,7 @@
         <include refid="DishColumns"/>
         FROM dish d
         WHERE d.kitchen_id = #{kitchenId}
+          AND d.is_template = FALSE
           <if test="status != null and status != ''">
               AND d.status = #{status}
           </if>
@@ -146,6 +165,7 @@
         SELECT COUNT(1)
         FROM dish d
         WHERE d.kitchen_id = #{kitchenId}
+          AND d.is_template = FALSE
           <if test="status != null and status != ''">
               AND d.status = #{status}
           </if>
@@ -192,11 +212,93 @@
         SELECT COUNT(1)
         FROM dish d
         WHERE d.status = 'ON_SALE'
+          AND d.is_template = FALSE
     </select>
 
     <select id="countByCategoryId" resultType="long">
         SELECT COUNT(1)
         FROM dish d
         WHERE d.category_id = #{categoryId}
+    </select>
+
+    <!-- 菜品模板（候选菜）：仅 is_template = TRUE，不参与点菜/预约链路 -->
+    <sql id="TemplateConditions">
+        AND d.is_template = TRUE
+        AND d.org_unit_id = #{orgUnitId}
+        <if test="status != null and status != ''">
+            AND d.template_status = #{status}
+        </if>
+        <if test="status == null or status == ''">
+            AND d.template_status &lt;&gt; 'archived'
+        </if>
+        <if test="creatorId != null">
+            AND d.created_by = #{creatorId}
+        </if>
+        <if test="made != null">
+            <choose>
+                <when test="made">
+                    AND EXISTS (SELECT 1 FROM cooking_task t
+                                WHERE t.dish_id = d.id AND t.status = 'COMPLETED')
+                </when>
+                <otherwise>
+                    AND NOT EXISTS (SELECT 1 FROM cooking_task t
+                                    WHERE t.dish_id = d.id AND t.status = 'COMPLETED')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (d.name ILIKE CONCAT('%', #{keyword}, '%')
+                 OR d.description ILIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+    </sql>
+
+    <select id="selectTemplatePage" resultMap="TemplateResultMap">
+        SELECT
+        <include refid="TemplateColumns"/>,
+        (SELECT COUNT(1) FROM cooking_task t
+          WHERE t.dish_id = d.id AND t.status = 'COMPLETED') AS usage_count
+        FROM dish d
+        <if test="recentUserId != null">
+            LEFT JOIN LATERAL (
+                SELECT MAX(t.create_time) AS last_used
+                FROM cooking_task t
+                WHERE t.dish_id = d.id
+                  AND t.org_unit_id = d.org_unit_id
+                  AND (t.submitter_id = #{recentUserId} OR t.chef_id = #{recentUserId})
+            ) u ON TRUE
+        </if>
+        WHERE 1 = 1
+        <include refid="TemplateConditions"/>
+        <choose>
+            <when test="recentUserId != null">
+                ORDER BY u.last_used DESC NULLS LAST, d.last_modify_time DESC
+            </when>
+            <otherwise>
+                ORDER BY d.last_modify_time DESC, d.create_time DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countTemplatePage" resultType="long">
+        SELECT COUNT(1)
+        FROM dish d
+        WHERE 1 = 1
+        <include refid="TemplateConditions"/>
+    </select>
+
+    <update id="updateTemplateStatus">
+        UPDATE dish
+        SET template_status = #{to},
+            last_modify_time = NOW()
+        WHERE id = #{id}
+          AND is_template = TRUE
+          AND template_status = #{from}
+    </update>
+
+    <select id="countCookingTasks" resultType="long">
+        SELECT COUNT(1)
+        FROM cooking_task t
+        WHERE t.dish_id = #{dishId}
     </select>
 </mapper>

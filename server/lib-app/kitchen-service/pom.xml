@@ -26,6 +26,10 @@
         </dependency>
         <dependency>
             <groupId>cn.miyf</groupId>
+            <artifactId>organization-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.miyf</groupId>
             <artifactId>oss-service</artifactId>
         </dependency>
         <dependency>

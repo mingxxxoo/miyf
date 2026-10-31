@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  做菜任务步骤 SQL。
+  步骤状态流转一律使用带状态条件的原子 UPDATE；单步操作额外校验任务仍为 COOKING 且掌勺人一致，
+  防止任务完成/暂停或换人后并发写入步骤。
+  @author XieMingJie
+  @since 2026-10-31 15:00
+-->
+<mapper namespace="cn.miyf.kitchen.repository.CookingTaskStepRepository">
+
+    <sql id="StepColumns">
+        id, task_id, step_order, status, timer_type, duration_seconds,
+        started_time, paused_time, total_paused_seconds, remaining_seconds,
+        completed_time, create_time, last_modify_time
+    </sql>
+
+    <!-- 单步写操作统一附加：任务仍由当前厨师制作中 -->
+    <sql id="TaskStillCooking">
+        AND EXISTS (
+            SELECT 1 FROM cooking_task t
+            WHERE t.id = #{taskId}
+              AND t.status = 'COOKING'
+              AND t.chef_id = #{chefId}
+        )
+    </sql>
+
+    <select id="selectByTaskId" resultType="cn.miyf.kitchen.bean.entity.CookingTaskStepEntity">
+        SELECT <include refid="StepColumns"/>
+        FROM cooking_task_step
+        WHERE task_id = #{taskId}
+        ORDER BY step_order ASC
+    </select>
+
+    <update id="start">
+        UPDATE cooking_task_step
+        SET status = 'RUNNING',
+            started_time = NOW(),
+            paused_time = NULL,
+            total_paused_seconds = 0,
+            remaining_seconds = CASE WHEN timer_type = 'countdown' THEN duration_seconds ELSE NULL END,
+            completed_time = NULL,
+            last_modify_time = NOW()
+        WHERE task_id = #{taskId}
+          AND step_order = #{stepOrder}
+          AND status = 'PENDING'
+        <include refid="TaskStillCooking"/>
+    </update>
+
+    <update id="pause">
+        UPDATE cooking_task_step
+        SET status = 'PAUSED',
+            remaining_seconds = CASE
+                WHEN timer_type = 'countdown' AND duration_seconds IS NOT NULL AND started_time IS NOT NULL
+                    THEN GREATEST(0,
+                        duration_seconds
+                        - (EXTRACT(EPOCH FROM (NOW() - started_time))::int - total_paused_seconds))
+                ELSE remaining_seconds
+            END,
+            paused_time = NOW(),
+            last_modify_time = NOW()
+        WHERE task_id = #{taskId}
+          AND step_order = #{stepOrder}
+          AND status = 'RUNNING'
+        <include refid="TaskStillCooking"/>
+    </update>
+
+    <update id="resume">
+        UPDATE cooking_task_step
+        SET status = 'RUNNING',
+            total_paused_seconds = total_paused_seconds
+                + CASE WHEN paused_time IS NULL THEN 0
+                       ELSE GREATEST(0, EXTRACT(EPOCH FROM (NOW() - paused_time))::int) END,
+            paused_time = NULL,
+            last_modify_time = NOW()
+        WHERE task_id = #{taskId}
+          AND step_order = #{stepOrder}
+          AND status = 'PAUSED'
+        <include refid="TaskStillCooking"/>
+    </update>
+
+    <update id="complete">
+        UPDATE cooking_task_step
+        SET status = 'DONE',
+            started_time = COALESCE(started_time, NOW()),
+            total_paused_seconds = total_paused_seconds
+                + CASE WHEN paused_time IS NULL THEN 0
+                       ELSE GREATEST(0, EXTRACT(EPOCH FROM (NOW() - paused_time))::int) END,
+            paused_time = NULL,
+            remaining_seconds = CASE WHEN timer_type = 'countdown' THEN 0 ELSE remaining_seconds END,
+            completed_time = NOW(),
+            last_modify_time = NOW()
+        WHERE task_id = #{taskId}
+          AND step_order = #{stepOrder}
+          AND status IN ('PENDING', 'RUNNING', 'PAUSED')
+        <include refid="TaskStillCooking"/>
+    </update>
+
+    <update id="undo">
+        UPDATE cooking_task_step
+        SET status = 'PENDING',
+            started_time = NULL,
+            paused_time = NULL,
+            total_paused_seconds = 0,
+            remaining_seconds = CASE WHEN timer_type = 'countdown' THEN duration_seconds ELSE NULL END,
+            completed_time = NULL,
+            last_modify_time = NOW()
+        WHERE task_id = #{taskId}
+          AND step_order = #{stepOrder}
+          AND status = 'DONE'
+        <include refid="TaskStillCooking"/>
+    </update>
+
+    <update id="pauseRunningSteps">
+        UPDATE cooking_task_step
+        SET status = 'PAUSED',
+            remaining_seconds = CASE
+                WHEN timer_type = 'countdown' AND duration_seconds IS NOT NULL AND started_time IS NOT NULL
+                    THEN GREATEST(0,
+                        duration_seconds
+                        - (EXTRACT(EPOCH FROM (NOW() - started_time))::int - total_paused_seconds))
+                ELSE remaining_seconds
+            END,
+            paused_time = NOW(),
+            last_modify_time = NOW()
+        WHERE task_id = #{taskId}
+          AND status = 'RUNNING'
+    </update>
+
+    <update id="resumePausedSteps">
+        UPDATE cooking_task_step
+        SET status = 'RUNNING',
+            total_paused_seconds = total_paused_seconds
+                + CASE WHEN paused_time IS NULL THEN 0
+                       ELSE GREATEST(0, EXTRACT(EPOCH FROM (NOW() - paused_time))::int) END,
+            paused_time = NULL,
+            last_modify_time = NOW()
+        WHERE task_id = #{taskId}
+          AND status = 'PAUSED'
+    </update>
+
+    <update id="finishActiveSteps">
+        UPDATE cooking_task_step
+        SET status = 'DONE',
+            started_time = COALESCE(started_time, NOW()),
+            total_paused_seconds = total_paused_seconds
+                + CASE WHEN paused_time IS NULL THEN 0
+                       ELSE GREATEST(0, EXTRACT(EPOCH FROM (NOW() - paused_time))::int) END,
+            paused_time = NULL,
+            remaining_seconds = CASE WHEN timer_type = 'countdown' THEN 0 ELSE remaining_seconds END,
+            completed_time = NOW(),
+            last_modify_time = NOW()
+        WHERE task_id = #{taskId}
+          AND status IN ('RUNNING', 'PAUSED')
+    </update>
+</mapper>

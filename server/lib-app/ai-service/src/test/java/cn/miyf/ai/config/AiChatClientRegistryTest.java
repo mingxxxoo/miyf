@@ -49,10 +49,10 @@ class AiChatClientRegistryTest {
         AiProperties properties = new AiProperties();
         properties.setEnabled(true);
         properties.setProvider("opencode");
-        properties.setFallback("dashscope");
+        properties.setFallback("backup");
         Map<String, AiProperties.Provider> providers = new LinkedHashMap<>();
-        providers.put("dashscope", provider("https://dashscope.aliyuncs.com/compatible-mode/v1",
-                "sk-dashscope", "qwen-plus"));
+        providers.put("backup", provider("https://api.example.com/v1",
+                "sk-backup", "deepseek-v4.1-flash"));
         providers.put("opencode", provider("https://opencode.ai/inference/openai/v1",
                 "oc_sk_test", "deepseek-v4.1-flash"));
         properties.setProviders(providers);
@@ -63,22 +63,22 @@ class AiChatClientRegistryTest {
         assertEquals(2, registry.clients().size());
         assertEquals("opencode", registry.clients().get(0).provider());
         assertEquals("deepseek-v4.1-flash", registry.clients().get(0).model());
-        assertEquals("dashscope", registry.clients().get(1).provider());
+        assertEquals("backup", registry.clients().get(1).provider());
     }
 
     @Test
     void fallsBackToDefaultModel() {
         AiProperties properties = new AiProperties();
         properties.setEnabled(true);
-        properties.setModel("qwen-plus");
-        properties.setProvider("dashscope");
-        properties.setProviders(Map.of("dashscope", provider("https://dashscope.aliyuncs.com/compatible-mode/v1",
-                "sk-dashscope", null)));
+        properties.setModel("deepseek-v4.1-flash");
+        properties.setProvider("backup");
+        properties.setProviders(Map.of("backup", provider("https://api.example.com/v1",
+                "sk-backup", null)));
 
         AiChatClientRegistry registry = AiChatClientRegistry.create(properties);
 
         assertTrue(registry.isAvailable());
-        assertEquals("qwen-plus", registry.clients().get(0).model());
+        assertEquals("deepseek-v4.1-flash", registry.clients().get(0).model());
     }
 
     private AiProperties.Provider provider(String baseUrl, String apiKey, String model) {
